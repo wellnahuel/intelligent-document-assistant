@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:chunking": "node --experimental-strip-types --test tests/chunking.test.mjs",
+    "sample:pdf": "node scripts/generate-sample-pdf.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
