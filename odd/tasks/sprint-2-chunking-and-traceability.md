@@ -21,7 +21,7 @@ Checks: `npm run test:chunking`, `npm run typecheck`, `npm run lint`, Prisma mig
 
 | ID | Specs | Route | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S2, S3 | inline | done | `src/lib/chunking/chunk-text.ts`, `config.ts`, `tests/chunking.test.mjs`; RED (module missing) → 11/11 GREEN |
+| T1 | S2, S3 | inline | done | `src/lib/chunking/chunk-text.ts`, `config.ts`, `tests/chunking.test.mjs`; RED (module missing) → 12/12 GREEN |
 | T2 | S1 | inline | done | `prisma/schema.prisma`, migration `20261111203342_add_document_chunk`; `prisma migrate status` up to date |
 | T3 | S3, S4 | inline | done | `src/lib/documents/chunks.ts`; same content hash and count after 3 regenerations; rollback trigger left 6 old chunks intact |
 | T4 | S5 | inline | done | `src/app/api/documents/[id]/chunks/route.ts`; 200/400/404/405 verified, safe `INTERNAL_ERROR` on forced failure |
@@ -271,7 +271,7 @@ Route note: T1–T9 run inline. The units are strictly sequential (pure module �
 
 ### L4 — Verification evidence (2026-11-11)
 
-- `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:chunking` ✅ (11/11).
+- `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:chunking` ✅ (12/12).
 - `npx prisma migrate status` ✅: 2 migrations applied, schema up to date.
 - HTTP smoke: short page 1 chunk; long page 3+3 chunks; paragraphs fixture 2 chunks; long sentence 3+3 chunks; empty page document 1+0 chunks; invalid id 400 `INVALID_DOCUMENT_ID`; missing id 404 `DOCUMENT_NOT_FOUND`; `GET` on the generation endpoint 405; detail API and HTML show chunks ordered by page/index with ranges and parameters.
 - Idempotency: 3 regenerations produced the same count (6) and the same content/range hash; row ids changed, proving replacement rather than duplication.

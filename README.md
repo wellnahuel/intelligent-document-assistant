@@ -502,7 +502,7 @@ Comprobado en este entorno:
 
 - `npm run typecheck` ✅
 - `npm run lint` ✅
-- `npm run test:chunking` ✅ (11 tests: normalización, párrafos, oraciones, palabras, palabra gigante, overlap, mínimo, trazabilidad y validación)
+- `npm run test:chunking` ✅ (12 tests: normalización, párrafos, oraciones, palabras, palabra gigante, overlap, borde del overlap, mínimo, trazabilidad y validación)
 - `npx prisma migrate status` ✅ (2 migraciones aplicadas, esquema al día)
 - Smoke test HTTP del Sprint 2 ✅: página corta (1 fragmento), página larga (3 + 3), varios párrafos (2), oración muy larga (3 + 3), documento con página vacía (1 + 0), regeneración repetida 3 veces con el mismo conteo y el mismo hash de contenido, id inválido `400`, id inexistente `404`, `GET` al endpoint de generación `405`, API de detalle con chunks ordenados y HTML con página, rango y parámetros.
 - SQL ✅: 0 rangos fuera de límites; `content` coincide con `substring(page.text, startChar, endChar)` en el 100% de las filas; 0 índices duplicados o discontinuos; overlap real de 143–148 caracteres (≤150); 0 chunks sin página.
