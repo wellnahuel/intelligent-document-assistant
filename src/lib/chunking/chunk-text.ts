@@ -297,7 +297,10 @@ function applyOverlap(
     let contentStart = range.start;
 
     if (index > 0 && overlapChars > 0) {
-      const windowStart = Math.max(previousStart, range.start - overlapChars);
+      const windowStart = Math.max(
+        previousStart + 1,
+        range.start - overlapChars,
+      );
       contentStart = nextWordStart(text, windowStart, range.start);
     }
 

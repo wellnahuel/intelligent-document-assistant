@@ -227,6 +227,19 @@ test("adds overlap from the previous chunk at word boundaries", () => {
   }
 });
 
+test("overlap never starts at the previous chunk start", () => {
+  const shortParagraph = `${"A".repeat(50)} ${"A".repeat(49)}`;
+  const text = `${shortParagraph}\n\n${"B".repeat(1100)}`;
+  const { chunks } = assertChunkContract(
+    text,
+    options({ targetChars: 1200, overlapChars: 150, minChars: 100 }),
+  );
+
+  assert.equal(chunks.length, 2);
+  assert.ok(chunks[1].startChar > chunks[0].startChar);
+  assert.ok(chunks[1].startChar < chunks[0].endChar);
+});
+
 test("merges a trailing chunk smaller than the minimum", () => {
   const text = `${"A".repeat(90)}\n\n${"B".repeat(20)}`;
   const chunkingOptions = options({ targetChars: 100, overlapChars: 0, minChars: 40 });
