@@ -1,0 +1,29 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# Next.js
+/.next/
+/out/
+/build
+
+# Environment files (never commit real credentials)
+.env
+.env*.local
+
+# Prisma generated client
+/src/generated/prisma
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs and coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage
+
+# Operating system
+.DS_Store
+Thumbs.db

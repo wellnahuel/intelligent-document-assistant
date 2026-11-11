@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentStatus {
+  PROCESSED
+  FAILED
+}
+
+model Document {
+  id               String         @id @default(cuid())
+  originalFilename String
+  mimeType         String
+  sizeBytes        Int
+  pageCount        Int
+  status           DocumentStatus @default(PROCESSED)
+  errorMessage     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  pages            DocumentPage[]
+
+  @@index([createdAt])
+}
+
+model DocumentPage {
+  id         String   @id @default(cuid())
+  documentId String
+  pageNumber Int
+  text       String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+}

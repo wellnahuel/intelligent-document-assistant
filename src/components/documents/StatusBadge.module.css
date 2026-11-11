@@ -1,0 +1,53 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.processed {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: rgba(23, 114, 74, 0.16);
+}
+
+.failed {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(179, 38, 30, 0.16);
+}
+
+.pending {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: rgba(138, 90, 0, 0.16);
+}
+
+.pending .dot {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending .dot {
+    animation: none;
+  }
+}

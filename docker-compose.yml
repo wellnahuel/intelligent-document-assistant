@@ -1,0 +1,22 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: ida-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ida
+      POSTGRES_PASSWORD: ida
+      POSTGRES_DB: ida
+    ports:
+      # Host 5434 avoids collisions with other local PostgreSQL instances.
+      - "5434:5432"
+    volumes:
+      - ida_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ida -d ida"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ida_postgres_data:
