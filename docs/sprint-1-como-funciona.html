@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Intelligent Document Assistant — Cómo funciona la aplicación (Sprint 1)</title>
+<!--
+  Generar el PDF:
+  google-chrome --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
+    --no-pdf-header-footer --run-all-compositor-stages-before-draw \
+    --virtual-time-budget=3000 \
+    --print-to-pdf="docs/sprint-1-como-funciona.pdf" \
+    "file:///ruta/al/proyecto/docs/sprint-1-como-funciona.html"
+-->
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 15mm 15mm;
+  }
+
+  :root {
+    --ink: #1d1b18;
+    --muted: #5f5a53;
+    --faint: #8a857d;
+    --line: #e4dfd5;
+    --paper: #f8f6f2;
+    --white: #ffffff;
+    --accent: #5146c8;
+    --accent-deep: #3f36a8;
+    --accent-soft: #edeafd;
+    --violet: #6d28d9;
+    --violet-soft: #f5f3ff;
+    --amber: #8a5a00;
+    --amber-soft: #fdf0d5;
+    --green: #17724a;
+    --green-soft: #e3f3ea;
+    --red: #b3261e;
+    --red-soft: #fce9e7;
+    --mono: "DejaVu Sans Mono", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    color: var(--ink);
+    background: #ffffff;
+    font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.62;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  p {
+    margin: 0 0 3mm;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h1,
+  h2 {
+    font-family: Georgia, "Liberation Serif", serif;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin-bottom: 4mm;
+    font-size: 20pt;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    margin: 5mm 0 1.5mm;
+    font-size: 11.8pt;
+    letter-spacing: -0.01em;
+  }
+
+  .kicker {
+    margin: 0 0 2mm;
+    color: var(--accent-deep);
+    font-size: 8.2pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lead {
+    color: var(--muted);
+    font-size: 11.2pt;
+    line-height: 1.62;
+  }
+
+  .small {
+    color: var(--faint);
+    font-size: 9pt;
+  }
+
+  code {
+    padding: 0.4mm 1.2mm;
+    border-radius: 4px;
+    background: #f1eee8;
+    color: #2a2723;
+    font-family: var(--mono);
+    font-size: 8.5pt;
+  }
+
+  pre {
+    margin: 3mm 0 5mm;
+    padding: 4mm 4.5mm;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #171522;
+    color: #f1efe8;
+    font-family: var(--mono);
+    font-size: 8.1pt;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .break {
+    break-before: page;
+  }
+
+  .avoid {
+    break-inside: avoid;
+  }
+
+  /* Portada */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 252mm;
+    padding: 18mm 18mm 16mm;
+    border-radius: 24px;
+    background:
+      radial-gradient(520px 340px at 88% 8%, rgba(109, 40, 217, 0.42), transparent 65%),
+      radial-gradient(480px 300px at 8% 92%, rgba(81, 70, 200, 0.4), transparent 65%),
+      #15131f;
+    color: #ffffff;
+    break-after: page;
+  }
+
+  .cover-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6mm;
+  }
+
+  .cover-badge {
+    padding: 2mm 3.5mm;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ddd6fe;
+    font-size: 8.2pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cover-brand {
+    color: #c4b5fd;
+    font-size: 8.8pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .cover-main {
+    display: grid;
+    grid-template-columns: 1.35fr 0.85fr;
+    align-items: center;
+    gap: 12mm;
+    margin: 8mm 0;
+  }
+
+  .cover-kicker {
+    margin-bottom: 5mm;
+    color: #c4b5fd;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .cover h1 {
+    margin-bottom: 5mm;
+    font-size: 34pt;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+
+  .cover-sub {
+    max-width: 88mm;
+    margin: 0;
+    color: #d6d0e6;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .ticket {
+    position: relative;
+    padding: 7mm 6mm 6mm;
+    border-radius: 4px;
+    background: #fffdf7;
+    color: #1b1916;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+    transform: rotate(1.3deg);
+  }
+
+  .ticket::before,
+  .ticket::after {
+    position: absolute;
+    top: 50%;
+    width: 6mm;
+    height: 6mm;
+    border-radius: 50%;
+    background: #15131f;
+    content: "";
+  }
+
+  .ticket::before {
+    left: -3mm;
+  }
+
+  .ticket::after {
+    right: -3mm;
+  }
+
+  .ticket-title {
+    margin: 0 0 4mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 1px dashed #cbc4b8;
+    font-family: var(--mono);
+    font-size: 7.7pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    padding: 1.4mm 0;
+    border-bottom: 1px dotted #e4dfd5;
+    font-size: 7.9pt;
+  }
+
+  .ticket-row span {
+    color: #6f6960;
+  }
+
+  .ticket-note {
+    margin-top: 4mm;
+    color: #8a5a00;
+    font-size: 7.8pt;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .cover-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-top: 5mm;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    color: #a8a2b8;
+    font-size: 8.6pt;
+  }
+
+  .cover-foot p {
+    margin: 0;
+  }
+
+  /* Secciones */
+  .section {
+    break-inside: auto;
+  }
+
+  .callout {
+    margin: 5mm 0;
+    padding: 4.5mm 5mm;
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    background: var(--accent-soft);
+    break-inside: avoid;
+  }
+
+  .callout.amber {
+    border-left-color: #f59e0b;
+    background: var(--amber-soft);
+  }
+
+  .callout.violet {
+    border-left-color: var(--violet);
+    background: var(--violet-soft);
+  }
+
+  .callout.green {
+    border-left-color: var(--green);
+    background: var(--green-soft);
+  }
+
+  .callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Tablas */
+  table {
+    width: 100%;
+    margin: 3mm 0 4mm;
+    border-collapse: collapse;
+    font-size: 8.8pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  th {
+    padding: 2.4mm 2.6mm;
+    border-bottom: 1px solid #cfc7b9;
+    background: #f1eee8;
+    color: #3b3731;
+    font-size: 8.3pt;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 1.9mm 2.4mm;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fcfbf8;
+  }
+
+  td strong {
+    color: var(--ink);
+  }
+
+  /* Pasos */
+  .step {
+    display: grid;
+    grid-template-columns: 10mm 1fr;
+    gap: 4mm;
+    margin-bottom: 4.5mm;
+    break-inside: avoid;
+  }
+
+  .step-num {
+    display: grid;
+    place-items: center;
+    width: 9mm;
+    height: 9mm;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  .step-body {
+    min-width: 0;
+  }
+
+  .step h3 {
+    margin: 0 0 1mm;
+    font-size: 11.4pt;
+  }
+
+  .analogy {
+    margin: 0 0 1.5mm;
+    color: var(--violet);
+    font-size: 9.5pt;
+    font-style: italic;
+  }
+
+  .tech {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .step-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Diagrama */
+  .flow {
+    margin: 4mm 0 5mm;
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfbf8;
+  }
+
+  .flow-box {
+    position: relative;
+    padding: 2.7mm 3.8mm;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 9px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .flow-box.server {
+    border-left-color: var(--violet);
+  }
+
+  .flow-box.back {
+    border-left-color: var(--green);
+  }
+
+  .flow-box .flow-label {
+    display: block;
+    margin-bottom: 0.8mm;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .flow-box strong {
+    display: block;
+    font-size: 9.7pt;
+  }
+
+  .flow-box span.desc {
+    display: block;
+    margin-top: 0.8mm;
+    color: var(--muted);
+    font-size: 8.7pt;
+    line-height: 1.45;
+  }
+
+  .flow-arrow {
+    margin: 0.8mm 0;
+    color: var(--accent);
+    font-size: 11pt;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .boundary {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin: 2.5mm 0;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .boundary::before,
+  .boundary::after {
+    flex: 1;
+    border-top: 1.5px dashed #cfc7b9;
+    content: "";
+  }
+
+  /* Límites */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3mm;
+    margin: 4mm 0 5mm;
+  }
+
+  .stat {
+    padding: 3.5mm;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    break-inside: avoid;
+  }
+
+  .stat strong {
+    display: block;
+    color: var(--accent-deep);
+    font-size: 15pt;
+    line-height: 1.2;
+  }
+
+  .stat span {
+    display: block;
+    margin-top: 1mm;
+    color: var(--muted);
+    font-size: 8.2pt;
+    line-height: 1.35;
+  }
+
+  .stat.mono strong {
+    font-family: var(--mono);
+    font-size: 12pt;
+  }
+
+  /* Tarjetas */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5mm;
+    margin: 4mm 0 4mm;
+  }
+
+  .card {
+    padding: 3.4mm 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .card .tag {
+    display: inline-block;
+    margin-bottom: 2mm;
+    padding: 1mm 2.2mm;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card h3 {
+    margin: 0 0 1.5mm;
+    font-size: 10.6pt;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 8.8pt;
+    line-height: 1.48;
+  }
+
+  /* Modelo de datos */
+  .model {
+    display: grid;
+    grid-template-columns: 1fr 16mm 1fr;
+    gap: 3mm;
+    align-items: center;
+    margin: 4mm 0 5mm;
+  }
+
+  .model-card {
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .model-label {
+    display: block;
+    margin-bottom: 1.5mm;
+    color: var(--accent-deep);
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .model-card strong {
+    display: block;
+    margin-bottom: 2mm;
+    font-family: var(--mono);
+    font-size: 10pt;
+  }
+
+  .model-card ul {
+    margin: 0;
+    padding-left: 4mm;
+    color: var(--muted);
+    font-size: 8.4pt;
+    line-height: 1.55;
+  }
+
+  .model-card li {
+    margin-bottom: 0.6mm;
+  }
+
+  .model-link {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Glosario */
+  .glossary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 6mm;
+    margin-top: 3mm;
+  }
+
+  .glossary div {
+    break-inside: avoid;
+  }
+
+  .glossary dt {
+    margin-top: 2.5mm;
+    font-size: 9.2pt;
+    font-weight: 700;
+  }
+
+  .glossary dd {
+    margin: 0.5mm 0 0;
+    color: var(--muted);
+    font-size: 9pt;
+    line-height: 1.48;
+  }
+
+  /* Preguntas */
+  .qa {
+    margin-bottom: 3.5mm;
+    break-inside: avoid;
+  }
+
+  .qa .q {
+    margin: 0 0 1mm;
+    font-size: 10.2pt;
+    font-weight: 700;
+  }
+
+  .qa .a {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .checklist {
+    margin: 3mm 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .checklist li {
+    position: relative;
+    margin-bottom: 1.5mm;
+    padding-left: 7mm;
+    color: var(--muted);
+    font-size: 9.4pt;
+  }
+
+  .checklist li::before {
+    position: absolute;
+    top: 0.2mm;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 4.2mm;
+    height: 4.2mm;
+    border: 1.2px solid #b8b1a5;
+    border-radius: 4px;
+    color: transparent;
+    content: "✓";
+    font-size: 7pt;
+    font-weight: 700;
+  }
+
+  pre.tree {
+    padding: 3.5mm 4mm;
+    font-size: 7.5pt;
+    line-height: 1.5;
+  }
+
+  .review {
+    margin: 2mm 0 0;
+    padding-left: 5mm;
+    color: var(--muted);
+    font-size: 9.2pt;
+  }
+
+  .review li {
+    margin-bottom: 1.2mm;
+  }
+
+  .review li::marker {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .footer {
+    position: fixed;
+    right: 0;
+    bottom: 5mm;
+    left: 0;
+    color: #a8a2b8;
+    font-size: 7.3pt;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+
+  .footer strong {
+    color: #7b7469;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- Portada                                                      -->
+<!-- ============================================================ -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="cover-badge">Proyecto 3 · Sprint 1</span>
+    <span class="cover-brand">Intelligent Document Assistant</span>
+  </div>
+
+  <div class="cover-main">
+    <div>
+      <p class="cover-kicker">Documento de estudio</p>
+      <h1>Cómo<br>funciona<br>la biblioteca</h1>
+      <p class="cover-sub">La analogía del archivo: del PDF a una colección consultable, paso a paso.</p>
+    </div>
+
+    <div class="ticket">
+      <p class="ticket-title">FICHA DE INGRESO #001</p>
+      <div class="ticket-row"><span>Manuscrito</span><strong>1 × PDF</strong></div>
+      <div class="ticket-row"><span>Páginas</span><strong>2 folios</strong></div>
+      <div class="ticket-row"><span>Recepción</span><strong>Ventanilla web</strong></div>
+      <div class="ticket-row"><span>Estado</span><strong>Procesado</strong></div>
+      <div class="ticket-row"><span>Semántica</span><strong>Todavía no</strong></div>
+      <div class="ticket-row"><span>Total</span><strong>Sprint 1</strong></div>
+      <div class="ticket-note">Sin embeddings ni LLM.<br>El bibliotecario está en entrenamiento.</div>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <p>Next.js 16 · TypeScript · PostgreSQL</p>
+    <p>El recorrido completo ya existe. Solo falta el bibliotecario.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- La idea central                                              -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La idea central</p>
+  <h2>El archivo ya funciona; el bibliotecario todavía no interpreta</h2>
+
+  <p class="lead">Intelligent Document Assistant es una aplicación para subir PDFs y consultarlos. En el Sprint 1 no hay búsqueda semántica ni respuestas generativas: hay un archivo que recibe un manuscrito, lo valida, lo desarma en páginas, lo guarda con su origen y lo muestra en una sala de lectura. Lo importante es que el recorrido completo ya existe.</p>
+
+  <div class="callout">
+    <p><strong>La tesis del Sprint 1:</strong> no necesitamos que el archivero entienda el manuscrito para probar que el archivo funciona. Necesitamos que el manuscrito llegue, se inspeccione, se desarme en folios numerados, se guarde en el armario y se pueda consultar. Cuando llegue la búsqueda semántica, cambiamos al bibliotecario sin mover los estantes.</p>
+  </div>
+
+  <h3>El reparto de roles</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>En el archivo</th>
+        <th>En la aplicación</th>
+        <th>Dónde vive</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Mensajero / formulario</strong></td>
+        <td>La persona que elige y sube el PDF</td>
+        <td><code>UploadForm.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>Ventanilla de recepción</strong></td>
+        <td>El Route Handler que recibe el archivo</td>
+        <td><code>POST /api/documents</code></td>
+      </tr>
+      <tr>
+        <td><strong>Inspección del paquete</strong></td>
+        <td>Validación de tamaño, tipo y cabecera</td>
+        <td><code>lib/pdf/validation.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>Transcripción</strong></td>
+        <td>Extracción de texto página por página</td>
+        <td><code>lib/pdf/extract-text.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>Folios numerados</strong></td>
+        <td>Cada página con su número y su texto</td>
+        <td><code>DocumentPage</code></td>
+      </tr>
+      <tr>
+        <td><strong>Ficha del catálogo</strong></td>
+        <td>Metadatos del documento y estado</td>
+        <td><code>Document</code></td>
+      </tr>
+      <tr>
+        <td><strong>Armario</strong></td>
+        <td>La base de datos PostgreSQL</td>
+        <td><code>docker-compose.yml</code></td>
+      </tr>
+      <tr>
+        <td><strong>Sala de lectura</strong></td>
+        <td>Biblioteca y vista de detalle</td>
+        <td><code>page.tsx</code>, <code>DocumentDetail.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>Sello «Procesado»</strong></td>
+        <td>El estado del documento</td>
+        <td><code>status = PROCESSED</code></td>
+      </tr>
+      <tr>
+        <td><strong>Índice de la sala</strong></td>
+        <td>La lista de páginas del documento</td>
+        <td><code>DocumentDetail.tsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>Búsqueda semántica</strong></td>
+        <td>Todavía no existe</td>
+        <td>Sprint 2 en adelante</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- Pasos 1 a 3                                                  -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El viaje de un manuscrito</p>
+  <h2>Seis pasos desde que subís el PDF hasta que lo ves en la sala</h2>
+
+  <p class="lead">Seguí el recorrido de un PDF cualquiera. En cada paso vas a ver qué pasa en el archivo y qué pasa exactamente en el código.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>El mensajero entrega el manuscrito</h3>
+      <p class="analogy">En el archivo: el mensajero llega con un sobre y lo entrega en la ventanilla.</p>
+      <p class="tech">En la app: <code>UploadForm</code> acepta el PDF por clic o arrastre. La comprobación de tamaño y tipo en el navegador es solo para dar feedback rápido; la decisión real la toma el servidor. <code>DocumentLibrary.handleUpload</code> arma un <code>FormData</code> con el campo <code>file</code> y hace <code>POST /api/documents</code>.</p>
+      <p class="tech">El formulario usa <code>multipart/form-data</code>. El archivo viaja en memoria; el nombre original se conserva solo como metadato de visualización.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>La ventanilla inspecciona el paquete</h3>
+      <p class="analogy">En el archivo: el archivero mira el paquete. ¿Hay un manuscrito? ¿Pesa demasiado? ¿La etiqueta dice manuscrito? ¿La portada tiene el sello <code>%PDF-</code>?</p>
+      <p class="tech">En la app: <code>validatePdfUpload</code> comprueba que el campo sea un archivo, que no esté vacío, que no supere <code>MAX_PDF_SIZE_MB</code> (10 MB por defecto), que el MIME declarado sea <code>application/pdf</code> y que los primeros 1024 bytes contengan <code>%PDF-</code>. El límite de páginas se verifica después, cuando PDF.js ya leyó el documento.</p>
+
+      <pre>if (value.size &gt; limits.maxSizeBytes) throw new AppError("FILE_TOO_LARGE", ...);
+if (declaredType !== "application/pdf") throw new AppError("INVALID_FILE_TYPE", ...);
+if (!hasPdfSignature(bytes)) throw new AppError("INVALID_PDF_HEADER", ...);</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>El manuscrito se desarma en folios</h3>
+      <p class="analogy">En el archivo: el archivero saca la encuadernación y numera cada folio. El folio 1 sigue siendo el folio 1 cuando el manuscrito llegue a la sala.</p>
+      <p class="tech">En la app: <code>extractPdfPages</code> abre el documento con PDF.js, verifica <code>numPages</code> contra el límite de 50, recorre cada página con <code>getPage(pageNumber)</code> y <code>getTextContent()</code>, normaliza espacios y saltos de línea, y arma <code>{ pageNumber, text }</code>.</p>
+
+      <pre>for (let pageNumber = 1; pageNumber &lt;= pdf.numPages; pageNumber += 1) {
+  const page = await pdf.getPage(pageNumber);
+  const content = await page.getTextContent();
+  pages.push({ pageNumber, text: normalizePageText(content.items) });
+}</pre>
+
+      <p class="tech">PDF.js corre en el servidor con el build <code>legacy</code>: la versión 6 usa <code>Promise.try</code>, que no existe en Node 22.13, y el bundle legacy incluye el polyfill. Ese detalle vive en <code>extract-text.ts</code> y <code>pdfjs-config.ts</code>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Pasos 4 a 6                                                  -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El viaje de un manuscrito · continuación</p>
+  <h2>Del folio suelto a la sala de lectura</h2>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>Si no hay letras, el archivo no inventa</h3>
+      <p class="analogy">En el archivo: si el sobre trae solo fotografías de las páginas, el archivero no puede transcribir letras que no están. No adivina ni inventa.</p>
+      <p class="tech">En la app: si ninguna página tiene texto, <code>extractPdfPages</code> lanza <code>NO_EXTRACTABLE_TEXT</code> y el endpoint responde <strong>422</strong> con el mensaje exacto: <strong>«No se encontró texto seleccionable en el PDF.»</strong>. No hay OCR en este sprint. Un PDF dañado recibe <code>CORRUPT_PDF</code>.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <h3>Los folios se guardan con su origen</h3>
+      <p class="analogy">En el archivo: cada folio va a una carpeta con el número del manuscrito y el número de página. La ficha del catálogo se escribe una sola vez, al final.</p>
+      <p class="tech">En la app: <code>createDocumentWithPages</code> abre una transacción con <code>prisma.$transaction</code>: crea el <code>Document</code> y luego inserta todas las <code>DocumentPage</code> con <code>createMany</code>. Si una página falla, el documento también se revierte. No quedan registros a medio guardar.</p>
+
+      <pre>return prisma.$transaction(async (tx) =&gt; {
+  const document = await tx.document.create({ data: { ...meta, status: "PROCESSED" } });
+  await tx.documentPage.createMany({
+    data: pages.map((page) =&gt; ({ documentId: document.id, ...page })),
+  });
+  return document;
+});</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <h3>La sala de lectura abre</h3>
+      <p class="analogy">En el archivo: la ficha aparece en el catálogo y cualquier persona puede pedir el manuscrito y leer sus folios.</p>
+      <p class="tech">En la app: el endpoint devuelve <strong>201</strong> con el resumen; la lista se actualiza y el aviso de éxito enlaza al detalle. <code>/documents/[id]</code> es un Server Component que consulta el documento y sus páginas ordenadas por <code>pageNumber</code>, y muestra un índice y una tarjeta por página.</p>
+      <p class="tech">La lista inicial se lee en el servidor; la isla cliente solo maneja la subida y el refresco. El navegador nunca recibe credenciales de la base.</p>
+    </div>
+  </div>
+
+  <div class="callout amber">
+    <p><strong>El estado «Pendiente» no es una fila de la base.</strong> Mientras la request está en vuelo, la UI muestra un estado transitorio del cliente. En la base solo se persiste <code>PROCESSED</code>. El valor <code>FAILED</code> existe en el enum para un pipeline asíncrono futuro: la extracción actual ocurre antes de cualquier escritura, así que si falla, no hay documento que marcar.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Mapa del recorrido                                           -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El mapa del recorrido</p>
+  <h2>Quién hace qué en cada extremo</h2>
+
+  <p class="lead">El mismo recorrido de los seis pasos, en una sola vista. La línea punteada marca la frontera entre el navegador y el servidor: ahí es donde el código deja de ser React y pasa a ser un Route Handler de Next.js.</p>
+
+  <div class="flow">
+    <div class="flow-box">
+      <span class="flow-label">Navegador</span>
+      <strong>1. UploadForm</strong>
+      <span class="desc">El usuario elige el PDF. La validación local de tamaño y tipo es solo UX; no es la autoridad.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box">
+      <span class="flow-label">Navegador</span>
+      <strong>2. DocumentLibrary → POST</strong>
+      <span class="desc">Arma el <code>FormData</code> con el campo <code>file</code> y hace <code>POST /api/documents</code>. Viaja como <code>multipart/form-data</code>; el nombre original es solo un dato, nunca una ruta.</span>
+    </div>
+
+    <div class="boundary">Frontera cliente / servidor</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · Route Handler</span>
+      <strong>3. POST /api/documents</strong>
+      <span class="desc">Orquesta la operación: lee el formulario, valida, extrae y persiste. Traduce cada error a una respuesta HTTP segura.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · validación + extracción</span>
+      <strong>4. validatePdfUpload + extractPdfPages</strong>
+      <span class="desc">Comprueba tamaño, MIME, cabecera y páginas. Después PDF.js lee cada página y conserva su número.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · persistencia</span>
+      <strong>5. createDocumentWithPages</strong>
+      <span class="desc">Una transacción crea el <code>Document</code> y sus <code>DocumentPage</code>. PostgreSQL es el armario.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box back">
+      <span class="flow-label">Navegador · lectura</span>
+      <strong>6. 201 + lista + detalle</strong>
+      <span class="desc">La lista muestra la ficha; el detalle renderiza el índice y el texto de cada folio.</span>
+    </div>
+  </div>
+
+  <div class="callout green">
+    <p><strong>La clave de la arquitectura:</strong> el navegador no sabe cómo se extrae el texto. Solo conoce el contrato: manda un PDF y recibe metadatos. Por eso el Sprint 2 puede agregar chunking sin tocar el formulario de carga ni la sala de lectura.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Controles de la ventanilla                                   -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Los controles de la ventanilla</p>
+  <h2>Qué se rechaza antes de tocar el armario</h2>
+
+  <p class="lead">La interfaz valida para dar feedback rápido, pero el servidor repite todas las comprobaciones. El navegador no es confiable: el nombre, el MIME y el tamaño declarados pueden no coincidir con el contenido real.</p>
+
+  <div class="stats">
+    <div class="stat"><strong>10 MB</strong><span>Tamaño máximo por defecto</span></div>
+    <div class="stat"><strong>50</strong><span>Páginas máximas por defecto</span></div>
+    <div class="stat mono"><strong>%PDF-</strong><span>Firma en los primeros 1024 bytes</span></div>
+    <div class="stat mono"><strong>application/pdf</strong><span>MIME declarado que se acepta</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Control</th>
+        <th>En el archivo</th>
+        <th>Código interno</th>
+        <th>HTTP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Archivo faltante</strong></td>
+        <td>No llegó ningún sobre.</td>
+        <td><code>MISSING_FILE</code></td>
+        <td>400</td>
+      </tr>
+      <tr>
+        <td><strong>Archivo vacío</strong></td>
+        <td>El sobre está vacío.</td>
+        <td><code>EMPTY_FILE</code></td>
+        <td>400</td>
+      </tr>
+      <tr>
+        <td><strong>Demasiado grande</strong></td>
+        <td>El paquete supera el peso máximo.</td>
+        <td><code>FILE_TOO_LARGE</code></td>
+        <td>413</td>
+      </tr>
+      <tr>
+        <td><strong>Tipo incorrecto</strong></td>
+        <td>La etiqueta no dice «manuscrito».</td>
+        <td><code>INVALID_FILE_TYPE</code></td>
+        <td>415</td>
+      </tr>
+      <tr>
+        <td><strong>Cabecera inválida</strong></td>
+        <td>La portada no tiene el sello del archivo.</td>
+        <td><code>INVALID_PDF_HEADER</code></td>
+        <td>400</td>
+      </tr>
+      <tr>
+        <td><strong>Demasiadas páginas</strong></td>
+        <td>El manuscrito tiene más folios de los permitidos.</td>
+        <td><code>TOO_MANY_PAGES</code></td>
+        <td>422</td>
+      </tr>
+      <tr>
+        <td><strong>Sin texto</strong></td>
+        <td>Solo hay imágenes; no hay letras que transcribir.</td>
+        <td><code>NO_EXTRACTABLE_TEXT</code></td>
+        <td>422</td>
+      </tr>
+      <tr>
+        <td><strong>PDF dañado</strong></td>
+        <td>El manuscrito está roto y no se puede abrir.</td>
+        <td><code>CORRUPT_PDF</code></td>
+        <td>422</td>
+      </tr>
+      <tr>
+        <td><strong>Documento inexistente</strong></td>
+        <td>Ese manuscrito no está en el catálogo.</td>
+        <td><code>DOCUMENT_NOT_FOUND</code></td>
+        <td>404</td>
+      </tr>
+      <tr>
+        <td><strong>Error inesperado</strong></td>
+        <td>Se cayó el archivo; no se muestra el detalle interno.</td>
+        <td><code>INTERNAL_ERROR</code></td>
+        <td>500</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <p><strong>Los mensajes son para la persona, no para la terminal.</strong> El detalle técnico queda en el servidor; el cliente recibe un código y una frase comprensible. El caso más importante del sprint es el PDF sin texto: el archivo no inventa letras y responde con una explicación clara.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Armario y ficha                                              -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El armario y la ficha</p>
+  <h2>Por qué cada folio conserva su página</h2>
+
+  <p class="lead">La ficha del catálogo describe el manuscrito completo. Los folios guardan el texto real. La relación entre ambos es lo que permitirá citar una respuesta en el Sprint 4.</p>
+
+  <div class="model">
+    <div class="model-card">
+      <span class="model-label">La ficha</span>
+      <strong>Document</strong>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>originalFilename</code></li>
+        <li><code>mimeType</code></li>
+        <li><code>sizeBytes</code></li>
+        <li><code>pageCount</code></li>
+        <li><code>status</code> · PROCESSED / FAILED</li>
+        <li><code>errorMessage</code> opcional</li>
+        <li><code>createdAt</code>, <code>updatedAt</code></li>
+      </ul>
+    </div>
+
+    <div class="model-link">1 — N</div>
+
+    <div class="model-card">
+      <span class="model-label">Los folios</span>
+      <strong>DocumentPage</strong>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>documentId</code></li>
+        <li><code>pageNumber</code></li>
+        <li><code>text</code></li>
+        <li><code>unique(documentId, pageNumber)</code></li>
+        <li><code>onDelete: Cascade</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>La frase que importa:</strong> si el PDF dice «El período de garantía del producto es de dos años», la respuesta del Sprint 4 debería poder citar <code>documento.pdf, página 1</code>. Si hubiéramos guardado todo el texto como un único bloque, sabríamos que la frase está en el PDF, pero no en qué página.</p>
+  </div>
+
+  <h3>La transacción evita fichas huérfanas</h3>
+  <p class="tech">Crear el <code>Document</code> y sus <code>DocumentPage</code> dentro de <code>prisma.$transaction</code> garantiza que no quede una ficha sin folios si falla una inserción. O se guarda todo, o no se guarda nada. La clave foránea con <code>onDelete: Cascade</code> completa la otra mitad: si se borra la ficha, sus folios desaparecen con ella. <code>@@unique([documentId, pageNumber])</code> impide dos folios con el mismo número.</p>
+
+  <div class="callout amber">
+    <p><strong>El binario no se guarda.</strong> El PDF se procesa en memoria y se descarta. Solo se conserva el nombre original como metadato saneado; se eliminan controles y separadores de ruta, y nunca se usa para construir una ruta del sistema de archivos.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Lo que todavía no hace + hoja de ruta                        -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Lo que viene</p>
+  <h2>Lo que el archivo todavía no hace</h2>
+
+  <p class="lead">El Sprint 1 construye la infraestructura de ingesta y lectura. La inteligencia llega después, por partes, sin romper el contrato de la ventanilla.</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">OCR</span>
+      <h3>No lee imágenes</h3>
+      <p>Un PDF escaneado como imagen no tiene texto seleccionable. El archivo lo rechaza en vez de inventar una transcripción.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Chunking</span>
+      <h3>No divide en fichas temáticas</h3>
+      <p>El texto se guarda por página, no en fragmentos con tamaño y solapamiento. Eso llega en el Sprint 2.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Embeddings</span>
+      <h3>No tiene índice semántico</h3>
+      <p>No hay vectores ni búsqueda por similitud. PostgreSQL tiene la imagen compatible con pgvector, pero todavía no guarda vectores.</p>
+    </div>
+    <div class="card">
+      <span class="tag">RAG + LLM</span>
+      <h3>No responde preguntas</h3>
+      <p>No hay OpenRouter, ni prompt con contexto, ni citas generadas. La sala de lectura muestra texto; no conversa.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Seguridad</span>
+      <h3>No hay credenciales ni salas privadas</h3>
+      <p>No hay autenticación, permisos por documento ni aislamiento entre usuarios. Por eso esta versión es solo local.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Producción</span>
+      <h3>No hay límites de uso ni observabilidad</h3>
+      <p>No hay rate limiting, métricas, colas ni despliegue. Es el foco del Sprint 7.</p>
+    </div>
+  </div>
+
+  <div class="callout green">
+    <p><strong>Lo que no cambia:</strong> el contrato de la ventanilla. El navegador seguirá mandando un PDF y recibiendo metadatos; el chunking es un detalle interno del servidor.</p>
+  </div>
+</section>
+
+<section class="section break">
+  <p class="kicker">Hoja de ruta</p>
+  <h2>Qué se agrega en cada sprint</h2>
+
+  <p class="lead">La arquitectura está preparada para crecer por partes. Esto es lo que cambia y lo que queda igual.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Sprint</th>
+        <th>Se agrega</th>
+        <th>En el archivo</th>
+        <th>Queda igual</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Chunking con tamaño y solapamiento</td>
+        <td>Fichas temáticas que conservan <code>documentId</code> y <code>pageNumber</code></td>
+        <td>La ventanilla de carga y el contrato del endpoint</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Embeddings y pgvector</td>
+        <td>Un índice por significado dentro de PostgreSQL</td>
+        <td>El armario, la ficha y los folios</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>RAG y OpenRouter</td>
+        <td>Un bibliotecario que recupera fragmentos y responde con citas</td>
+        <td>El origen por página y la sala de lectura</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>Evaluación, búsqueda híbrida y reranking</td>
+        <td>Un control de calidad de las respuestas</td>
+        <td>El pipeline de ingesta y el contrato</td>
+      </tr>
+      <tr>
+        <td><strong>6</strong></td>
+        <td>Auth, permisos e IDOR</td>
+        <td>Credenciales y salas privadas</td>
+        <td>El recorrido de carga y lectura</td>
+      </tr>
+      <tr>
+        <td><strong>7</strong></td>
+        <td>Producción y optimización</td>
+        <td>Límites, costos, observabilidad y despliegue</td>
+        <td>La arquitectura y la separación por capas</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <p><strong>La regla de oro:</strong> el Sprint 2 no debería tocar <code>UploadForm</code> ni el contrato <code>POST /api/documents</code>. Si hay que cambiar la UI para agregar chunking, la frontera está mal puesta.</p>
+  </div>
+
+  <div class="callout violet">
+    <p><strong>El próximo paso:</strong> el Sprint 2 convierte cada página en fichas temáticas con tamaño y solapamiento. Cada ficha conserva <code>documentId</code> y <code>pageNumber</code>, así que la cita futura no pierde el origen.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Mapa de archivos + checklist                                 -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El mapa de archivos</p>
+  <h2>Dónde vive cada parte del archivo</h2>
+
+  <p class="lead">Si mañana tenés que explicar el proyecto, este es el orden en el que conviene abrir los archivos.</p>
+
+  <pre class="tree">src/
+├── app/
+│   ├── api/documents/route.ts        ← la ventanilla
+│   ├── api/documents/[id]/route.ts   ← la ficha en JSON
+│   ├── documents/[id]/page.tsx       ← la sala de lectura
+│   └── page.tsx                      ← la puerta
+├── components/documents/
+│   ├── UploadForm.tsx                ← el ingreso
+│   ├── DocumentLibrary.tsx           ← la isla cliente
+│   └── DocumentDetail.tsx            ← los folios
+├── lib/
+│   ├── pdf/validation.ts             ← la inspección
+│   ├── pdf/extract-text.ts           ← la transcripción
+│   ├── documents/create-document.ts  ← la transacción
+│   └── documents/queries.ts          ← la lectura
+└── generated/prisma/                 ← cliente generado
+
+prisma/schema.prisma                  ← el armario
+docker-compose.yml                    ← PostgreSQL + pgvector
+samples/documento-de-prueba.pdf       ← manuscrito de prueba</pre>
+
+  <h3>Checklist del Sprint 1</h3>
+  <ul class="checklist">
+    <li>La aplicación y PostgreSQL levantan localmente con Docker.</li>
+    <li>Se sube un PDF de texto y aparece en la biblioteca.</li>
+    <li>La extracción conserva el texto y el número de página.</li>
+    <li>Los errores de carga no dejan registros a medio guardar.</li>
+    <li>Los archivos inválidos o fuera de los límites reciben un mensaje entendible.</li>
+    <li>La interfaz se usa sin exponer claves ni acceso a la base en el navegador.</li>
+  </ul>
+
+  <h3>Cómo probarlo</h3>
+  <p class="tech">Levantá el servidor y subí el PDF incluido en el repositorio. También podés regenerarlo con <code>npm run sample:pdf</code>.</p>
+
+  <pre>npm run dev
+# Abrir http://localhost:3000
+# Subir samples/documento-de-prueba.pdf
+
+# O probar la API directamente:
+curl -F "file=@samples/documento-de-prueba.pdf;type=application/pdf" \
+  http://localhost:3000/api/documents</pre>
+
+</section>
+
+<!-- ============================================================ -->
+<!-- Preguntas de repaso                                          -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Para comprobar que entendiste</p>
+  <h2>Seis preguntas de repaso</h2>
+
+  <p class="lead">Estas son las preguntas que conviene poder responder sin mirar el código. Si salen, entendiste el recorrido y la lógica del sprint.</p>
+
+  <div class="qa">
+    <p class="q">1. ¿Qué diferencia práctica hay entre extraer texto de un PDF y hacer OCR?</p>
+    <p class="a">Extraer texto lee las letras que el PDF ya contiene como texto. El OCR mira una imagen y trata de reconocer formas. En este sprint solo aceptamos PDFs con texto seleccionable; los escaneados se rechazan con un mensaje claro.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">2. ¿Por qué guardamos el texto por página en vez de un bloque completo?</p>
+    <p class="a">Porque la cita futura necesita documento + página. Si todo fuera un bloque, podríamos saber que la frase está en el PDF, pero no señalar dónde. <code>DocumentPage</code> conserva esa relación desde el primer paso.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">3. ¿Por qué la validación debe repetirse en el servidor?</p>
+    <p class="a">Porque el navegador no es confiable: el nombre, el MIME y el tamaño declarados pueden no coincidir con el contenido real. El servidor valida el archivo de verdad y aplica los límites antes de procesarlo.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">4. ¿Qué problema evita guardar el documento y sus páginas en una transacción?</p>
+    <p class="a">Evita fichas huérfanas o documentos sin folios si falla una inserción. O se guarda el documento con todas sus páginas, o no se guarda nada. No hay estados intermedios.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">5. ¿Qué dato necesitamos conservar ahora para mostrar citas con página más adelante?</p>
+    <p class="a">La relación entre cada fragmento y <code>documentId</code> + <code>pageNumber</code>. Hoy el texto ya se guarda con esa relación; en el Sprint 2 los chunks heredarán esos mismos metadatos.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">6. Si un PDF se procesa correctamente pero sus páginas no contienen texto, ¿qué estado o mensaje debería ver el usuario?</p>
+    <p class="a">No se persiste un documento: el servidor responde <strong>422</strong> con «No se encontró texto seleccionable en el PDF.». El estado <code>FAILED</code> está reservado para un pipeline asíncrono futuro; en este sprint el error se muestra antes de crear la ficha.</p>
+  </div>
+
+  <div class="callout violet">
+    <p><strong>La respuesta corta:</strong> si no hay texto, no hay ficha. El archivo no inventa.</p>
+  </div>
+
+  <h3>Para revisar el código</h3>
+  <ol class="review">
+    <li><code>src/app/api/documents/route.ts</code> — orquestación y errores.</li>
+    <li><code>src/lib/pdf/validation.ts</code> — validación real.</li>
+    <li><code>src/lib/pdf/extract-text.ts</code> — recorrido página por página.</li>
+    <li><code>src/lib/documents/create-document.ts</code> — transacción.</li>
+    <li><code>prisma/schema.prisma</code> — modelo y restricciones.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<!-- Glosario                                                     -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Glosario</p>
+  <h2>Los términos que conviene tener a mano</h2>
+
+  <dl class="glossary">
+    <div>
+      <dt>PDF</dt>
+      <dd>Un formato de documento que puede contener texto seleccionable, imágenes o ambas cosas. No todo PDF tiene texto que se pueda extraer.</dd>
+    </div>
+    <div>
+      <dt>Texto seleccionable</dt>
+      <dd>Las letras que el PDF guarda como texto y que un extractor puede leer. Si el PDF es una foto de una página, no hay texto seleccionable.</dd>
+    </div>
+    <div>
+      <dt>OCR</dt>
+      <dd>Reconocimiento óptico de caracteres: mirar una imagen y adivinar las letras. Queda fuera del Sprint 1.</dd>
+    </div>
+    <div>
+      <dt>MIME</dt>
+      <dd>El tipo declarado del archivo, por ejemplo <code>application/pdf</code>. Es una pista, no una garantía: por eso también se revisa la cabecera.</dd>
+    </div>
+    <div>
+      <dt>Cabecera <code>%PDF-</code></dt>
+      <dd>La firma que identifica un PDF. Se busca en los primeros 1024 bytes, porque el estándar permite bytes previos.</dd>
+    </div>
+    <div>
+      <dt>Extracción</dt>
+      <dd>Leer el texto de cada página y conservar su número. No es lo mismo que renderizar o interpretar el documento.</dd>
+    </div>
+    <div>
+      <dt>Chunk</dt>
+      <dd>Un fragmento de texto más pequeño que una página. Llega en el Sprint 2 para recuperar partes relevantes sin enviar documentos completos al modelo.</dd>
+    </div>
+    <div>
+      <dt>Embedding</dt>
+      <dd>Una representación numérica del significado de un texto. Permite buscar por similitud semántica en el Sprint 3.</dd>
+    </div>
+    <div>
+      <dt>pgvector</dt>
+      <dd>Una extensión de PostgreSQL para guardar vectores y buscar por distancia. La imagen de Docker ya es compatible, pero este sprint no la usa.</dd>
+    </div>
+    <div>
+      <dt>RAG</dt>
+      <dd>Retrieval-Augmented Generation: recuperar fragmentos relevantes y usarlos como contexto para generar una respuesta. Es el objetivo del Sprint 4.</dd>
+    </div>
+    <div>
+      <dt>Transacción</dt>
+      <dd>Un grupo de operaciones que se confirman o se revierten juntas. Evita fichas sin folios o folios sin ficha.</dd>
+    </div>
+    <div>
+      <dt><code>PROCESSED</code> / <code>FAILED</code></dt>
+      <dd>Los estados posibles de un documento. Hoy solo se persiste <code>PROCESSED</code>; <code>FAILED</code> queda para un pipeline asíncrono futuro.</dd>
+    </div>
+  </dl>
+
+  <div class="callout green">
+    <p><strong>La frase para llevarte:</strong> el Sprint 1 no construyó un bibliotecario; construyó el archivo completo alrededor del bibliotecario. Cuando llegue la búsqueda semántica, el manuscrito ya sabe llegar, guardarse y encontrarse.</p>
+  </div>
+
+  <p class="small" style="text-align:center; margin-top:6mm;">Intelligent Document Assistant · Proyecto 3 · Sprint 1 · Documento de estudio</p>
+</section>
+
+<div class="footer"><strong>Intelligent Document Assistant</strong> · Sprint 1 · Cómo funciona la aplicación</div>
+
+</body>
+</html>
