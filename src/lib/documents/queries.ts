@@ -12,6 +12,11 @@ export async function getDocumentWithPages(id: string) {
     include: {
       pages: {
         orderBy: { pageNumber: "asc" },
+        include: {
+          chunks: {
+            orderBy: { chunkIndex: "asc" },
+          },
+        },
       },
     },
   });

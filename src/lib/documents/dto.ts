@@ -20,6 +20,14 @@ type DocumentDetailSource = DocumentSummarySource & {
     id: string;
     pageNumber: number;
     text: string;
+    chunks: Array<{
+      id: string;
+      documentPageId: string;
+      chunkIndex: number;
+      content: string;
+      startChar: number;
+      endChar: number;
+    }>;
   }>;
 };
 
@@ -42,6 +50,14 @@ export function toDocumentDetailDto(
       id: page.id,
       pageNumber: page.pageNumber,
       text: page.text,
+      chunks: page.chunks.map((chunk) => ({
+        id: chunk.id,
+        documentPageId: chunk.documentPageId,
+        chunkIndex: chunk.chunkIndex,
+        content: chunk.content,
+        startChar: chunk.startChar,
+        endChar: chunk.endChar,
+      })),
     })),
   };
 }

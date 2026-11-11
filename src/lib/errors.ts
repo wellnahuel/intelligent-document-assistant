@@ -8,7 +8,8 @@ export type AppErrorCode =
   | "TOO_MANY_PAGES"
   | "NO_EXTRACTABLE_TEXT"
   | "CORRUPT_PDF"
-  | "DOCUMENT_NOT_FOUND";
+  | "DOCUMENT_NOT_FOUND"
+  | "INVALID_DOCUMENT_ID";
 
 const STATUS_BY_CODE: Record<AppErrorCode, number> = {
   MISSING_FILE: 400,
@@ -21,6 +22,7 @@ const STATUS_BY_CODE: Record<AppErrorCode, number> = {
   NO_EXTRACTABLE_TEXT: 422,
   CORRUPT_PDF: 422,
   DOCUMENT_NOT_FOUND: 404,
+  INVALID_DOCUMENT_ID: 400,
 };
 
 /**

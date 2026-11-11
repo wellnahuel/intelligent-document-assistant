@@ -16,6 +16,36 @@ export type DocumentPageDto = {
   id: string;
   pageNumber: number;
   text: string;
+  chunks: DocumentChunkDto[];
+};
+
+export type DocumentChunkDto = {
+  id: string;
+  documentPageId: string;
+  chunkIndex: number;
+  content: string;
+  startChar: number;
+  endChar: number;
+};
+
+export type ChunkingConfigDto = {
+  targetChars: number;
+  overlapChars: number;
+  minChars: number;
+};
+
+export type ChunkGenerationPageDto = {
+  pageId: string;
+  pageNumber: number;
+  chunks: DocumentChunkDto[];
+};
+
+export type ChunkGenerationResultDto = {
+  documentId: string;
+  chunkCount: number;
+  pageCount: number;
+  chunking: ChunkingConfigDto;
+  pages: ChunkGenerationPageDto[];
 };
 
 export type DocumentDetailDto = DocumentSummaryDto & {

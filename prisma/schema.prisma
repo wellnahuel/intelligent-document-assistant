@@ -28,12 +28,27 @@ model Document {
 }
 
 model DocumentPage {
-  id         String   @id @default(cuid())
+  id         String          @id @default(cuid())
   documentId String
   pageNumber Int
   text       String
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document   Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks     DocumentChunk[]
 
   @@unique([documentId, pageNumber])
   @@index([documentId])
+}
+
+model DocumentChunk {
+  id             String       @id @default(cuid())
+  documentPageId String
+  chunkIndex     Int
+  content        String
+  startChar      Int
+  endChar        Int
+  createdAt      DateTime     @default(now())
+  documentPage   DocumentPage @relation(fields: [documentPageId], references: [id], onDelete: Cascade)
+
+  @@unique([documentPageId, chunkIndex])
+  @@index([documentPageId])
 }
