@@ -1,31 +1,27 @@
 import Link from "next/link";
 
+import type {
+  ChunkingConfigDto,
+  DocumentDetailDto,
+} from "@/lib/documents/types";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
+import { DocumentChunkViewer } from "./DocumentChunkViewer";
 import { StatusBadge } from "./StatusBadge";
 import styles from "./DocumentDetail.module.css";
 
 type DocumentDetailProps = {
-  document: {
-    id: string;
-    originalFilename: string;
-    mimeType: string;
-    sizeBytes: number;
-    pageCount: number;
-    status: "PROCESSED" | "FAILED";
-    errorMessage: string | null;
-    createdAt: Date;
-    pages: Array<{
-      id: string;
-      pageNumber: number;
-      text: string;
-    }>;
-  };
+  document: DocumentDetailDto;
+  chunking: ChunkingConfigDto;
 };
 
-export function DocumentDetail({ document }: DocumentDetailProps) {
+export function DocumentDetail({ document, chunking }: DocumentDetailProps) {
   const totalCharacters = document.pages.reduce(
     (total, page) => total + page.text.length,
+    0,
+  );
+  const totalChunks = document.pages.reduce(
+    (total, page) => total + page.chunks.length,
     0,
   );
   const emptyPages = document.pages.filter(
@@ -64,6 +60,10 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
             <dd>{totalCharacters.toLocaleString("es")}</dd>
           </div>
           <div>
+            <dt>Fragmentos</dt>
+            <dd>{totalChunks.toLocaleString("es")}</dd>
+          </div>
+          <div>
             <dt>Subido</dt>
             <dd>{formatDateTime(document.createdAt)}</dd>
           </div>
@@ -90,6 +90,9 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                   <a href={`#pagina-${page.pageNumber}`}>
                     Página {page.pageNumber}
                     {page.text.length === 0 ? " · vacía" : ""}
+                    {page.chunks.length > 0
+                      ? ` · ${page.chunks.length} frag.`
+                      : ""}
                   </a>
                 </li>
               ))}
@@ -112,39 +115,18 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                 texto seleccionable.
               </p>
             ) : null}
+            <p>
+              Los fragmentos se generan por página y guardan su rango de
+              caracteres dentro del texto normalizado.
+            </p>
           </div>
         </aside>
 
-        <div className={styles.pages}>
-          {document.pages.map((page) => (
-            <section
-              key={page.id}
-              id={`pagina-${page.pageNumber}`}
-              className={styles.pageCard}
-              aria-labelledby={`pagina-${page.pageNumber}-titulo`}
-            >
-              <header className={styles.pageHeader}>
-                <h2
-                  id={`pagina-${page.pageNumber}-titulo`}
-                  className={styles.pageTitle}
-                >
-                  Página {page.pageNumber}
-                </h2>
-                <span className={styles.charCount}>
-                  {page.text.length.toLocaleString("es")} caracteres
-                </span>
-              </header>
-
-              {page.text.length > 0 ? (
-                <div className={styles.pageText}>{page.text}</div>
-              ) : (
-                <p className={styles.emptyPage}>
-                  Sin texto seleccionable en esta página.
-                </p>
-              )}
-            </section>
-          ))}
-        </div>
+        <DocumentChunkViewer
+          documentId={document.id}
+          pages={document.pages}
+          chunking={chunking}
+        />
       </div>
     </article>
   );

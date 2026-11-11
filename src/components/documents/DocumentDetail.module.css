@@ -219,6 +219,166 @@
   font-style: italic;
 }
 
+.chunkToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.chunkToolbarText {
+  min-width: 0;
+}
+
+.chunkToolbarTitle {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.chunkToolbarParams {
+  margin: 5px 0 0;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.chunkToolbarHint {
+  margin: 6px 0 0;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+}
+
+.generateButton {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition:
+    background 150ms ease,
+    transform 100ms ease;
+}
+
+.generateButton:hover:not(:disabled) {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.generateButton:disabled {
+  opacity: 0.55;
+}
+
+.chunkStatus {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.chunkStatusSuccess {
+  border-color: rgba(23, 114, 74, 0.2);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.chunkStatusError {
+  border-color: rgba(179, 38, 30, 0.2);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.chunkSection {
+  padding: 18px 22px 22px;
+  border-top: 1px solid var(--line);
+}
+
+.chunkSectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chunkSectionTitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chunkCount {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.chunkEmpty {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.chunkList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chunkItem {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.chunkMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+}
+
+.chunkIndex {
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.chunkRange {
+  margin-left: auto;
+}
+
+.chunkText {
+  color: #2c2925;
+  font-size: 0.84rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
@@ -245,5 +405,21 @@
 
   .pageText {
     padding: 16px;
+  }
+
+  .chunkToolbar {
+    flex-direction: column;
+  }
+
+  .generateButton {
+    width: 100%;
+  }
+
+  .chunkSection {
+    padding: 16px;
+  }
+
+  .chunkRange {
+    margin-left: 0;
   }
 }
