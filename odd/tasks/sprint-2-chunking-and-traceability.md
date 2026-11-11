@@ -30,6 +30,7 @@ Checks: `npm run test:chunking`, `npm run typecheck`, `npm run lint`, Prisma mig
 | T7 | S2, S7, S9 | inline | done | `.env.example`, `README.md`, `package.json`; docs include flow, decisions, limits, manual checks |
 | T8 | S1–S9 | inline | done | typecheck, lint, 11 chunk tests, HTTP smoke, SQL integrity, idempotency, rollback, cascade, config fallback |
 | T9 | S8 | inline | done | Final response with algorithm, traceability, files, limits and reading order |
+| T10 | S8 | inline | done | `docs/sprint-2-como-funciona.html` + `docs/sprint-2-como-funciona.pdf` (14 pages, Chrome headless); continuation of the Sprint 1 guide |
 
 Route note: T1–T9 run inline. The units are strictly sequential (pure module → schema → persistence → API → UI → docs → verification), so the Writer trigger holds no parallelism reason; there are no independent units with disjoint edit surfaces.
 
@@ -280,3 +281,10 @@ Route note: T1–T9 run inline. The units are strictly sequential (pure module �
 - Cascade: deleting one page removed only its 3 chunks; deleting all test documents left 0 documents, 0 pages, 0 chunks.
 - Config fallback: `CHUNK_TARGET_CHARS=100` + `CHUNK_OVERLAP_CHARS=200` logged the validation warning and used 1200/150/100.
 - `next build` was not run (workspace rule). The dev server was stopped and all test documents were removed after verification.
+
+### L5 — Sprint 2 study guide (2026-11-11)
+
+- Added `docs/sprint-2-como-funciona.html` and `docs/sprint-2-como-funciona.pdf` as the continuation of the Sprint 1 guide, reusing its visual language (cover, ticket, analogy, tables, diagrams, glossary).
+- The guide covers: why one embedding is not enough, the paragraph → sentence → word hierarchy, overlap, traceability (`DocumentPage` → `DocumentChunk`), the invariant `content === slice(startChar, endChar)`, idempotent regeneration and rollback, the UI, known limits, the roadmap, the file map, the manual checklist, the six review questions, and a glossary.
+- The PDF was generated with the same command documented in the HTML comment: Chrome headless 133, A4, 14 pages. The layout was rendered to PNG and reviewed page by page; orphan headings and footer overlaps were corrected by keeping headings with their content, increasing the print bottom margin, and compacting the interface table and commands block.
+- The guide explicitly documents the current PDF paragraph limitation (PDF.js does not preserve blank lines) so the reader does not expect paragraph-first cuts on real PDFs yet.

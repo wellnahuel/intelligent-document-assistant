@@ -23,6 +23,8 @@ Este es el segundo hito del proyecto de RAG: ya existe texto por página y ahora
 
 - `docs/sprint-1-como-funciona.pdf` — recorrido del Sprint 1 explicado con la analogía del archivo de una biblioteca.
 - `docs/sprint-1-como-funciona.html` — fuente editable del PDF; se convierte con Chrome headless.
+- `docs/sprint-2-como-funciona.pdf` — continuación del Sprint 2: chunking, overlap, trazabilidad, idempotencia y límites.
+- `docs/sprint-2-como-funciona.html` — fuente editable del PDF del Sprint 2; se convierte con Chrome headless.
 
 ## Qué no incluye (a propósito)
 
