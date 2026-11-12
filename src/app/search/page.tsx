@@ -45,7 +45,9 @@ export default function SearchPage() {
         <p className={styles.note}>
           No se aplica un umbral de distancia. Los resultados se ordenan del
           más cercano al más lejano, hasta el topK elegido. El texto se procesa
-          localmente y no se envía a un proveedor externo.
+          localmente y no se envía a un proveedor externo. Para obtener una
+          respuesta redactada con citas, usá{" "}
+          <Link href="/ask">Preguntar al documento</Link>.
         </p>
       </header>
 

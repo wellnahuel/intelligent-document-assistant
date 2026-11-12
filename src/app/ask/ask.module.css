@@ -1,0 +1,105 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.breadcrumb {
+  font-size: 0.8rem;
+}
+
+.breadcrumb a {
+  margin-left: -8px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.header {
+  max-width: 860px;
+  padding: 26px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.title {
+  margin: 8px 0 0;
+  font-size: clamp(1.7rem, 3.4vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.lead {
+  margin: 14px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+  text-wrap: pretty;
+}
+
+.modelLine {
+  margin: 14px 0 0;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.modelLine code {
+  color: var(--accent-ink);
+  font-family: inherit;
+}
+
+.note {
+  margin: 10px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+
+.errorCard,
+.emptyCard {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+}
+
+.errorCard {
+  border-color: rgba(179, 38, 30, 0.2);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.emptyCard a {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .header {
+    padding: 20px;
+  }
+}

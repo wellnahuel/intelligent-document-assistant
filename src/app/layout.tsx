@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s · Intelligent Document Assistant",
   },
   description:
-    "Biblioteca de documentos con extracción por página, chunking y búsqueda semántica local con embeddings.",
+    "Biblioteca de documentos con extracción por página, chunking, búsqueda semántica local y respuestas con citas verificadas.",
 };
 
 export default function RootLayout({
@@ -49,7 +49,7 @@ export default function RootLayout({
                 </span>
                 <span className="brandText">
                   <strong>Intelligent Document Assistant</strong>
-                  <span>Biblioteca, texto y búsqueda · Sprint 3</span>
+                  <span>Biblioteca, búsqueda y respuestas · Sprint 4</span>
                 </span>
               </Link>
 
@@ -60,7 +60,10 @@ export default function RootLayout({
                 <Link href="/search" className="navLink">
                   Buscar
                 </Link>
-                <span className="sprintBadge">Sprint 3</span>
+                <Link href="/ask" className="navLink">
+                  Preguntar
+                </Link>
+                <span className="sprintBadge">Sprint 4</span>
               </nav>
             </div>
           </header>

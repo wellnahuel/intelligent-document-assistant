@@ -54,7 +54,11 @@
   letter-spacing: 0.02em;
 }
 
-.heroActions {
+.heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-top: 22px;
 }
 
@@ -76,6 +80,17 @@
 .heroLink:hover {
   background: var(--accent-strong);
   transform: translateY(-1px);
+}
+
+.heroLinkSecondary {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.heroLinkSecondary:hover {
+  background: var(--surface-muted);
+  color: var(--accent-ink);
 }
 
 @media (max-width: 560px) {
