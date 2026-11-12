@@ -1,0 +1,1946 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-12T22:02:21.122Z",
+  "runtime": {
+    "node": "v22.13.1"
+  },
+  "dataset": {
+    "fixturePath": "eval/fixtures/fictional-documents.json",
+    "fixtureSha256": "eb1b2d938ca1b64e63fb09af7b1818552ea10e47b411b4a19374384f04e76461",
+    "goldSetPath": "eval/gold-set.json",
+    "goldSetSha256": "85ae1fc45428d91e50270338e64cca2b25bf8845b97be7a2e2495ecff8caeb31",
+    "caseCount": 25,
+    "answerableCaseCount": 20,
+    "unanswerableCaseCount": 5
+  },
+  "retrieval": {
+    "topK": 5,
+    "candidates": 20,
+    "rrfK": 60,
+    "meanEmbeddingMs": 6.27568547999992,
+    "embeddingModel": {
+      "modelId": "Xenova/multilingual-e5-small",
+      "modelRevision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "dimensions": 384
+    },
+    "databaseProvider": "postgresql",
+    "precisionAtKDenominator": "k",
+    "notes": [
+      "Precision@k divides by k, so missing positions count as non-relevant.",
+      "Recall@k and MRR aggregates use answerable cases only; unanswerable cases belong to abstention evaluation.",
+      "The query embedding is measured once per case and reported as meanEmbeddingMs; strategy latency excludes that shared embedding.",
+      "RRF uses positions only. Cosine distance and lexical score are never added directly.",
+      "The rerank strategy sends the query and candidate chunks to an external provider only when RERANK_MODEL and a key are configured.",
+      "The fixture is fictional and non-sensitive; do not replace it with real documents when reranking is enabled."
+    ]
+  },
+  "rerank": {
+    "enabled": false,
+    "model": null,
+    "topN": 5,
+    "disabledReason": "missing_model",
+    "meanLatencyMs": null,
+    "usage": null,
+    "aborted": false,
+    "abortReason": null
+  },
+  "strategies": [
+    {
+      "strategy": "vector",
+      "caseCount": 25,
+      "answerableCaseCount": 20,
+      "failedCaseCount": 0,
+      "skipped": false,
+      "skipReason": null,
+      "recallAtK": 1,
+      "precisionAtK": 0.21000000000000005,
+      "mrr": 0.9666666666666666,
+      "meanLatencyMs": 2.102874199999951,
+      "rerankModel": null,
+      "rerankLatencyMs": null,
+      "rerankUsage": null
+    },
+    {
+      "strategy": "lexical",
+      "caseCount": 25,
+      "answerableCaseCount": 20,
+      "failedCaseCount": 0,
+      "skipped": false,
+      "skipReason": null,
+      "recallAtK": 0.95,
+      "precisionAtK": 0.2000000000000001,
+      "mrr": 0.635,
+      "meanLatencyMs": 1.8721644799999921,
+      "rerankModel": null,
+      "rerankLatencyMs": null,
+      "rerankUsage": null
+    },
+    {
+      "strategy": "hybrid",
+      "caseCount": 25,
+      "answerableCaseCount": 20,
+      "failedCaseCount": 0,
+      "skipped": false,
+      "skipReason": null,
+      "recallAtK": 1,
+      "precisionAtK": 0.21000000000000005,
+      "mrr": 0.9,
+      "meanLatencyMs": 2.4926602399998954,
+      "rerankModel": null,
+      "rerankLatencyMs": null,
+      "rerankUsage": null
+    },
+    {
+      "strategy": "hybrid-rerank",
+      "caseCount": 0,
+      "answerableCaseCount": 0,
+      "failedCaseCount": 0,
+      "skipped": true,
+      "skipReason": "missing_model",
+      "recallAtK": null,
+      "precisionAtK": null,
+      "mrr": null,
+      "meanLatencyMs": null,
+      "rerankModel": null,
+      "rerankLatencyMs": null,
+      "rerankUsage": null
+    }
+  ],
+  "cases": [
+    {
+      "id": "q-01",
+      "question": "¿Cuál es el código del contrato entre Nube Andina y Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-01"
+      ],
+      "embeddingMs": 9.58154999999988,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-01": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 4.775127000000339,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-06"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-01": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 7.430140999999821,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-01": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 4.1301479999997355,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-02",
+      "question": "¿Cuántos días de aviso exige el contrato para cancelar el servicio?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-04"
+      ],
+      "embeddingMs": 6.012918999999783,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-05"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.2607450000000426,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-10"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-04": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 1.6927290000003268,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-01"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.483962999999676,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-03",
+      "question": "¿Con cuántos días de anticipación hay que avisar para no renovar automáticamente el contrato?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-03"
+      ],
+      "embeddingMs": 6.534831999999824,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-12",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-05"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.535906999999952,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-03": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 2.0896950000001198,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-12"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.419148999999834,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-04",
+      "question": "¿Cuál es el abono mensual del contrato?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-02"
+      ],
+      "embeddingMs": 4.969949999999699,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-10",
+            "eval-chunk-contrato-01"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.3359229999996387,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.4039659999998548,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-01"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 4.789222999999765,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-05",
+      "question": "¿Cuál es el horario de atención del soporte del contrato?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-05"
+      ],
+      "embeddingMs": 5.153945999999905,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.4751790000000256,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-11"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": null
+          },
+          "metrics": {
+            "recallAtK": 0,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.4595640000002277,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 1.7880529999997634,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-06",
+      "question": "¿Qué penalidad aplica el proveedor si no alcanza la disponibilidad comprometida?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-05",
+        "eval-chunk-contrato-06"
+      ],
+      "embeddingMs": 5.692184999999881,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": 2,
+            "eval-chunk-contrato-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.4,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.9278399999998328,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": 4,
+            "eval-chunk-contrato-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.4,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.525463999999829,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-05": 2,
+            "eval-chunk-contrato-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.4,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.920162999999775,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-07",
+      "question": "¿En qué región se almacenan los datos del cliente?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-09"
+      ],
+      "embeddingMs": 6.509197000000313,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.5323359999997592,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.5189210000003186,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.9741019999996752,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-08",
+      "question": "¿A qué hora se ejecuta la copia de seguridad diaria?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-09"
+      ],
+      "embeddingMs": 5.063959999999952,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.280713999999989,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 1.5282720000000154,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.828183000000081,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-09",
+      "question": "¿Cuál es el código de escalamiento para incidentes críticos?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-11"
+      ],
+      "embeddingMs": 7.409849000000122,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-11": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.6193200000002435,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-11": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 1.5777960000000348,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-11": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.715153999999984,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-10",
+      "question": "¿Cada cuánto puede el cliente auditar al proveedor?",
+      "documentId": "eval-doc-contrato",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-contrato-12"
+      ],
+      "embeddingMs": 6.248660999999629,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-12",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-06",
+            "eval-chunk-contrato-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-12": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.4275080000002163,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-12",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-12": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 1.4152460000000247,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-12",
+            "eval-chunk-contrato-07",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-04",
+            "eval-chunk-contrato-05"
+          ],
+          "relevantRanks": {
+            "eval-chunk-contrato-12": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.8588110000000597,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-11",
+      "question": "¿Cuál es el número de teléfono del propietario del edificio donde está Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "answerable": false,
+      "relevantChunkIds": [],
+      "embeddingMs": 7.424764999999752,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-09",
+            "eval-chunk-contrato-05"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.6709630000000288,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.6069769999999153,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-05"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.8983029999999417,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-12",
+      "question": "¿Cuántos empleados tiene Nube Andina?",
+      "documentId": "eval-doc-contrato",
+      "answerable": false,
+      "relevantChunkIds": [],
+      "embeddingMs": 5.948957999999948,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-09"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.3848170000001119,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.209679000000051,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-08",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-02"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.3669079999999667,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-13",
+      "question": "¿Cuál es el número de CUIT de Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "answerable": false,
+      "relevantChunkIds": [],
+      "embeddingMs": 6.261993999999959,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-10"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.3832010000000992,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-03",
+            "eval-chunk-contrato-08"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.5237419999998565,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-contrato-01",
+            "eval-chunk-contrato-02",
+            "eval-chunk-contrato-11",
+            "eval-chunk-contrato-05",
+            "eval-chunk-contrato-03"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.5598509999999806,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-14",
+      "question": "¿Cuál es el peso del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-01"
+      ],
+      "embeddingMs": 6.227433000000019,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-01": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.4834710000000086,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-01": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 1.4377479999998286,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-01": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 5.5125709999997525,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-15",
+      "question": "¿Qué fusible utiliza el Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-02"
+      ],
+      "embeddingMs": 6.679422000000159,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 3.061529999999948,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-06"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.8805849999998827,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-02": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 4.577690000000075,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-16",
+      "question": "¿Qué significa el código de error E-104?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-03"
+      ],
+      "embeddingMs": 6.793071999999938,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-07",
+            "eval-chunk-manual-06"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.5423279999999977,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.0689040000002024,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 3.025456999999733,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-17",
+      "question": "¿Qué significa el código de error E-330?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-03"
+      ],
+      "embeddingMs": 6.47997099999975,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-06"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.597461000000294,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.91838800000005,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-03": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.82627199999979,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-18",
+      "question": "¿Cada cuántas horas se realiza el mantenimiento preventivo?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-04"
+      ],
+      "embeddingMs": 7.200937000000067,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-07",
+            "eval-chunk-manual-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 3.0539719999997033,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-01"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.9368890000000647,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-07",
+            "eval-chunk-manual-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.861080000000129,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-19",
+      "question": "¿Cuál es el número de repuesto del filtro de aire?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-04"
+      ],
+      "embeddingMs": 6.793594000000212,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-07"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.2104169999997794,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-06"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 2.235899999999674,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-05"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-04": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.8440350000000763,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-20",
+      "question": "¿Cuántas personas se necesitan para calibrar el sensor de presión?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-05"
+      ],
+      "embeddingMs": 7.497698000000128,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-01"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-05": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 5.942975999999817,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-05"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-05": 5
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.2
+          },
+          "latencyMs": 2.737250000000131,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-05": 2
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.5
+          },
+          "latencyMs": 3.679273999999623,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-21",
+      "question": "¿Cuánto dura la garantía del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-06"
+      ],
+      "embeddingMs": 7.133654999999635,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-08"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.7957499999997708,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.4569169999999758,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-05",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-06": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 2.283509000000322,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-22",
+      "question": "¿Cuál es el precio de lista del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": false,
+      "relevantChunkIds": [],
+      "embeddingMs": 4.978685000000041,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.3432170000000951,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.1240960000000086,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.332962999999836,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-23",
+      "question": "¿En qué país se fabrica el Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": false,
+      "relevantChunkIds": [],
+      "embeddingMs": 4.462413999999626,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.2265699999998105,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-03"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.0032189999997172,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-08"
+          ],
+          "relevantRanks": {},
+          "metrics": {
+            "recallAtK": null,
+            "precisionAtK": 0,
+            "reciprocalRank": 0
+          },
+          "latencyMs": 1.1662260000002789,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-24",
+      "question": "¿Qué repuesto corresponde al código VAL-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-09"
+      ],
+      "embeddingMs": 4.5262729999999465,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-04"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.2643759999996291,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-09": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 0.8670589999996992,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-09",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-03",
+            "eval-chunk-manual-04",
+            "eval-chunk-manual-02"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-09": 1
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 1
+          },
+          "latencyMs": 1.1120039999996152,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "q-25",
+      "question": "¿Cuál es el correo de soporte técnico del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "answerable": true,
+      "relevantChunkIds": [
+        "eval-chunk-manual-08"
+      ],
+      "embeddingMs": 5.306216999999833,
+      "strategies": [
+        {
+          "strategy": "vector",
+          "chunkIds": [
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-09"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-08": 3
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.3333333333333333
+          },
+          "latencyMs": 1.4402069999996456,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "lexical",
+          "chunkIds": [
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-03"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-08": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 1.1549650000001748,
+          "rerank": null,
+          "error": null
+        },
+        {
+          "strategy": "hybrid",
+          "chunkIds": [
+            "eval-chunk-manual-06",
+            "eval-chunk-manual-02",
+            "eval-chunk-manual-01",
+            "eval-chunk-manual-08",
+            "eval-chunk-manual-03"
+          ],
+          "relevantRanks": {
+            "eval-chunk-manual-08": 4
+          },
+          "metrics": {
+            "recallAtK": 1,
+            "precisionAtK": 0.2,
+            "reciprocalRank": 0.25
+          },
+          "latencyMs": 1.3634139999999206,
+          "rerank": null,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

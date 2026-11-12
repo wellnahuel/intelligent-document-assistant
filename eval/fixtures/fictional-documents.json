@@ -1,0 +1,126 @@
+{
+  "documents": [
+    {
+      "id": "eval-doc-contrato",
+      "originalFilename": "contrato-servicios-ficticio.txt",
+      "mimeType": "text/plain",
+      "pages": [
+        {
+          "id": "eval-page-contrato-1",
+          "pageNumber": 1,
+          "chunks": [
+            {
+              "id": "eval-chunk-contrato-01",
+              "content": "Contrato de prestación de servicios N.º NA-2026-014, celebrado el 15 de marzo de 2026 entre Nube Andina S.A., con domicilio en Av. Ficticia 1234, Ciudad de Córdoba, y Estudio Horizonte S.R.L., con domicilio en Calle Ejemplo 567, Ciudad Autónoma de Buenos Aires. El proveedor prestará servicios de alojamiento y soporte para la plataforma Horizonte."
+            },
+            {
+              "id": "eval-chunk-contrato-02",
+              "content": "El objeto del contrato comprende el alojamiento de la aplicación, la administración de la base de datos y el soporte técnico de segundo nivel. El abono mensual es de 1.850 USD, facturado el primer día hábil de cada mes. El cliente debe pagar dentro de los 15 días corridos siguientes a la fecha de factura."
+            },
+            {
+              "id": "eval-chunk-contrato-03",
+              "content": "El contrato tiene una duración inicial de 12 meses contados desde el 1 de abril de 2026. Se renueva automáticamente por períodos anuales salvo que una parte notifique la intención de no renovar con al menos noventa (90) días de anticipación."
+            },
+            {
+              "id": "eval-chunk-contrato-04",
+              "content": "Cualquiera de las partes puede cancelar el servicio en cualquier momento dando aviso por escrito con treinta (30) días corridos de anticipación. La cancelación no genera penalidad si el cliente está al día con los pagos."
+            },
+            {
+              "id": "eval-chunk-contrato-05",
+              "content": "El proveedor garantiza una disponibilidad mensual del 99,5 %. El soporte se atiende de lunes a viernes de 9:00 a 18:00 (GMT-3), excepto feriados. La respuesta inicial a un incidente crítico será en un plazo máximo de 4 horas."
+            },
+            {
+              "id": "eval-chunk-contrato-06",
+              "content": "Si el proveedor no alcanza la disponibilidad comprometida, aplicará una penalidad del 5 % del abono mensual por cada hora de exceso, con un tope del 25 % del abono. La penalidad se descuenta en la factura siguiente."
+            }
+          ]
+        },
+        {
+          "id": "eval-page-contrato-2",
+          "pageNumber": 2,
+          "chunks": [
+            {
+              "id": "eval-chunk-contrato-07",
+              "content": "La información confidencial debe protegerse durante la vigencia del contrato y durante los cinco (5) años posteriores a su finalización. El proveedor no puede divulgar datos del cliente a terceros sin autorización escrita."
+            },
+            {
+              "id": "eval-chunk-contrato-08",
+              "content": "El canal oficial de soporte es soporte@nubeandina.example y el teléfono +54 11 5555-0142. El contacto comercial designado por el proveedor es Ana Torres, con correo ana.torres@nubeandina.example."
+            },
+            {
+              "id": "eval-chunk-contrato-09",
+              "content": "Los datos del cliente se almacenan en la región de São Paulo, Brasil. El proveedor realiza una copia de seguridad diaria a las 02:00 UTC y conserva las copias durante 30 días."
+            },
+            {
+              "id": "eval-chunk-contrato-10",
+              "content": "El incumplimiento grave habilita a la parte cumplidora a terminar el contrato previa intimación escrita con un plazo de cura de quince (15) días. En caso de terminación por incumplimiento no corresponde reembolso de abonos ya facturados."
+            },
+            {
+              "id": "eval-chunk-contrato-11",
+              "content": "Anexo A: el código de servicio asignado a la plataforma Horizonte es SRV-NA-450. Anexo B: el código de escalamiento para incidentes críticos es ESC-104. Ambos códigos deben figurar en cada ticket de soporte."
+            },
+            {
+              "id": "eval-chunk-contrato-12",
+              "content": "El cliente puede auditar al proveedor una vez por año, con aviso previo de diez (10) días hábiles. El informe de auditoría se entrega dentro de los veinte (20) días hábiles posteriores a la revisión."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "eval-doc-manual",
+      "originalFilename": "manual-atlas-mx450-ficticio.txt",
+      "mimeType": "text/plain",
+      "pages": [
+        {
+          "id": "eval-page-manual-1",
+          "pageNumber": 1,
+          "chunks": [
+            {
+              "id": "eval-chunk-manual-01",
+              "content": "Manual de operación del equipo Atlas MX-450. El equipo pesa 12,4 kg y utiliza el prefijo de número de serie MX450-2026. Antes de encenderlo, verifique que la unidad esté apoyada sobre una superficie nivelada."
+            },
+            {
+              "id": "eval-chunk-manual-02",
+              "content": "El Atlas MX-450 requiere una alimentación de 220 V y 50 Hz. El consumo máximo es de 850 W. Utilice exclusivamente el fusible T-10A especificado por el fabricante."
+            },
+            {
+              "id": "eval-chunk-manual-03",
+              "content": "Códigos de error: E-104 indica sensor de temperatura desconectado; E-207 indica falla de presión; E-330 indica mantenimiento vencido. Ante un código E-104, apague el equipo y revise el conector del sensor."
+            },
+            {
+              "id": "eval-chunk-manual-04",
+              "content": "El mantenimiento preventivo se realiza cada 500 horas de operación o cada 12 meses, lo que ocurra primero. El filtro de aire se reemplaza por el repuesto FLT-450-A."
+            },
+            {
+              "id": "eval-chunk-manual-05",
+              "content": "La calibración del sensor de presión requiere dos personas y demora aproximadamente 30 minutos. Ajuste los tornillos de fijación con un torque de 18 Nm."
+            }
+          ]
+        },
+        {
+          "id": "eval-page-manual-2",
+          "pageNumber": 2,
+          "chunks": [
+            {
+              "id": "eval-chunk-manual-06",
+              "content": "La garantía del Atlas MX-450 es de 24 meses desde la fecha de factura. La garantía no cubre daños por agua, golpes ni uso fuera de las condiciones especificadas."
+            },
+            {
+              "id": "eval-chunk-manual-07",
+              "content": "Almacene el equipo entre 5 °C y 40 °C, con una humedad relativa de 20 % a 80 %. No lo exponga a la lluvia ni a ambientes con polvo conductivo."
+            },
+            {
+              "id": "eval-chunk-manual-08",
+              "content": "El soporte técnico se contacta en soporte@atlas.example, de lunes a viernes de 8:00 a 17:00. Mencione el código de servicio SUP-450 al abrir un caso."
+            },
+            {
+              "id": "eval-chunk-manual-09",
+              "content": "Repuestos disponibles: válvula de presión VAL-450, impulsor IMP-450 y sensor de temperatura SEN-450. Use solo repuestos originales para conservar la garantía."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "sample:pdf": "node scripts/generate-sample-pdf.mjs",
+    "eval:seed": "tsx scripts/eval-seed.ts",
+    "eval:retrieval": "tsx scripts/eval-retrieval.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -39,6 +41,7 @@
     "eslint": "10.14.0",
     "eslint-config-next": "16.4.6",
     "prisma": "7.10.1",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   }
