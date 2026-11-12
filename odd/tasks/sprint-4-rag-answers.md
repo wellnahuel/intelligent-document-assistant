@@ -28,14 +28,14 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, missing-config and no-e
 | ID | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
 | T1 | S1 | inline | done | Inspected schema, embeddings, search, UI and tests; Sprint 3 present |
-| T2 | S2, S3, S4, S5, S7, S8 | inline | done | `src/lib/rag/types.ts`, `config.ts`, `input.ts`, `prompt.ts`, `citations.ts`, `retrieval.ts`, `generate.ts`; document-scoped SQL in `embeddings/store.ts` |
-| T3 | S6 | inline | done | `src/lib/rag/openrouter.ts`; mocked success/timeout/HTTP/malformed/embedded-error tests |
-| T4 | S9 | inline | done | `src/app/api/ask/route.ts`, `errors.ts`, safe logging in `ask.ts` |
-| T5 | S10 | inline | done | `src/app/ask/page.tsx`, `components/ask/AskPanel.tsx`, CSS Modules, nav and Sprint 4 labels |
-| T6 | S12 | inline | done | `tests/unit/rag-*.test.ts`, verifier probe regressions, updated `embeddings-sql-params.test.ts`; 65 Vitest tests pass |
-| T7 | S13 | inline | done | `README.md`, `.env.example`, this feature document |
-| T8 | S13 | inline | done | typecheck, lint, 12 chunking + 65 Vitest, HTTP probes, real retrieval and no-evidence probes |
-| T9 | S1–S15 | inline | pending | Final report pending |
+| T2 | S2, S3, S4, S5, S7, S8 | inline | done | `290658d`; `src/lib/rag/types.ts`, `config.ts`, `input.ts`, `prompt.ts`, `citations.ts`, `retrieval.ts`, `generate.ts`; document-scoped SQL in `embeddings/store.ts` |
+| T3 | S6 | inline | done | `4a774bd`; `src/lib/rag/openrouter.ts`; mocked success/timeout/HTTP/malformed/embedded-error tests |
+| T4 | S9 | inline | done | `fe17527`; `src/app/api/ask/route.ts`, `errors.ts`, safe logging in `ask.ts` |
+| T5 | S10 | inline | done | `434f7f7`; `src/app/ask/page.tsx`, `components/ask/AskPanel.tsx`, CSS Modules, nav and Sprint 4 labels |
+| T6 | S12 | inline | done | `290658d`, `4a774bd`, `fe17527`, `8462d7b`; `tests/unit/rag-*.test.ts`, verifier probe regressions, updated `embeddings-sql-params.test.ts`; 65 Vitest tests pass |
+| T7 | S13 | inline | done | `b040393`; `README.md`, `.env.example`, this feature document |
+| T8 | S13 | inline | done | `8462d7b`; typecheck, lint, 12 chunking + 65 Vitest, HTTP probes, real retrieval and no-evidence probes |
+| T9 | S1–S15 | inline | done | Final report in the conversation |
 
 Route note: T1–T9 are sequential and share the same types, API contract and UI labels. There is no pair of independent units with disjoint edit surfaces that justifies parallel writers, so the parent works inline. The feature names high-risk items 2 (security: external provider, server-only secret, prompt-injection boundary) and 5 (new dependency `zod`); one independent verifier runs at the end, as rarely as possible.
 
@@ -318,6 +318,9 @@ Al finalizar:
 - Verifier evidence: `git diff --check` clean; typecheck, lint, 12/12 chunking, 65/65 Vitest in 10 files; invalid-input HTTP probes; real retrieval `503` after `retrieval=1817ms`; no-evidence `200` with `retrieval=8ms`; `/`, `/search`, `/ask`, document detail and `/api/search` `200`; no new workspace files.
 - Remaining limitations: real OpenRouter network success was not executed (no key); production `next build` was not run per project rule; browser interaction not automated.
 
-### L6 — Closure
+### L6 — Closure (2026-11-12)
 
-- Pending.
+- Feature complete on `feat/sprint-4-rag-answers` with seven work-unit commits: `fa8172c` plan, `290658d` prompt/citations, `4a774bd` retrieval/OpenRouter, `fe17527` API orchestration, `434f7f7` UI, `b040393` docs, `8462d7b` verifier corrections.
+- Final evidence: `npm run typecheck` ✅, `npm run lint` ✅, 12/12 chunking + 65/65 Vitest in 10 files ✅, `git diff --check` ✅, Prisma schema up to date (3 migrations) ✅, HTTP probes ✅, real retrieval probe ✅, no-evidence probe ✅, no secret literal in client chunks ✅.
+- Risk line: item 2 (security: external provider, server-only key, prompt-injection boundary) and item 5 (dependency `zod`). Independent verifier returned pass-with-advisories; advisories were corrected and the probe suite committed. Native receipt review was unavailable in this runtime and is recorded as typed unavailable, never PASS.
+- Final report: end-to-end flow, files, environment variables, citation verification, limitations, manual tests and suggested reading order delivered in the conversation. No push, PR or merge requested; delivery is local to the feature branch.
