@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "npm run test:chunking && npm run test:unit",
     "test:chunking": "node --experimental-strip-types --test tests/chunking.test.mjs",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "sample:pdf": "node scripts/generate-sample-pdf.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -17,6 +20,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@huggingface/transformers": "4.3.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "18.0.10",
@@ -34,6 +38,7 @@
     "eslint": "10.14.0",
     "eslint-config-next": "16.4.6",
     "prisma": "7.10.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
   }
 }

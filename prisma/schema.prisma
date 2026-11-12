@@ -40,15 +40,32 @@ model DocumentPage {
 }
 
 model DocumentChunk {
-  id             String       @id @default(cuid())
+  id             String          @id @default(cuid())
   documentPageId String
   chunkIndex     Int
   content        String
   startChar      Int
   endChar        Int
-  createdAt      DateTime     @default(now())
-  documentPage   DocumentPage @relation(fields: [documentPageId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  documentPage   DocumentPage    @relation(fields: [documentPageId], references: [id], onDelete: Cascade)
+  embeddings     ChunkEmbedding[]
 
   @@unique([documentPageId, chunkIndex])
   @@index([documentPageId])
+}
+
+model ChunkEmbedding {
+  id            String        @id @default(cuid())
+  chunkId       String
+  modelId       String
+  modelRevision String
+  dimensions    Int
+  // pgvector's vector type is not a Prisma scalar. Prisma exposes this column
+  // as Unsupported, so all vector reads/writes use parameterized raw SQL.
+  embedding     Unsupported("vector(384)")
+  createdAt     DateTime      @default(now())
+  chunk         DocumentChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, modelId, modelRevision])
+  @@index([modelId, modelRevision])
 }
