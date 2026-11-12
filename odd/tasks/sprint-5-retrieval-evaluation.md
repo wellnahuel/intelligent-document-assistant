@@ -27,15 +27,15 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run eval:seed`, `n
 | ID | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
 | T1 | S1 | inline | done | Inspected schema, embeddings, vector SQL, RAG flow, tests, env and local DB; Sprint 4 present; branch created |
-| T2 | S2, S5, S6 | inline | done | `src/lib/retrieval/types.ts`, `config.ts`, `src/lib/evaluation/dataset.ts`, `metrics.ts`; 18 tests |
-| T3 | S7, S8 | delegated | done | Parallel writer A: `lexical.ts`, `rrf.ts`, `hybrid.ts`, `vector.ts`; 51 tests; lexical OR fix by parent |
-| T4 | S9 | delegated | done | Parallel writer B: `reranker.ts`, `openrouter-reranker.ts`; 24 mocked tests |
-| T5 | S2, S3 | inline | done | `eval/fixtures/fictional-documents.json`, `eval/gold-set.json`, `scripts/eval-seed.ts`; 2 docs/21 chunks/21 embeddings |
-| T6 | S4, S5 | inline | done | `src/lib/evaluation/run.ts`, `report.ts`, `scripts/eval-retrieval.ts`; real report |
-| T7 | S7 | inline | done | `20261112220247_add_document_chunk_fts_index`; index applied and usable |
-| T8 | S10, S12 | inline | done | `eval/answer-quality-review.md`, README, `.env.example`, `eval/README.md` |
-| T9 | S1–S14 | delegated | pending | typecheck, lint, full tests, seed, real evaluation, independent verifier |
-| T10 | S1–S14 | inline | pending | Final report and commit map |
+| T2 | S2, S5, S6 | inline | done | `d4bf75d`; `src/lib/retrieval/types.ts`, `config.ts`, `src/lib/evaluation/dataset.ts`, `metrics.ts`; 18 tests |
+| T3 | S7, S8 | delegated | done | `de7eb78`, `6065b4c`; parallel writer A: `lexical.ts`, `rrf.ts`, `hybrid.ts`, `vector.ts`; lexical OR fix by parent |
+| T4 | S9 | delegated | done | `3c7c979`; parallel writer B: `reranker.ts`, `openrouter-reranker.ts`; 24 mocked tests |
+| T5 | S2, S3 | inline | done | `4b40131`; `eval/fixtures/fictional-documents.json`, `eval/gold-set.json`, `scripts/eval-seed.ts`; 2 docs/21 chunks/21 embeddings |
+| T6 | S4, S5 | inline | done | `4b40131`, `198372c`; `src/lib/evaluation/run.ts`, `report.ts`, `scripts/eval-retrieval.ts`; real report and denominator disclosure |
+| T7 | S7 | inline | done | `65cc910`; `20261112220247_add_document_chunk_fts_index`; index applied and usable |
+| T8 | S10, S12 | inline | done | `09c96b8`; `eval/answer-quality-review.md`, README, `.env.example`, `eval/README.md` |
+| T9 | S1–S14 | delegated | done | `198372c`; verifier `pass_with_advisories`, no blockers; 12 chunker + 169 Vitest; native review unavailable (`unassessable` runtime) |
+| T10 | S1–S14 | inline | done | Final report in the conversation; no push/PR/merge |
 
 Route note: T3 and T4 are independent units with disjoint edit surfaces, each several files and well over 100 changed lines, so two bounded writers run in parallel after T2 publishes the shared types and config. T5–T8 depend on the shared contracts and run inline once the writers return. The feature names high-risk item 1 (a new database migration/index) and item 2 (an external rerank provider with a server-only secret); one independent verifier runs at the end. No PR is requested; commits stay as work units on the feature branch.
 
