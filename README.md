@@ -1,10 +1,10 @@
-# Intelligent Document Assistant — Sprint 4
+# Intelligent Document Assistant — Sprint 5
 
 Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
 
-Este es el cuarto hito del proyecto de RAG. El recorrido completo es **indexar → recuperar → generar**: los documentos se procesan y se vectorizan localmente; la pregunta se convierte en un vector con el mismo modelo; los chunks del documento elegido se envían como contexto a OpenRouter; y el servidor valida las citas antes de mostrarlas. La respuesta es de un solo turno: todavía no hay historial de conversación, herramientas ni agentes.
+Este es el quinto hito del proyecto de RAG. El recorrido completo es **indexar → recuperar → generar**, y ahora también **medir**. Los documentos se procesan y se vectorizan localmente; la pregunta se convierte en un vector con el mismo modelo; los chunks del documento elegido se envían como contexto a OpenRouter; el servidor valida las citas antes de mostrarlas; y un conjunto de evaluación pequeño compara búsqueda vectorial, búsqueda léxica, búsqueda híbrida con RRF y reranking opcional. La respuesta sigue siendo de un solo turno: no hay historial de conversación, herramientas ni agentes.
 
-> **Solo para desarrollo local.** Esta versión no incluye autenticación ni aislamiento entre usuarios. No la expongas a Internet ni la uses con documentos reales.
+> **Solo para desarrollo local.** Esta versión no incluye autenticación ni aislamiento entre usuarios. No la expongas a Internet ni la uses con documentos reales. Los fixtures de evaluación son ficticios a propósito: si activás el reranking, la pregunta y los fragmentos candidatos salen hacia un proveedor externo.
 
 ## Qué incluye
 
@@ -27,10 +27,20 @@ Este es el cuarto hito del proyecto de RAG. El recorrido completo es **indexar �
 - Validación y limpieza de citas: los IDs inventados no generan metadata ni se muestran como fuentes válidas.
 - Fuentes verificadas con documento, página, fragmento, distancia y estado de cita.
 - Pruebas unitarias con Vitest para prompt, citas, entrada, cliente HTTP mockeado y camino sin evidencia.
+- Conjunto de evaluación tipado con 25 casos: 20 respondibles y 5 no respondibles, con chunks relevantes y hechos esperados.
+- Fixture ficticio y determinista de dos documentos, 21 chunks y embeddings generados con el mismo modelo local.
+- Comando `npm run eval:retrieval` sin llamadas a un LLM, con reporte JSON reproducible.
+- Métricas Recall@k, Precision@k (denominador `k`) y MRR, por caso y agregadas.
+- Búsqueda léxica PostgreSQL con `tsvector`/`tsquery`, configuración `simple`, consulta parametrizada e índice GIN.
+- Búsqueda híbrida con Reciprocal Rank Fusion (RRF), sin sumar distancias coseno y scores léxicos.
+- Adaptador `Reranker` y cliente opcional de OpenRouter `/api/v1/rerank`, desactivado si no hay modelo o clave.
+- Plantilla manual para revisar exactitud, fidelidad, citas y abstención de las respuestas del Sprint 4.
+- Reporte de referencia generado por una ejecución real en `eval/reports/reference-report.json`.
 - Documentación de decisiones, límites y comprobaciones manuales.
 
 ## Documentación del sprint
 
+- **Sprint 5:** la sección [Evaluación de recuperación](#flujo-de-evaluación-de-recuperación-sprint-5) de este README explica el gold set, las métricas, RRF, el reranking opcional, el índice GIN y los límites. Los artefactos viven en `eval/gold-set.json`, `eval/fixtures/fictional-documents.json`, `eval/answer-quality-review.md` y `eval/reports/reference-report.json`.
 - `docs/sprint-4-como-funciona.pdf` — guía de estudio del Sprint 4 (20 páginas): RAG, recuperación por documento, contexto, OpenRouter, citas verificadas, pruebas reales, límites y checklist para el Sprint 5.
 - `docs/sprint-4-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - `docs/sprint-3-como-funciona.pdf` — guía de estudio del Sprint 3 (19 páginas): embeddings, distancia coseno, pgvector, generación idempotente, búsqueda y límites.
@@ -42,9 +52,11 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 
 - Streaming de la respuesta.
 - Historial de conversación, herramientas o agentes.
-- Reranking o búsqueda híbrida.
+- Conectar la búsqueda híbrida o el reranking al flujo de `/ask`; por ahora se comparan en la evaluación.
+- Un LLM juez automático para calidad de respuesta.
 - Umbral universal de similitud.
 - Índices HNSW o IVFFlat.
+- Stemming específico para español o italiano; la búsqueda léxica usa la configuración `simple`.
 - OCR para PDFs escaneados.
 - Autenticación, permisos por documento, rate limiting o aislamiento entre usuarios.
 - Almacenamiento del archivo PDF original.
@@ -64,8 +76,12 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 | Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local |
 | Modelo de embeddings | `Xenova/multilingual-e5-small` (384 dimensiones) |
 | Generación | OpenRouter Chat Completions vía `fetch` en el servidor |
+| Búsqueda léxica | PostgreSQL `tsvector`/`tsquery` con configuración `simple` e índice GIN |
+| Búsqueda híbrida | Reciprocal Rank Fusion sobre rankings vectorial y léxico |
+| Reranking opcional | OpenRouter `/api/v1/rerank` vía `fetch` en el servidor |
+| Scripts de evaluación | `tsx` para ejecutar TypeScript fuera de Next.js |
 | Validación de entrada | Zod |
-| Tests | `node:test` para el chunker + Vitest para embeddings y RAG |
+| Tests | `node:test` para el chunker + Vitest para embeddings, RAG, métricas y retrieval |
 
 ## Requisitos
 
@@ -93,10 +109,14 @@ docker compose up -d
 # 4. Cliente de Prisma
 npm run db:generate
 
-# 5. Migraciones (incluye CREATE EXTENSION vector)
+# 5. Migraciones (incluye CREATE EXTENSION vector y el índice GIN de Sprint 5)
 npm run db:migrate
 
-# 6. Servidor de desarrollo
+# 6. Fixture de evaluación ficticio (opcional; requiere el modelo local)
+npm run eval:seed
+npm run eval:retrieval
+
+# 7. Servidor de desarrollo
 npm run dev
 ```
 
@@ -143,10 +163,19 @@ rm -rf .cache/transformers
 | `RAG_MAX_CONTEXT_CHARS` | No | `8000` | Máximo de caracteres de fuentes enviados al modelo. Rango: 500–50000. |
 | `RAG_QUESTION_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta en `/api/ask`. Rango: 1–4000. |
 | `RAG_PROVIDER_TIMEOUT_MS` | No | `30000` | Timeout de la llamada a OpenRouter. Rango: 1000–120000. |
+| `EVAL_TOP_K` | No | `5` | Corte de Recall@k/Precision@k en la evaluación. Rango: 1–50. |
+| `RETRIEVAL_CANDIDATES` | No | `20` | Candidatos que devuelve cada fuente antes de RRF. Rango: 1–100. |
+| `RETRIEVAL_RRF_K` | No | `60` | Constante `k` de Reciprocal Rank Fusion. Rango: 1–1000. |
+| `RERANK_MODEL` | No | vacío | Modelo de reranking de OpenRouter, por ejemplo `cohere/rerank-v3.5`. Vacío desactiva el reranking. |
+| `RERANK_API_KEY` | No | vacío | Clave opcional del reranker; si falta, se usa `OPENROUTER_API_KEY`. Solo servidor. |
+| `RERANK_TOP_N` | No | `5` | Cantidad de candidatos que devuelve el reranker. Rango: 1–50. |
+| `RERANK_TIMEOUT_MS` | No | `20000` | Timeout del reranker. Rango: 1000–120000. |
 
 Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y el proveedor valida que el modelo produzca exactamente 384 números. Cambiar de modelo exige una migración y regenerar los vectores.
 
 `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` se leen solo en el servidor. Si faltan, `/api/ask` responde `503` con un mensaje seguro después de recuperar los fragmentos; el camino sin evidencia sigue funcionando sin llamar al proveedor. La clave no aparece en el bundle del navegador, en la API ni en los logs.
+
+El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:retrieval` lo marca como `skipped` y termina normalmente. Cuando se activa, la pregunta y los fragmentos candidatos se envían a OpenRouter; usá solo documentos ficticios o que puedas compartir. No se asume que exista un modelo gratuito disponible.
 
 ## Scripts
 
@@ -166,6 +195,8 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 | `npm run db:deploy` | Aplica migraciones en un entorno desplegado. |
 | `npm run db:studio` | Abre Prisma Studio. |
 | `npm run sample:pdf` | Regenera el PDF de prueba en `samples/`. |
+| `npm run eval:seed` | Inserta o reemplaza el fixture ficticio de evaluación y genera sus embeddings locales. Es idempotente. |
+| `npm run eval:retrieval` | Ejecuta los 25 casos de evaluación sin llamar a un LLM, imprime el resumen y escribe un reporte JSON en `eval/reports/`. Acepta `-- --top-k`, `--candidates`, `--rrf-k`, `--no-rerank` y `--out`. |
 
 ## Estructura del proyecto
 
@@ -173,7 +204,14 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 .
 ├── prisma/
 │   ├── schema.prisma              # Document, DocumentPage, DocumentChunk, ChunkEmbedding
-│   └── migrations/                # Inicial, chunks y embeddings/pgvector
+│   └── migrations/                # Inicial, chunks, embeddings/pgvector e índice GIN
+├── eval/
+│   ├── gold-set.json              # 25 casos con chunks relevantes y hechos esperados
+│   ├── fixtures/
+│   │   └── fictional-documents.json
+│   ├── answer-quality-review.md   # Plantilla manual de respuesta y citas
+│   └── reports/
+│       └── reference-report.json  # Ejecución real de referencia
 ├── src/
 │   ├── app/
 │   │   ├── api/
@@ -225,7 +263,9 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       │   ├── config.ts          # Modelo, lotes y límites de búsqueda
 │       │   ├── generate.ts        # Generación por lotes y resultado parcial
 │       │   ├── input.ts           # Validación de pregunta, topK y cuerpo
+│       │   ├── load-extractor.ts  # Carga compartida de Transformers.js
 │       │   ├── load-provider.ts   # Traducción de errores del modelo
+│       │   ├── node-provider.ts   # Singleton para scripts fuera de Next
 │       │   ├── provider.ts        # Carga lazy y singleton del modelo
 │       │   ├── provider-core.ts   # Prefijos, pooling y validación
 │       │   ├── search.ts          # Búsqueda exacta por distancia coseno
@@ -233,6 +273,20 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       │   ├── summary.ts         # Conteo por documento para la UI
 │       │   ├── types.ts
 │       │   └── vector.ts          # Validación y formato pgvector
+│       ├── evaluation/
+│       │   ├── dataset.ts         # Zod, fixture y validación referencial
+│       │   ├── metrics.ts         # Recall@k, Precision@k y MRR
+│       │   ├── report.ts          # Reporte JSON y resumen de consola
+│       │   └── run.ts             # Orquestación de estrategias y agregados
+│       ├── retrieval/
+│       │   ├── config.ts          # Candidatos, RRF y reranking opcional
+│       │   ├── hybrid.ts          # Vector + léxico + RRF
+│       │   ├── lexical.ts         # tsvector/tsquery con configuración simple
+│       │   ├── openrouter-reranker.ts
+│       │   ├── reranker.ts        # Validación de índices y mapping
+│       │   ├── rrf.ts             # Reciprocal Rank Fusion
+│       │   ├── types.ts
+│       │   └── vector.ts          # Wrapper de la búsqueda vectorial existente
 │       ├── rag/
 │       │   ├── ask.ts             # Orquestación: retrieval → prompt → proveedor
 │       │   ├── citations.ts       # Limpieza y validación de [S#]
@@ -258,15 +312,25 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       ├── embeddings-boundaries.test.ts
 │       ├── embeddings-generate.test.ts
 │       ├── embeddings-sql-params.test.ts
+│       ├── eval-dataset.test.ts
+│       ├── eval-metrics.test.ts
+│       ├── openrouter-reranker.test.ts
 │       ├── rag-citations.test.ts
 │       ├── rag-generate.test.ts
 │       ├── rag-input.test.ts
 │       ├── rag-openrouter.test.ts
 │       ├── rag-prompt.test.ts
-│       └── rag-verification.test.ts
+│       ├── rag-verification.test.ts
+│       ├── reranker-validation.test.ts
+│       ├── retrieval-hybrid.test.ts
+│       ├── retrieval-lexical.test.ts
+│       ├── retrieval-rrf.test.ts
+│       └── retrieval-vector.test.ts
 ├── samples/
 │   └── documento-de-prueba.pdf
 ├── scripts/
+│   ├── eval-retrieval.ts
+│   ├── eval-seed.ts
 │   └── generate-sample-pdf.mjs
 ├── docker-compose.yml
 ├── prisma.config.ts
@@ -350,6 +414,110 @@ distancia = 1 - similitud
 ```
 
 Menor distancia significa mayor similitud. La UI muestra la distancia y también `1 - distancia` como porcentaje para facilitar la lectura. No se aplica un umbral: se muestran los `topK` más cercanos aunque estén lejos.
+
+## Flujo de evaluación de recuperación (Sprint 5)
+
+La pregunta central del sprint es doble: **¿la búsqueda recupera los fragmentos correctos?** y **¿la respuesta usa esos fragmentos y los cita bien?** Son problemas distintos. Una búsqueda perfecta no garantiza una buena respuesta, y una respuesta convincente puede estar basada en fragmentos irrelevantes.
+
+### Gold set y fixture
+
+`eval/gold-set.json` contiene 25 casos revisados manualmente: 20 respondibles y 5 no respondibles. Cada caso declara el documento, los chunks relevantes y, cuando corresponde, los hechos esperados:
+
+```json
+{
+  "id": "q-02",
+  "question": "¿Cuántos días de aviso exige el contrato para cancelar el servicio?",
+  "documentId": "eval-doc-contrato",
+  "relevantChunkIds": ["eval-chunk-contrato-04"],
+  "answerable": true,
+  "expectedFacts": ["Se requieren treinta (30) días corridos de aviso por escrito."]
+}
+```
+
+`eval/fixtures/fictional-documents.json` define dos documentos ficticios con IDs deterministas: un contrato de servicios y un manual de producto. No se usan documentos reales ni sensibles. `npm run eval:seed` inserta o reemplaza esos documentos y genera sus 21 embeddings con el modelo local configurado; es idempotente y no llama a ningún LLM. La validación con Zod rechaza IDs duplicados, documentos inexistentes, chunks de otro documento y casos donde `answerable` no coincide con la lista de chunks relevantes.
+
+### Métricas
+
+| Métrica | Qué mide | Fórmula |
+| --- | --- | --- |
+| Recall@k | Qué proporción de los chunks relevantes aparece en los primeros `k`. | `aciertos en top-k / total de chunks relevantes` |
+| Precision@k | Qué proporción de los primeros `k` resultados es relevante. | `aciertos en top-k / k` |
+| MRR | Qué tan arriba aparece el primer chunk relevante. | `1 / posición del primer relevante`, o `0` si no aparece |
+
+**Precision@k divide por `k`, no por la cantidad efectivamente devuelta.** Si una estrategia devuelve menos de `k` resultados, las posiciones ausentes cuentan como no relevantes. La regla se aplica en todos los reportes y está registrada en el JSON (`precisionAtKDenominator: "k"`). Los casos no respondibles no tienen chunks relevantes: se excluyen de los promedios de recuperación y quedan para la evaluación de abstención.
+
+En este dataset la mayoría de los casos tiene un solo chunk relevante; con `k = 5`, el máximo de Precision@5 por caso es `0.2`. Por eso un valor cercano a `0.21` no significa “mal retrieval”: significa que hay un chunk relevante y cuatro posiciones que no lo son. El caso `q-06` tiene dos chunks relevantes y eleva levemente el promedio.
+
+### Estrategias comparadas
+
+1. **Vectorial:** reutiliza el embedding `query: ` y la búsqueda exacta `<=>` sobre pgvector, filtrada por documento, modelo, revisión y dimensiones.
+2. **Léxica:** `to_tsvector('simple', content)` contra `websearch_to_tsquery('simple', $1)`, con `ts_rank_cd` y un índice GIN. La consulta se parametriza y se construye con los términos de la pregunta unidos por OR, porque `websearch_to_tsquery` interpreta una pregunta completa como AND y exige que el chunk contenga todas las palabras. Los términos entre comillas evitan que palabras como `or` se conviertan en operadores.
+3. **Híbrida:** pide 20 candidatos a cada fuente, los fusiona con RRF y devuelve el top-k.
+4. **Híbrida + rerank:** si hay un modelo configurado, envía los candidatos fusionados al reranker y vuelve a ordenar. Si no hay configuración, la estrategia se reporta como `skipped` y el comando termina normalmente.
+
+### Reciprocal Rank Fusion
+
+RRF combina **posiciones**, no scores:
+
+```text
+RRF(d) = Σ 1 / (k + rank_s(d))
+```
+
+La constante por defecto es `k = 60` (`RETRIEVAL_RRF_K`). Un chunk que aparece bien ubicado en ambas listas suma dos contribuciones; uno que aparece en una sola suma una. Si un chunk se repite dentro de una misma lista, se cuenta una vez; si aparece en ambas listas, se conserva la trazabilidad con `sourceRanks` (`vector` y `lexical`, con su posición y score original). No sumamos distancia coseno y `ts_rank_cd` directamente porque no comparten escala ni significado: la distancia es menor cuando el texto es más parecido, mientras que el score léxico es mayor cuando coincide más. Comparar posiciones evita inventar una normalización arbitraria.
+
+### Comando y reporte
+
+```bash
+npm run eval:seed          # una vez, o después de editar el fixture
+npm run eval:retrieval     # ejecuta los 25 casos sin LLM
+npm run eval:retrieval -- --top-k 5 --candidates 20 --rrf-k 60
+npm run eval:retrieval -- --no-rerank
+```
+
+El comando imprime un resumen por estrategia, los casos donde un chunk relevante no aparece o aparece más abajo, y escribe un JSON en `eval/reports/`. El reporte registra fecha, versión de Node, hashes del fixture y del gold set, modelo/revisión/dimensión del embedding, `topK`, candidatos, constante RRF, estado del reranking, agregados por estrategia, rangos de los chunks relevantes y latencias por caso. La latencia del embedding se mide una vez por caso y se informa aparte; la latencia de cada estrategia no la duplica.
+
+`eval/reports/reference-report.json` es una ejecución real de referencia generada en este entorno con el fixture de 25 casos. No es una promesa de resultados universales: depende del corpus, del modelo y del hardware.
+
+### Resultado de referencia (ejecución real)
+
+| Estrategia | Casos | Recall@5 | Precision@5 | MRR | Latencia media |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `vector` | 25 | 1.0000 | 0.2100 | 0.9667 | 2 ms |
+| `lexical` | 25 | 0.9500 | 0.2000 | 0.6350 | 2 ms |
+| `hybrid` | 25 | 1.0000 | 0.2100 | 0.9000 | 2 ms |
+| `hybrid-rerank` | — | — | — | — | skipped (`missing_model`) |
+
+Lectura honesta de esta muestra:
+
+- La búsqueda vectorial encontró todos los chunks relevantes en el top-5 y casi siempre en la primera posición. El corpus es pequeño y los documentos fueron escritos para ser recuperables; no generalices este resultado.
+- La búsqueda léxica encontró el 95 % de los chunks relevantes, pero los ordenó peor. Es útil para códigos exactos (`ESC-104`, `FLT-450-A`, `VAL-450`) y para preguntas con términos literales; no reemplaza al vector.
+- La híbrida mantuvo Recall@5 en 1.0, pero su MRR fue menor porque RRF también incorpora las posiciones léxicas. En este dataset el baseline vectorial ya era muy fuerte. La comparación sirve para ver el efecto, no para declarar un ganador universal.
+- El reranking no se ejecutó: no hay `RERANK_MODEL` configurado. El cliente se validó con `fetch` mockeado. No se asume que exista un modelo gratuito.
+
+### Índice GIN y costo
+
+La migración `20261112220247_add_document_chunk_fts_index` crea:
+
+```sql
+CREATE INDEX "DocumentChunk_content_simple_fts_idx"
+ON "DocumentChunk"
+USING GIN (to_tsvector('simple', "content"));
+```
+
+La expresión del índice debe coincidir exactamente con la de la consulta para que PostgreSQL pueda usarlo. GIN acelera las búsquedas de texto completo a costa de almacenamiento y de escrituras más caras; en este corpus local el planner puede elegir un scan secuencial porque la tabla es minúscula, pero el índice queda preparado para crecer. Es una limitación conocida de Prisma que los índices de expresión no se puedan declarar en `schema.prisma`: la migración es SQL manual. Al crear una migración futura con `prisma migrate dev --create-only`, revisá el SQL generado para no perder este índice.
+
+### Calidad de respuesta
+
+`eval/answer-quality-review.md` es una plantilla manual para revisar las respuestas del Sprint 4 con cinco ejes: exactitud, fidelidad a las fuentes, validez de las citas, abstención y latencia/uso. No hay un LLM juez en este sprint. El prompt de respuesta no se modificó; si se propone un cambio, primero hay que definir cómo se evaluaría con los mismos casos y la misma tabla.
+
+### Límites del dataset y próximos pasos
+
+- 25 casos, dos documentos ficticios y un solo modelo de embeddings: es una muestra para aprender y para detectar regresiones, no un benchmark representativo.
+- La relevancia está etiquetada a nivel de chunk; un chunk puede contener la respuesta y no ser el único fragmento útil.
+- No hay stemming español/italiano: `simple` solo tokeniza y baja a minúsculas. Probar configuraciones lingüísticas es trabajo futuro.
+- No hay índice ANN ni corpus grande; la latencia no refleja un sistema en producción.
+- No hay juez automático ni intervalo de confianza. Con 20 casos respondibles, una diferencia de MRR puede ser ruido.
+- Próximos pasos: ampliar el gold set, agregar documentos reales anonimizados, conectar la estrategia ganadora a `/ask` con una comparación A/B, evaluar un juez LLM contra la revisión manual, medir costo/latencia con más volumen y probar configuraciones de texto en español e italiano.
 
 ## Modelo de datos
 
@@ -660,6 +828,30 @@ Prisma modela las entidades y relaciones normales, pero no puede leer ni escribi
 
 La primera llamada descarga el modelo y sus archivos de tokenización en `.cache/transformers/`. El proceso reutiliza una sola instancia del pipeline; en desarrollo, el singleton vive en `globalThis` para sobrevivir a recargas de módulos. Si la carga falla, la promesa se limpia para permitir un reintento.
 
+### Búsqueda léxica con `simple`
+
+La configuración `simple` de PostgreSQL no aplica stemming ni stopwords: solo tokeniza y normaliza a minúsculas. Es un punto de partida deliberadamente neutro para documentos en español e italiano. La consulta se construye uniendo los términos con OR y cada término va entre comillas antes de pasarlo como parámetro a `websearch_to_tsquery`; así una pregunta completa no se convierte en un AND imposible de satisfacer y una palabra como `or` no se interpreta como operador. La consulta sigue siendo parametrizada: el texto nunca se concatena en el SQL.
+
+### RRF y scores incompatibles
+
+La distancia coseno y `ts_rank_cd` no comparten escala. La primera es menor cuando el texto es más parecido; el segundo es mayor cuando hay más coincidencias léxicas. Sumarlos exigiría una normalización arbitraria. RRF usa solo posiciones (`1 / (k + rank)`), conserva el ranking original de cada fuente y hace que un chunk bien ubicado en ambas listas suba. Los duplicados dentro de una lista se eliminan antes de asignar posiciones; un chunk presente en las dos listas suma una contribución por lista.
+
+### Precision@k con denominador `k`
+
+Precision@k se calcula dividiendo por `k`, no por la cantidad devuelta. Si una estrategia devuelve menos resultados, las posiciones faltantes cuentan como no relevantes. Es la regla documentada en el reporte y en la sección de métricas, y se aplica a todas las estrategias para que la comparación sea consistente.
+
+### Reranking opcional
+
+El adaptador `Reranker` recibe la pregunta y los candidatos, y devuelve una lista ordenada con scores. El cliente de OpenRouter valida que cada índice devuelto sea entero, esté dentro del rango enviado y no se repita; también maneja timeout, 429, 5xx, errores de red, JSON malformado, respuestas vacías y objetos `error`. La latencia y el usage se registran sin guardar la pregunta ni el texto de los candidatos. Si no hay `RERANK_MODEL` o clave, la estrategia se omite y el comando de evaluación no falla.
+
+### Índice GIN fuera del schema
+
+Prisma no puede declarar índices de expresión como `to_tsvector('simple', content)` en `schema.prisma`. La migración lo crea con SQL manual y la consulta usa exactamente la misma expresión para que PostgreSQL pueda aprovecharlo. GIN agrega costo de almacenamiento y escritura; en el corpus local el planner puede preferir un scan secuencial, pero el índice queda listo para un corpus mayor. Al generar futuras migraciones con `--create-only`, revisar que Prisma no proponga eliminar este índice desconocido.
+
+### CLI fuera de Next
+
+`npm run eval:retrieval` y `npm run eval:seed` se ejecutan con `tsx`, fuera del servidor de Next.js. El cargador del modelo se extrajo a `src/lib/embeddings/load-extractor.ts` y el CLI usa `node-provider.ts`; el servidor sigue usando `provider.ts` con la guardia `server-only`. Así ambos caminos comparten revisión, dtype y caché, sin duplicar la carga del modelo.
+
 ## Seguridad y límites conocidos
 
 - **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir, leer, buscar y preguntar sobre cualquier documento de la biblioteca. `/ask` filtra los chunks por documento, pero no hay usuarios ni ownership: el filtro es de alcance de la pregunta, no de permisos. No exponer públicamente.
@@ -672,21 +864,21 @@ La primera llamada descarga el modelo y sus archivos de tokenización en `.cache
 - **Precisión fija:** el sprint usa `fp32`. Cambiar de precisión puede cambiar los vectores; hay que regenerarlos y documentarlo.
 - **Vectores de modelos anteriores:** no se borran automáticamente. Quedan en la tabla para comparar y se pueden eliminar con SQL. No se mezclan en la búsqueda porque el filtro usa el modelo y la revisión actuales.
 - **Sin índice ANN:** la búsqueda exacta es O(n) sobre las filas compatibles. Con un corpus grande habrá que medir y evaluar HNSW/IVFFlat.
-- **Sin umbral de distancia:** la búsqueda siempre devuelve hasta `topK` resultados, incluso si son poco relevantes. El umbral se decidirá con evaluación en el Sprint 5.
-- **Sin reranking ni búsqueda híbrida:** la recuperación es solo vectorial.
+- **Sin umbral de distancia:** la búsqueda siempre devuelve hasta `topK` resultados, incluso si son poco relevantes. La evaluación del Sprint 5 mide aciertos, pero no fija un umbral universal.
+- **Híbrida y reranking no conectados a `/ask`:** la comparación vive en `npm run eval:retrieval`; la respuesta del Sprint 4 sigue usando recuperación vectorial.
 - **Sin streaming:** la respuesta se valida completa antes de mostrarse. Esto facilita comprobar citas, pero aumenta la espera percibida.
 - **Sin historial ni agentes:** cada pregunta es independiente; no hay memoria de la conversación ni herramientas.
-- **El documento sale del servidor:** a diferencia de los embeddings, la generación envía los fragmentos recuperados a OpenRouter. No uses documentos confidenciales en esta versión local sin evaluar ese intercambio.
+- **El documento sale del servidor:** a diferencia de los embeddings, la generación envía los fragmentos recuperados a OpenRouter. Si activás el reranking, la pregunta y los chunks candidatos también se envían al proveedor. No uses documentos confidenciales en esta versión local sin evaluar ese intercambio.
 - **Prompt injection:** el system prompt indica tratar las fuentes como datos y no como instrucciones, pero no es una barrera de seguridad completa. Falta una capa de controles adicionales.
 - **Respuestas no garantizadas:** pedir “no alucines” reduce el riesgo, no lo elimina. La app muestra fuentes y citas para que una persona pueda revisar el origen.
-- **Sin evaluación de calidad:** no hay conjunto de preguntas, métrica de recuperación ni comparación de modelos. El Sprint 5 debe medir aciertos, abstención y citas.
+- **Evaluación pequeña y no representativa:** hay 25 casos sobre dos documentos ficticios y un solo modelo de embeddings. Sirve para detectar regresiones y aprender, no para afirmar qué estrategia es mejor en general. La calidad de respuesta se revisa a mano con `eval/answer-quality-review.md`; no hay juez automático.
 - **Sin rate limiting:** no hay protección contra abuso de la API ni del proveedor.
 - **Sin progreso en tiempo real:** la UI muestra “Generando respuesta…” mientras espera; no hay porcentaje ni streaming.
 - **Regeneración concurrente:** dos pedidos simultáneos sobre el mismo documento pueden competir. El `ON CONFLICT` y la transacción protegen la integridad, pero el resultado de cada pedido puede ser distinto. No es un escenario esperado en esta versión local.
 - **Regenerar chunks borra embeddings:** la cascada elimina los vectores de los chunks reemplazados. Hay que volver a generarlos.
 - **Prisma Studio:** no puede leer la tabla `ChunkEmbedding` por el tipo `vector`.
-- **Proveedor no verificado en red real:** en este entorno no hay `OPENROUTER_API_KEY`, así que la integración con OpenRouter se validó con `fetch` mockeado y con pruebas HTTP del camino sin configuración. No se afirma que una llamada real haya funcionado.
-- **Build de producción:** esta entrega se validó con `tsc`, ESLint, tests y `next dev`. No se ejecutó `npm run build` (regla del proyecto). Si se despliega, revisar el empaquetado de `@huggingface/transformers`, `onnxruntime-node`, `sharp` y `zod`.
+- **Proveedores no verificados en red real en este sprint:** el cliente de reranking se validó con `fetch` mockeado y no se ejecutó una llamada real porque no hay `RERANK_MODEL` configurado. La generación del Sprint 4 no se volvió a probar con una llamada real en este sprint. No se afirma que una llamada de red haya funcionado.
+- **Build de producción:** esta entrega se validó con `tsc`, ESLint, tests y los comandos de evaluación. No se ejecutó `npm run build` (regla del proyecto). Si se despliega, revisar el empaquetado de `@huggingface/transformers`, `onnxruntime-node`, `sharp`, `zod` y `tsx` (este último es solo para scripts).
 
 ## Cómo probar manualmente
 
@@ -709,6 +901,14 @@ La primera llamada descarga el modelo y sus archivos de tokenización en `.cache
 15. Prueba `RAG_TOP_K` en `0` o `21`: se usa el valor por defecto con una advertencia, no se rompe la app.
 16. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y pregunta: el documento debe quedar sin embeddings compatibles y la API debe devolver `noEvidence: true` sin llamar a OpenRouter.
 17. Si regeneras los chunks de un documento, vuelve a generar sus embeddings antes de preguntar.
+18. Ejecuta `npm run eval:seed` y confirma que inserta 2 documentos y 21 chunks con embeddings. El comando es idempotente: repetirlo no duplica filas.
+19. Ejecuta `npm run eval:retrieval`. Debe imprimir las estrategias `vector`, `lexical`, `hybrid` y `hybrid-rerank` (esta última como `skipped` si no configuraste un modelo) y escribir un JSON en `eval/reports/`.
+20. Abre el reporte y verifica que incluya fecha, modelo/revisión/dimensión, `topK`, candidatos, RRF `k`, hashes del fixture y del gold set, y los rangos de cada chunk relevante. No confíes en el resumen sin mirar los casos.
+21. Prueba `npm run eval:retrieval -- --top-k 1`: Recall@1 y MRR deben cambiar respecto de `k = 5`; si un relevante estaba en la posición 2, deja de aparecer en Recall@1.
+22. Compara las listas de `vector` y `hybrid` para un caso con código exacto, por ejemplo `q-09` (`ESC-104`) o `q-19` (`FLT-450-A`). La búsqueda léxica debería priorizar la coincidencia literal; la vectorial puede fallar en códigos poco frecuentes.
+23. Si configuras `RERANK_MODEL` (y una clave), ejecuta una vez sin `--no-rerank` y otra con `--no-rerank`; compara el orden de los candidatos y el MRR. Usa solo el fixture ficticio: el reranker envía la pregunta y los chunk candidatos a OpenRouter.
+24. Revisa al menos una respuesta con `eval/answer-quality-review.md`: comprueba que cada cita `[S#]` apunte a una fuente recuperada y que el excerpt sostenga la afirmación. No cambies el prompt durante la revisión.
+25. Si editas el fixture o el gold set, vuelve a ejecutar `npm run eval:seed` antes de `npm run eval:retrieval`; los embeddings guardados no se recalculan solos.
 
 Consultas útiles:
 
@@ -736,6 +936,21 @@ HAVING count(*) > 1;
 
 -- La extensión debe estar instalada
 \dx vector
+
+-- Fixture de evaluación (2 documentos y 21 chunks)
+SELECT d.id, d."originalFilename", count(c.id) AS chunks
+FROM "Document" d
+JOIN "DocumentPage" p ON p."documentId" = d.id
+LEFT JOIN "DocumentChunk" c ON c."documentPageId" = p.id
+WHERE d.id LIKE 'eval-%'
+GROUP BY d.id, d."originalFilename"
+ORDER BY d.id;
+
+-- Índice GIN de búsqueda léxica
+SELECT indexname, indexdef
+FROM pg_indexes
+WHERE tablename = 'DocumentChunk'
+ORDER BY indexname;
 ```
 
 ## Verificación de esta entrega
@@ -745,37 +960,58 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (65 tests en 10 archivos; incluye prompt, citas, entrada Zod, cliente OpenRouter mockeado, camino sin fuentes, presupuesto de contexto y filtro SQL por documento)
-- `npm test` ✅ (12 + 65)
-- `npx prisma migrate status` ✅ (3 migraciones aplicadas; no se agregaron migraciones en este sprint)
-- Tipo y esquema ✅: `ChunkEmbedding` sigue usando `embedding vector(384)`, unique `(chunkId, modelId, modelRevision)`, índice por modelo y FK con `ON DELETE CASCADE`.
-- Retrieval real ✅: `POST /api/ask` sobre `documento-de-prueba.pdf` cargó el modelo local y ejecutó la búsqueda; la configuración faltante se detectó después del retrieval, con `retrieval=1833ms` y el modelo listo. Esto prueba que el documento tenía embeddings, que se recuperaron chunks y que se armó el prompt.
-- Sin embeddings ✅: un documento temporal sin embeddings (insertado y eliminado con SQL) devolvió `200`, `noEvidence: true`, `noEvidenceReason: "no_embeddings"`, `sources: []`, `model: null`, sin cargar el modelo y sin llamar al proveedor. El log mostró `retrieval=12ms sources=0 provider=skipped`.
-- Configuración faltante ✅: con una pregunta sobre un documento indexado y sin `OPENROUTER_API_KEY`/`OPENROUTER_MODEL`, la API devolvió `503` con `OPENROUTER_NOT_CONFIGURED`, sin claves ni stack traces.
-- Validación HTTP ✅: JSON inválido `400`; pregunta vacía `400`; pregunta de 1.001 caracteres `400`; id inválido `400`; documento inexistente `404`; campo extra `400`; cuerpo de 20.000 caracteres `400`.
-- Cliente OpenRouter ✅ (mockeado): éxito con `usage`, timeout, HTTP 429, JSON malformado, respuesta vacía y objeto `error` embebido en `200`. No se envió `temperature` ni `top_p`. La API key no aparece en los mensajes de error.
-- Citas ✅ (unitario): `[S1]`, `[S1][S2]`, `[S1, S2]`, IDs inventados, grupos mixtos y corchetes ajenos. Una respuesta con `[S9]` no crea una fuente S9 ni una página inventada.
-- Seguridad ✅: `OPENROUTER_API_KEY` no aparece en `.next/static`; la UI recibe solo un booleano de configuración. Los logs registran duración, estado y usage, no pregunta, prompt ni texto completo.
-- UI ✅: `GET /`, `GET /search` y `GET /ask` responden `200`; `/ask` muestra el selector con los documentos y su cantidad de embeddings, el formulario, la advertencia de configuración y los enlaces de navegación. No se automatizó una interacción de navegador.
-- Proveedor real ❌ no ejecutado: no hay API key en este entorno. El camino de éxito de OpenRouter se validó con `fetch` mockeado, no con una llamada de red real.
-- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests y `next dev`.
+- `npm run test:unit` ✅ (161 tests en 18 archivos; incluye métricas, dataset, RRF, léxico, vector, reranking mockeado y toda la suite anterior)
+- `npm test` ✅ (12 + 161)
+- `npx prisma migrate status` ✅ (4 migraciones aplicadas, esquema al día). La migración `20261112220247_add_document_chunk_fts_index` creó `DocumentChunk_content_simple_fts_idx` con GIN sobre `to_tsvector('simple', "content")`; se verificó con `pg_indexes`. Con `enable_seqscan = off`, `EXPLAIN` mostró `Bitmap Index Scan on DocumentChunk_content_simple_fts_idx`; con el corpus pequeño el planner puede preferir un scan secuencial.
+- `npm run eval:seed` ✅: 2 documentos ficticios, 21 chunks y 21 embeddings con `Xenova/multilingual-e5-small@761b726...` (384 dimensiones). Es idempotente.
+- `npm run eval:retrieval` ✅ (ejecución real, sin llamadas a un LLM): 25 casos, 20 respondibles y 5 no respondibles. Resultados agregados:
+  - `vector`: Recall@5 1.0000, Precision@5 0.2100, MRR 0.9667.
+  - `lexical`: Recall@5 0.9500, Precision@5 0.2000, MRR 0.6350.
+  - `hybrid`: Recall@5 1.0000, Precision@5 0.2100, MRR 0.9000.
+  - `hybrid-rerank`: `skipped`, motivo `missing_model`.
+  El reporte real quedó en `eval/reports/reference-report.json`.
+- Correción detectada por la ejecución real ✅: la primera versión léxica pasaba la pregunta completa a `websearch_to_tsquery`, que une todos los términos con AND y devolvía cero resultados. Se cambió a un tsquery OR de términos citados y parametrizados; la suite léxica se actualizó y la evaluación pasó de 0 % a 95 % de Recall@5 léxico. Esto queda como evidencia de por qué hay que ejecutar el comando antes de afirmar resultados.
+- Sensibilidad al corte ✅: `npm run eval:retrieval -- --top-k 1` produjo `vector` Recall@1 0.9250 / MRR 0.9500, `lexical` 0.4250 / 0.4500 y `hybrid` 0.8250 / 0.8500. Las métricas cambian como se espera al reducir `k`. El reporte temporal se eliminó después de la comprobación.
+- Reranking desactivado ✅: `npm run eval:retrieval -- --no-rerank` terminó con éxito y reportó `hybrid-rerank` como `skipped` con motivo `disabled_by_flag`.
+- Reranking mockeado ✅: éxito con body `documents`/`top_n`, timeout, 429, 500, JSON malformado, respuesta vacía, error embebido en 200, índice fuera de rango, índice duplicado e índice no entero. No se envió ninguna consulta a la red y no se registró texto de candidatos ni la clave.
+- Calidad de respuesta ❌ no ejecutada: la plantilla `eval/answer-quality-review.md` está lista, pero no se hizo una revisión manual de respuestas del Sprint 4 en este sprint.
+- Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado y no se asume un modelo gratuito. La integración se validó con `fetch` mockeado.
+- Generación real de OpenRouter ❌ no ejecutada en este sprint: no se repitió una llamada de chat real; la suite existente y los mocks siguen pasando.
+- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests y los comandos de evaluación.
+- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-5-retrieval-evaluation`.
 
 ## Próximo sprint
 
-Sprint 5: evaluar la calidad del RAG. Hay que construir un conjunto de preguntas con respuestas y páginas esperadas, medir recuperación (por ejemplo, si la página correcta aparece en el topK), medir abstención cuando no hay evidencia, revisar citas y decidir si hace falta un umbral de similitud, reranking o un índice ANN. También conviene comparar modelos y costos de OpenRouter con datos, no por intuición.
+Sprint 6: conectar la mejor estrategia medida a `/ask` y comparar el flujo completo, no solo el retrieval. Antes de cambiar el prompt de respuesta, hay que ampliar el gold set, hacer la revisión manual de respuestas y citas, y decidir con datos si conviene un umbral de similitud, un reranker pago o un índice ANN. También quedan pendientes:
+
+- Evaluar configuraciones de texto en español e italiano en lugar de `simple`.
+- Probar más modelos de embeddings y de generación, midiendo costo y latencia.
+- Convertir `npm run eval:retrieval` en una comprobación de regresión repetible.
+- Evaluar un juez LLM contra la revisión manual, sin reemplazarla.
+- Medir el corpus con más documentos y con datos anonimizados.
 
 ## Orden sugerido para revisar el código
 
-1. `src/lib/embeddings/vector.ts` — validación, formato pgvector y similitud.
-2. `src/lib/embeddings/provider-core.ts` — prefijos E5, pooling mean, normalización y contrato del proveedor.
-3. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert, búsqueda global y búsqueda filtrada por documento.
-4. `src/lib/rag/config.ts` — límites, timeout y lectura server-only de las credenciales.
-5. `src/lib/rag/input.ts` — validación Zod.
-6. `src/lib/rag/retrieval.ts` — documento, embeddings y recuperación.
-7. `src/lib/rag/prompt.ts` — etiquetas `[S#]`, presupuesto de contexto y system prompt.
-8. `src/lib/rag/openrouter.ts` — cliente HTTP, timeout y errores del proveedor.
-9. `src/lib/rag/citations.ts` — limpieza de citas inventadas.
-10. `src/lib/rag/generate.ts` — unión de contexto, respuesta y metadata.
-11. `src/lib/rag/ask.ts` — orquestación y logging seguro.
-12. `src/app/api/ask/route.ts` — contrato HTTP.
-13. `src/components/ask/AskPanel.tsx` y `src/app/ask/page.tsx` — UI y estados.
+1. `eval/gold-set.json` y `eval/fixtures/fictional-documents.json` — qué se considera relevante y por qué.
+2. `src/lib/evaluation/dataset.ts` — validación Zod y consistencia entre fixture y gold set.
+3. `src/lib/evaluation/metrics.ts` — Recall@k, Precision@k con denominador `k`, MRR y promedios.
+4. `src/lib/retrieval/lexical.ts` — tsvector/tsquery, OR de términos y SQL parametrizado.
+5. `src/lib/retrieval/rrf.ts` — fusión por posiciones, duplicados y desempate.
+6. `src/lib/retrieval/hybrid.ts` — ventana de candidatos y composición de vector + léxico.
+7. `src/lib/retrieval/reranker.ts` y `openrouter-reranker.ts` — contrato, validación de índices y cliente opcional.
+8. `src/lib/evaluation/run.ts` — orquestación, latencias, errores y agregados.
+9. `scripts/eval-retrieval.ts` y `scripts/eval-seed.ts` — CLI, reporte y fixture.
+10. `prisma/migrations/20261112220247_add_document_chunk_fts_index/migration.sql` — índice GIN y su costo.
+11. `src/lib/embeddings/vector.ts` — validación, formato pgvector y similitud.
+12. `src/lib/embeddings/provider-core.ts` — prefijos E5, pooling mean, normalización y contrato del proveedor.
+13. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert, búsqueda global y búsqueda filtrada por documento.
+14. `src/lib/rag/config.ts` — límites, timeout y lectura server-only de las credenciales.
+15. `src/lib/rag/input.ts` — validación Zod.
+16. `src/lib/rag/retrieval.ts` — documento, embeddings y recuperación.
+17. `src/lib/rag/prompt.ts` — etiquetas `[S#]`, presupuesto de contexto y system prompt.
+18. `src/lib/rag/openrouter.ts` — cliente HTTP, timeout y errores del proveedor.
+19. `src/lib/rag/citations.ts` — limpieza de citas inventadas.
+20. `src/lib/rag/generate.ts` — unión de contexto, respuesta y metadata.
+21. `src/lib/rag/ask.ts` — orquestación y logging seguro.
+22. `src/app/api/ask/route.ts` — contrato HTTP.
+23. `src/components/ask/AskPanel.tsx` y `src/app/ask/page.tsx` — UI y estados.
