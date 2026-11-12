@@ -39,6 +39,9 @@ model DocumentPage {
   @@index([documentId])
 }
 
+// Sprint 5 adds a full-text GIN expression index in the migration
+// 20261112220247_add_document_chunk_fts_index. Prisma cannot declare
+// expression indexes here; review future migrations so it is not dropped.
 model DocumentChunk {
   id             String          @id @default(cuid())
   documentPageId String
