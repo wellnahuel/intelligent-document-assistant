@@ -54,6 +54,30 @@
   letter-spacing: 0.02em;
 }
 
+.heroActions {
+  margin-top: 22px;
+}
+
+.heroLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background 150ms ease,
+    transform 100ms ease;
+}
+
+.heroLink:hover {
+  background: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 560px) {
   .page {
     gap: 26px;

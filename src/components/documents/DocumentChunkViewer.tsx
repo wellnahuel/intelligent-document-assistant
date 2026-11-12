@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { readErrorMessage } from "@/lib/client/read-error";
 import type {
   ChunkGenerationResultDto,
   ChunkingConfigDto,
@@ -24,22 +25,6 @@ type DocumentChunkViewerProps = {
 
 const GENERIC_ERROR =
   "No se pudieron generar los fragmentos. Intenta nuevamente.";
-
-function readErrorMessage(payload: unknown): string | null {
-  if (typeof payload !== "object" || payload === null || !("error" in payload)) {
-    return null;
-  }
-
-  const error = (payload as { error?: unknown }).error;
-
-  if (typeof error !== "object" || error === null) {
-    return null;
-  }
-
-  const message = (error as { message?: unknown }).message;
-
-  return typeof message === "string" && message.length > 0 ? message : null;
-}
 
 function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural;
@@ -86,6 +71,18 @@ export function DocumentChunkViewer({
         }),
       );
 
+      // Regenerating chunks deletes their embeddings through the cascade.
+      // The embeddings panel is a separate client island, so it listens for
+      // this event and resets its counters without a full page reload.
+      window.dispatchEvent(
+        new CustomEvent("document-chunks-regenerated", {
+          detail: {
+            documentId,
+            chunkCount: result.chunkCount,
+          },
+        }),
+      );
+
       setStatus({
         kind: "success",
         message:
@@ -107,7 +104,7 @@ export function DocumentChunkViewer({
   }
 
   return (
-    <div className={styles.pages}>
+    <>
       <section
         className={styles.chunkToolbar}
         aria-labelledby="fragmentos-titulo"
@@ -238,6 +235,6 @@ export function DocumentChunkViewer({
           </div>
         </section>
       ))}
-    </div>
+    </>
   );
 }

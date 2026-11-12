@@ -5,6 +5,7 @@ import { DocumentDetail } from "@/components/documents/DocumentDetail";
 import { getChunkingConfig } from "@/lib/chunking/config";
 import { toDocumentDetailDto } from "@/lib/documents/dto";
 import { getDocumentWithPages } from "@/lib/documents/queries";
+import { getDocumentEmbeddingSummary } from "@/lib/embeddings/summary";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,13 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
     notFound();
   }
 
+  const embeddingSummary = await getDocumentEmbeddingSummary(id);
+
   return (
     <DocumentDetail
       document={toDocumentDetailDto(document)}
       chunking={getChunkingConfig()}
+      embeddingSummary={embeddingSummary}
     />
   );
 }

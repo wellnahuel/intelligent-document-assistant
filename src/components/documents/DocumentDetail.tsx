@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import type { DocumentEmbeddingSummaryDto } from "@/lib/embeddings/types";
 import type {
   ChunkingConfigDto,
   DocumentDetailDto,
@@ -7,15 +8,21 @@ import type {
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 import { DocumentChunkViewer } from "./DocumentChunkViewer";
+import { DocumentEmbeddingsPanel } from "./DocumentEmbeddingsPanel";
 import { StatusBadge } from "./StatusBadge";
 import styles from "./DocumentDetail.module.css";
 
 type DocumentDetailProps = {
   document: DocumentDetailDto;
   chunking: ChunkingConfigDto;
+  embeddingSummary: DocumentEmbeddingSummaryDto;
 };
 
-export function DocumentDetail({ document, chunking }: DocumentDetailProps) {
+export function DocumentDetail({
+  document,
+  chunking,
+  embeddingSummary,
+}: DocumentDetailProps) {
   const totalCharacters = document.pages.reduce(
     (total, page) => total + page.text.length,
     0,
@@ -62,6 +69,13 @@ export function DocumentDetail({ document, chunking }: DocumentDetailProps) {
           <div>
             <dt>Fragmentos</dt>
             <dd>{totalChunks.toLocaleString("es")}</dd>
+          </div>
+          <div>
+            <dt>Embeddings</dt>
+            <dd>
+              {embeddingSummary.embeddedChunkCount.toLocaleString("es")}/
+              {totalChunks.toLocaleString("es")}
+            </dd>
           </div>
           <div>
             <dt>Subido</dt>
@@ -119,14 +133,24 @@ export function DocumentDetail({ document, chunking }: DocumentDetailProps) {
               Los fragmentos se generan por página y guardan su rango de
               caracteres dentro del texto normalizado.
             </p>
+            <p>
+              Los embeddings se generan desde cada fragmento y se guardan con
+              el modelo, su revisión y la dimensión del vector.
+            </p>
           </div>
         </aside>
 
-        <DocumentChunkViewer
-          documentId={document.id}
-          pages={document.pages}
-          chunking={chunking}
-        />
+        <div className={styles.pages}>
+          <DocumentEmbeddingsPanel
+            documentId={document.id}
+            initialSummary={embeddingSummary}
+          />
+          <DocumentChunkViewer
+            documentId={document.id}
+            pages={document.pages}
+            chunking={chunking}
+          />
+        </div>
       </div>
     </article>
   );

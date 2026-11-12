@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { DocumentLibrary } from "@/components/documents/DocumentLibrary";
 import { getUploadLimits } from "@/lib/config";
@@ -35,16 +36,23 @@ export default async function HomePage() {
           Tu biblioteca de documentos, lista para RAG.
         </h1>
         <p className={styles.lead}>
-          Sube un PDF y revisa el texto extraído página por página. Este primer
-          hito prepara la materia prima para la búsqueda semántica y las
-          respuestas con citas.
+          Subí un PDF, revisá el texto extraído página por página, generá
+          fragmentos y probá la búsqueda semántica local con embeddings. La
+          búsqueda recupera los fragmentos más cercanos; todavía no redacta una
+          respuesta.
         </p>
         <ul className={styles.chips} aria-label="Tecnologías del sprint">
           <li>PDF.js</li>
-          <li>PostgreSQL</li>
+          <li>PostgreSQL + pgvector</li>
+          <li>Transformers.js</li>
           <li>Prisma</li>
           <li>Next.js</li>
         </ul>
+        <div className={styles.heroActions}>
+          <Link href="/search" className={styles.heroLink}>
+            Probar búsqueda semántica →
+          </Link>
+        </div>
       </section>
 
       <DocumentLibrary

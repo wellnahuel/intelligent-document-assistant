@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s · Intelligent Document Assistant",
   },
   description:
-    "Biblioteca de documentos con extracción de texto por página. Primer sprint del proyecto de RAG.",
+    "Biblioteca de documentos con extracción por página, chunking y búsqueda semántica local con embeddings.",
 };
 
 export default function RootLayout({
@@ -49,7 +49,7 @@ export default function RootLayout({
                 </span>
                 <span className="brandText">
                   <strong>Intelligent Document Assistant</strong>
-                  <span>Biblioteca y extracción · Sprint 1</span>
+                  <span>Biblioteca, texto y búsqueda · Sprint 3</span>
                 </span>
               </Link>
 
@@ -57,7 +57,10 @@ export default function RootLayout({
                 <Link href="/" className="navLink">
                   Biblioteca
                 </Link>
-                <span className="sprintBadge">Sprint 1</span>
+                <Link href="/search" className="navLink">
+                  Buscar
+                </Link>
+                <span className="sprintBadge">Sprint 3</span>
               </nav>
             </div>
           </header>
