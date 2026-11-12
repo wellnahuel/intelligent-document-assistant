@@ -9,6 +9,7 @@ vi.mock("@/lib/db", () => ({ prisma: db }));
 
 import {
   findNearestChunks,
+  findNearestChunksForDocument,
   upsertEmbeddingBatch,
 } from "@/lib/embeddings/store";
 
@@ -97,6 +98,32 @@ describe("vector SQL parameterization", () => {
 
     expect(arg.values).toEqual(
       expect.arrayContaining([MODEL.modelId, MODEL.modelRevision, 384, 7]),
+    );
+    expect(arg.values?.filter((value) => value === literal)).toHaveLength(2);
+  });
+
+  it("binds the document filter for document-scoped retrieval", async () => {
+    await findNearestChunksForDocument(vector, MODEL, "doc-42", 5);
+
+    expect(db.$queryRaw).toHaveBeenCalledTimes(1);
+    const arg = db.$queryRaw.mock.calls[0]?.[0] as SqlLike;
+    const text = textOf(arg);
+
+    expect(text).toContain('p."documentId" =');
+    expect(text).toContain('e."modelId" =');
+    expect(text).toContain("ORDER BY e.\"embedding\" <=>");
+    expect(text).toContain("LIMIT");
+    expect(text).not.toContain("doc-42");
+    expect(text).not.toContain(literal);
+
+    expect(arg.values).toEqual(
+      expect.arrayContaining([
+        MODEL.modelId,
+        MODEL.modelRevision,
+        384,
+        "doc-42",
+        5,
+      ]),
     );
     expect(arg.values?.filter((value) => value === literal)).toHaveLength(2);
   });

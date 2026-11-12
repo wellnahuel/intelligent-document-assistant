@@ -194,3 +194,38 @@ export async function findNearestChunks(
     LIMIT ${topK}
   `);
 }
+
+/**
+ * Same exact search as findNearestChunks, scoped to one document. This keeps
+ * the Sprint 3 global search unchanged while Sprint 4 never mixes sources
+ * from another document.
+ */
+export async function findNearestChunksForDocument(
+  vector: readonly number[],
+  model: EmbeddingModelInfo,
+  documentId: string,
+  topK: number,
+): Promise<NearestChunkRow[]> {
+  const vectorLiteral = formatVectorForSql(vector, model.dimensions);
+
+  return prisma.$queryRaw<NearestChunkRow[]>(Prisma.sql`
+    SELECT
+      c."id" AS "chunkId",
+      c."content" AS "content",
+      c."chunkIndex" AS "chunkIndex",
+      p."pageNumber" AS "pageNumber",
+      d."id" AS "documentId",
+      d."originalFilename" AS "documentName",
+      (e."embedding" <=> ${vectorLiteral}::vector) AS "distance"
+    FROM "ChunkEmbedding" e
+    JOIN "DocumentChunk" c ON c."id" = e."chunkId"
+    JOIN "DocumentPage" p ON p."id" = c."documentPageId"
+    JOIN "Document" d ON d."id" = p."documentId"
+    WHERE e."modelId" = ${model.modelId}
+      AND e."modelRevision" = ${model.modelRevision}
+      AND e."dimensions" = ${model.dimensions}
+      AND p."documentId" = ${documentId}
+    ORDER BY e."embedding" <=> ${vectorLiteral}::vector ASC
+    LIMIT ${topK}
+  `);
+}
