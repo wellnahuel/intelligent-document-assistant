@@ -58,6 +58,11 @@ export type StrategyAggregate = {
   strategy: StrategyName;
   caseCount: number;
   answerableCaseCount: number;
+  /**
+   * Answerable cases with a successful result that contributed to the metric
+   * means. It is smaller than answerableCaseCount when a case failed.
+   */
+  metricCaseCount: number;
   failedCaseCount: number;
   skipped: boolean;
   skipReason: string | null;
@@ -183,6 +188,7 @@ function aggregateStrategy(input: {
       strategy: input.strategy,
       caseCount: 0,
       answerableCaseCount: 0,
+      metricCaseCount: 0,
       failedCaseCount: 0,
       skipped: true,
       skipReason: input.skipReason,
@@ -233,6 +239,7 @@ function aggregateStrategy(input: {
     strategy: input.strategy,
     caseCount: attemptedCases.length,
     answerableCaseCount: answerableCases.length,
+    metricCaseCount: answerableResults.length,
     failedCaseCount: results.filter((result) => result.error !== null).length,
     skipped: false,
     skipReason: null,

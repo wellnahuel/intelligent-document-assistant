@@ -474,7 +474,7 @@ npm run eval:retrieval -- --top-k 5 --candidates 20 --rrf-k 60
 npm run eval:retrieval -- --no-rerank
 ```
 
-El comando imprime un resumen por estrategia, los casos donde un chunk relevante no aparece o aparece más abajo, y escribe un JSON en `eval/reports/`. El reporte registra fecha, versión de Node, hashes del fixture y del gold set, modelo/revisión/dimensión del embedding, `topK`, candidatos, constante RRF, estado del reranking, agregados por estrategia, rangos de los chunks relevantes y latencias por caso. La latencia del embedding se mide una vez por caso y se informa aparte; la latencia de cada estrategia no la duplica.
+El comando imprime un resumen por estrategia, los casos donde un chunk relevante no aparece o aparece más abajo, y escribe un JSON en `eval/reports/`. El reporte registra fecha, versión de Node, hashes del fixture y del gold set, modelo/revisión/dimensión del embedding, `topK`, candidatos, constante RRF, estado del reranking, agregados por estrategia, rangos de los chunks relevantes y latencias por caso. La latencia del embedding se mide una vez por caso y se informa aparte; la latencia de cada estrategia no la duplica. Si una estrategia falla en un caso, ese caso no entra en los promedios: el reporte expone `metricCaseCount` y `failedCaseCount`, muestra el denominador en la consola y el comando termina con código 1.
 
 `eval/reports/reference-report.json` es una ejecución real de referencia generada en este entorno con el fixture de 25 casos. No es una promesa de resultados universales: depende del corpus, del modelo y del hardware.
 
@@ -960,8 +960,8 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (161 tests en 18 archivos; incluye métricas, dataset, RRF, léxico, vector, reranking mockeado y toda la suite anterior)
-- `npm test` ✅ (12 + 161)
+- `npm run test:unit` ✅ (169 tests en 19 archivos; incluye métricas, dataset, RRF, léxico, vector, reranking mockeado, los probes del verificador y toda la suite anterior)
+- `npm test` ✅ (12 + 169)
 - `npx prisma migrate status` ✅ (4 migraciones aplicadas, esquema al día). La migración `20261112220247_add_document_chunk_fts_index` creó `DocumentChunk_content_simple_fts_idx` con GIN sobre `to_tsvector('simple', "content")`; se verificó con `pg_indexes`. Con `enable_seqscan = off`, `EXPLAIN` mostró `Bitmap Index Scan on DocumentChunk_content_simple_fts_idx`; con el corpus pequeño el planner puede preferir un scan secuencial.
 - `npm run eval:seed` ✅: 2 documentos ficticios, 21 chunks y 21 embeddings con `Xenova/multilingual-e5-small@761b726...` (384 dimensiones). Es idempotente.
 - `npm run eval:retrieval` ✅ (ejecución real, sin llamadas a un LLM): 25 casos, 20 respondibles y 5 no respondibles. Resultados agregados:

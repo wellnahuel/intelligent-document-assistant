@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T22:02:21.122Z",
+  "generatedAt": "2026-11-12T22:28:41.865Z",
   "runtime": {
     "node": "v22.13.1"
   },
@@ -17,7 +17,7 @@
     "topK": 5,
     "candidates": 20,
     "rrfK": 60,
-    "meanEmbeddingMs": 6.27568547999992,
+    "meanEmbeddingMs": 9.84108027999997,
     "embeddingModel": {
       "modelId": "Xenova/multilingual-e5-small",
       "modelRevision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
@@ -49,13 +49,14 @@
       "strategy": "vector",
       "caseCount": 25,
       "answerableCaseCount": 20,
+      "metricCaseCount": 20,
       "failedCaseCount": 0,
       "skipped": false,
       "skipReason": null,
       "recallAtK": 1,
       "precisionAtK": 0.21000000000000005,
       "mrr": 0.9666666666666666,
-      "meanLatencyMs": 2.102874199999951,
+      "meanLatencyMs": 3.176575720000019,
       "rerankModel": null,
       "rerankLatencyMs": null,
       "rerankUsage": null
@@ -64,13 +65,14 @@
       "strategy": "lexical",
       "caseCount": 25,
       "answerableCaseCount": 20,
+      "metricCaseCount": 20,
       "failedCaseCount": 0,
       "skipped": false,
       "skipReason": null,
       "recallAtK": 0.95,
       "precisionAtK": 0.2000000000000001,
       "mrr": 0.635,
-      "meanLatencyMs": 1.8721644799999921,
+      "meanLatencyMs": 2.8789707199999794,
       "rerankModel": null,
       "rerankLatencyMs": null,
       "rerankUsage": null
@@ -79,13 +81,14 @@
       "strategy": "hybrid",
       "caseCount": 25,
       "answerableCaseCount": 20,
+      "metricCaseCount": 20,
       "failedCaseCount": 0,
       "skipped": false,
       "skipReason": null,
       "recallAtK": 1,
       "precisionAtK": 0.21000000000000005,
       "mrr": 0.9,
-      "meanLatencyMs": 2.4926602399998954,
+      "meanLatencyMs": 3.5980522800000108,
       "rerankModel": null,
       "rerankLatencyMs": null,
       "rerankUsage": null
@@ -94,6 +97,7 @@
       "strategy": "hybrid-rerank",
       "caseCount": 0,
       "answerableCaseCount": 0,
+      "metricCaseCount": 0,
       "failedCaseCount": 0,
       "skipped": true,
       "skipReason": "missing_model",
@@ -115,7 +119,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-01"
       ],
-      "embeddingMs": 9.58154999999988,
+      "embeddingMs": 28.891120000000228,
       "strategies": [
         {
           "strategy": "vector",
@@ -134,7 +138,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 4.775127000000339,
+          "latencyMs": 7.69178600000032,
           "rerank": null,
           "error": null
         },
@@ -155,7 +159,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 7.430140999999821,
+          "latencyMs": 5.766826999999921,
           "rerank": null,
           "error": null
         },
@@ -176,7 +180,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 4.1301479999997355,
+          "latencyMs": 12.19432199999983,
           "rerank": null,
           "error": null
         }
@@ -190,7 +194,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-04"
       ],
-      "embeddingMs": 6.012918999999783,
+      "embeddingMs": 7.76947999999993,
       "strategies": [
         {
           "strategy": "vector",
@@ -209,7 +213,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.2607450000000426,
+          "latencyMs": 3.2019460000001345,
           "rerank": null,
           "error": null
         },
@@ -230,7 +234,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 1.6927290000003268,
+          "latencyMs": 2.811768000000029,
           "rerank": null,
           "error": null
         },
@@ -251,7 +255,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.483962999999676,
+          "latencyMs": 3.674485999999888,
           "rerank": null,
           "error": null
         }
@@ -265,7 +269,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-03"
       ],
-      "embeddingMs": 6.534831999999824,
+      "embeddingMs": 10.186619999999948,
       "strategies": [
         {
           "strategy": "vector",
@@ -284,7 +288,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.535906999999952,
+          "latencyMs": 5.610544000000118,
           "rerank": null,
           "error": null
         },
@@ -305,7 +309,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 2.0896950000001198,
+          "latencyMs": 7.12878099999989,
           "rerank": null,
           "error": null
         },
@@ -326,7 +330,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.419148999999834,
+          "latencyMs": 5.312042999999903,
           "rerank": null,
           "error": null
         }
@@ -340,7 +344,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-02"
       ],
-      "embeddingMs": 4.969949999999699,
+      "embeddingMs": 10.897295000000213,
       "strategies": [
         {
           "strategy": "vector",
@@ -359,7 +363,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.3359229999996387,
+          "latencyMs": 3.334809999999834,
           "rerank": null,
           "error": null
         },
@@ -380,7 +384,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.4039659999998548,
+          "latencyMs": 5.567927999999938,
           "rerank": null,
           "error": null
         },
@@ -401,7 +405,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 4.789222999999765,
+          "latencyMs": 4.263065000000097,
           "rerank": null,
           "error": null
         }
@@ -415,7 +419,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-05"
       ],
-      "embeddingMs": 5.153945999999905,
+      "embeddingMs": 9.545344000000114,
       "strategies": [
         {
           "strategy": "vector",
@@ -434,7 +438,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.4751790000000256,
+          "latencyMs": 1.8833760000002258,
           "rerank": null,
           "error": null
         },
@@ -455,7 +459,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.4595640000002277,
+          "latencyMs": 1.9537380000001576,
           "rerank": null,
           "error": null
         },
@@ -476,7 +480,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 1.7880529999997634,
+          "latencyMs": 2.3574530000000777,
           "rerank": null,
           "error": null
         }
@@ -491,7 +495,7 @@
         "eval-chunk-contrato-05",
         "eval-chunk-contrato-06"
       ],
-      "embeddingMs": 5.692184999999881,
+      "embeddingMs": 8.656950999999935,
       "strategies": [
         {
           "strategy": "vector",
@@ -511,7 +515,7 @@
             "precisionAtK": 0.4,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.9278399999998328,
+          "latencyMs": 2.5037389999997686,
           "rerank": null,
           "error": null
         },
@@ -533,7 +537,7 @@
             "precisionAtK": 0.4,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.525463999999829,
+          "latencyMs": 3.214802999999847,
           "rerank": null,
           "error": null
         },
@@ -555,7 +559,7 @@
             "precisionAtK": 0.4,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.920162999999775,
+          "latencyMs": 4.1863399999997455,
           "rerank": null,
           "error": null
         }
@@ -569,7 +573,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-09"
       ],
-      "embeddingMs": 6.509197000000313,
+      "embeddingMs": 7.999746000000414,
       "strategies": [
         {
           "strategy": "vector",
@@ -588,7 +592,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.5323359999997592,
+          "latencyMs": 5.374565000000075,
           "rerank": null,
           "error": null
         },
@@ -609,7 +613,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.5189210000003186,
+          "latencyMs": 3.4119470000000547,
           "rerank": null,
           "error": null
         },
@@ -630,7 +634,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.9741019999996752,
+          "latencyMs": 6.889934000000267,
           "rerank": null,
           "error": null
         }
@@ -644,7 +648,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-09"
       ],
-      "embeddingMs": 5.063959999999952,
+      "embeddingMs": 9.379307999999583,
       "strategies": [
         {
           "strategy": "vector",
@@ -663,7 +667,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.280713999999989,
+          "latencyMs": 7.260237999999845,
           "rerank": null,
           "error": null
         },
@@ -684,7 +688,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 1.5282720000000154,
+          "latencyMs": 2.3592610000000604,
           "rerank": null,
           "error": null
         },
@@ -705,7 +709,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.828183000000081,
+          "latencyMs": 7.679366999999729,
           "rerank": null,
           "error": null
         }
@@ -719,7 +723,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-11"
       ],
-      "embeddingMs": 7.409849000000122,
+      "embeddingMs": 15.952088999999887,
       "strategies": [
         {
           "strategy": "vector",
@@ -738,7 +742,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.6193200000002435,
+          "latencyMs": 2.658448000000135,
           "rerank": null,
           "error": null
         },
@@ -759,7 +763,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 1.5777960000000348,
+          "latencyMs": 2.640929000000142,
           "rerank": null,
           "error": null
         },
@@ -780,7 +784,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.715153999999984,
+          "latencyMs": 3.476427000000058,
           "rerank": null,
           "error": null
         }
@@ -794,7 +798,7 @@
       "relevantChunkIds": [
         "eval-chunk-contrato-12"
       ],
-      "embeddingMs": 6.248660999999629,
+      "embeddingMs": 8.667998999999782,
       "strategies": [
         {
           "strategy": "vector",
@@ -813,7 +817,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.4275080000002163,
+          "latencyMs": 2.951991000000362,
           "rerank": null,
           "error": null
         },
@@ -834,7 +838,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 1.4152460000000247,
+          "latencyMs": 6.6122309999996105,
           "rerank": null,
           "error": null
         },
@@ -855,7 +859,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.8588110000000597,
+          "latencyMs": 5.031073000000106,
           "rerank": null,
           "error": null
         }
@@ -867,7 +871,7 @@
       "documentId": "eval-doc-contrato",
       "answerable": false,
       "relevantChunkIds": [],
-      "embeddingMs": 7.424764999999752,
+      "embeddingMs": 8.99056500000006,
       "strategies": [
         {
           "strategy": "vector",
@@ -884,7 +888,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.6709630000000288,
+          "latencyMs": 2.285866000000169,
           "rerank": null,
           "error": null
         },
@@ -903,7 +907,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.6069769999999153,
+          "latencyMs": 2.5037019999999757,
           "rerank": null,
           "error": null
         },
@@ -922,7 +926,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.8983029999999417,
+          "latencyMs": 3.0626969999998437,
           "rerank": null,
           "error": null
         }
@@ -934,7 +938,7 @@
       "documentId": "eval-doc-contrato",
       "answerable": false,
       "relevantChunkIds": [],
-      "embeddingMs": 5.948957999999948,
+      "embeddingMs": 11.642533999999614,
       "strategies": [
         {
           "strategy": "vector",
@@ -951,7 +955,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.3848170000001119,
+          "latencyMs": 2.1666660000000775,
           "rerank": null,
           "error": null
         },
@@ -967,7 +971,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.209679000000051,
+          "latencyMs": 1.367696000000251,
           "rerank": null,
           "error": null
         },
@@ -986,7 +990,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.3669079999999667,
+          "latencyMs": 3.4859040000001187,
           "rerank": null,
           "error": null
         }
@@ -998,7 +1002,7 @@
       "documentId": "eval-doc-contrato",
       "answerable": false,
       "relevantChunkIds": [],
-      "embeddingMs": 6.261993999999959,
+      "embeddingMs": 9.27650900000026,
       "strategies": [
         {
           "strategy": "vector",
@@ -1015,7 +1019,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.3832010000000992,
+          "latencyMs": 1.9355319999999665,
           "rerank": null,
           "error": null
         },
@@ -1034,7 +1038,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.5237419999998565,
+          "latencyMs": 2.668988999999783,
           "rerank": null,
           "error": null
         },
@@ -1053,7 +1057,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.5598509999999806,
+          "latencyMs": 2.9719130000003133,
           "rerank": null,
           "error": null
         }
@@ -1067,7 +1071,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-01"
       ],
-      "embeddingMs": 6.227433000000019,
+      "embeddingMs": 8.790896999999859,
       "strategies": [
         {
           "strategy": "vector",
@@ -1086,7 +1090,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.4834710000000086,
+          "latencyMs": 2.915809999999965,
           "rerank": null,
           "error": null
         },
@@ -1107,7 +1111,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 1.4377479999998286,
+          "latencyMs": 2.731159000000389,
           "rerank": null,
           "error": null
         },
@@ -1128,7 +1132,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 5.5125709999997525,
+          "latencyMs": 2.816008000000238,
           "rerank": null,
           "error": null
         }
@@ -1142,7 +1146,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-02"
       ],
-      "embeddingMs": 6.679422000000159,
+      "embeddingMs": 9.009501999999884,
       "strategies": [
         {
           "strategy": "vector",
@@ -1161,7 +1165,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 3.061529999999948,
+          "latencyMs": 2.5893269999996846,
           "rerank": null,
           "error": null
         },
@@ -1182,7 +1186,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.8805849999998827,
+          "latencyMs": 1.3202289999999266,
           "rerank": null,
           "error": null
         },
@@ -1203,7 +1207,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 4.577690000000075,
+          "latencyMs": 1.6745949999999539,
           "rerank": null,
           "error": null
         }
@@ -1217,7 +1221,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-03"
       ],
-      "embeddingMs": 6.793071999999938,
+      "embeddingMs": 5.54406999999992,
       "strategies": [
         {
           "strategy": "vector",
@@ -1236,7 +1240,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.5423279999999977,
+          "latencyMs": 3.294311000000107,
           "rerank": null,
           "error": null
         },
@@ -1257,7 +1261,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.0689040000002024,
+          "latencyMs": 2.1423329999997804,
           "rerank": null,
           "error": null
         },
@@ -1278,7 +1282,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 3.025456999999733,
+          "latencyMs": 2.2840000000001055,
           "rerank": null,
           "error": null
         }
@@ -1292,7 +1296,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-03"
       ],
-      "embeddingMs": 6.47997099999975,
+      "embeddingMs": 6.306552000000011,
       "strategies": [
         {
           "strategy": "vector",
@@ -1311,7 +1315,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.597461000000294,
+          "latencyMs": 1.9403849999998783,
           "rerank": null,
           "error": null
         },
@@ -1332,7 +1336,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.91838800000005,
+          "latencyMs": 1.2905759999998736,
           "rerank": null,
           "error": null
         },
@@ -1353,7 +1357,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.82627199999979,
+          "latencyMs": 1.8548789999999826,
           "rerank": null,
           "error": null
         }
@@ -1367,7 +1371,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-04"
       ],
-      "embeddingMs": 7.200937000000067,
+      "embeddingMs": 9.624601000000439,
       "strategies": [
         {
           "strategy": "vector",
@@ -1386,7 +1390,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 3.0539719999997033,
+          "latencyMs": 2.3148120000000745,
           "rerank": null,
           "error": null
         },
@@ -1407,7 +1411,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.9368890000000647,
+          "latencyMs": 4.624186000000009,
           "rerank": null,
           "error": null
         },
@@ -1428,7 +1432,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.861080000000129,
+          "latencyMs": 2.260514999999941,
           "rerank": null,
           "error": null
         }
@@ -1442,7 +1446,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-04"
       ],
-      "embeddingMs": 6.793594000000212,
+      "embeddingMs": 7.081975000000057,
       "strategies": [
         {
           "strategy": "vector",
@@ -1461,7 +1465,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.2104169999997794,
+          "latencyMs": 3.5119540000000598,
           "rerank": null,
           "error": null
         },
@@ -1482,7 +1486,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 2.235899999999674,
+          "latencyMs": 1.8775049999999283,
           "rerank": null,
           "error": null
         },
@@ -1503,7 +1507,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.8440350000000763,
+          "latencyMs": 2.252433999999994,
           "rerank": null,
           "error": null
         }
@@ -1517,7 +1521,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-05"
       ],
-      "embeddingMs": 7.497698000000128,
+      "embeddingMs": 16.408394000000044,
       "strategies": [
         {
           "strategy": "vector",
@@ -1536,7 +1540,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 5.942975999999817,
+          "latencyMs": 2.717917999999827,
           "rerank": null,
           "error": null
         },
@@ -1557,7 +1561,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.2
           },
-          "latencyMs": 2.737250000000131,
+          "latencyMs": 2.006840000000011,
           "rerank": null,
           "error": null
         },
@@ -1578,7 +1582,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.5
           },
-          "latencyMs": 3.679273999999623,
+          "latencyMs": 2.7115319999998064,
           "rerank": null,
           "error": null
         }
@@ -1592,7 +1596,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-06"
       ],
-      "embeddingMs": 7.133654999999635,
+      "embeddingMs": 5.793109999999615,
       "strategies": [
         {
           "strategy": "vector",
@@ -1611,7 +1615,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.7957499999997708,
+          "latencyMs": 1.7212579999995796,
           "rerank": null,
           "error": null
         },
@@ -1632,7 +1636,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.4569169999999758,
+          "latencyMs": 1.502933000000212,
           "rerank": null,
           "error": null
         },
@@ -1653,7 +1657,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 2.283509000000322,
+          "latencyMs": 1.950694999999996,
           "rerank": null,
           "error": null
         }
@@ -1665,7 +1669,7 @@
       "documentId": "eval-doc-manual",
       "answerable": false,
       "relevantChunkIds": [],
-      "embeddingMs": 4.978685000000041,
+      "embeddingMs": 11.694526000000224,
       "strategies": [
         {
           "strategy": "vector",
@@ -1682,7 +1686,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.3432170000000951,
+          "latencyMs": 2.034892000000127,
           "rerank": null,
           "error": null
         },
@@ -1701,7 +1705,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.1240960000000086,
+          "latencyMs": 1.748309000000063,
           "rerank": null,
           "error": null
         },
@@ -1720,7 +1724,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.332962999999836,
+          "latencyMs": 1.8522649999999885,
           "rerank": null,
           "error": null
         }
@@ -1732,7 +1736,7 @@
       "documentId": "eval-doc-manual",
       "answerable": false,
       "relevantChunkIds": [],
-      "embeddingMs": 4.462413999999626,
+      "embeddingMs": 6.319088999999622,
       "strategies": [
         {
           "strategy": "vector",
@@ -1749,7 +1753,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.2265699999998105,
+          "latencyMs": 3.7895840000001044,
           "rerank": null,
           "error": null
         },
@@ -1768,7 +1772,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.0032189999997172,
+          "latencyMs": 1.6790249999999105,
           "rerank": null,
           "error": null
         },
@@ -1787,7 +1791,7 @@
             "precisionAtK": 0,
             "reciprocalRank": 0
           },
-          "latencyMs": 1.1662260000002789,
+          "latencyMs": 1.5735230000000229,
           "rerank": null,
           "error": null
         }
@@ -1801,7 +1805,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-09"
       ],
-      "embeddingMs": 4.5262729999999465,
+      "embeddingMs": 5.146148999999696,
       "strategies": [
         {
           "strategy": "vector",
@@ -1820,7 +1824,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.2643759999996291,
+          "latencyMs": 1.6324650000001384,
           "rerank": null,
           "error": null
         },
@@ -1840,7 +1844,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 0.8670589999996992,
+          "latencyMs": 1.0977929999999105,
           "rerank": null,
           "error": null
         },
@@ -1861,7 +1865,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 1
           },
-          "latencyMs": 1.1120039999996152,
+          "latencyMs": 1.410479000000123,
           "rerank": null,
           "error": null
         }
@@ -1875,7 +1879,7 @@
       "relevantChunkIds": [
         "eval-chunk-manual-08"
       ],
-      "embeddingMs": 5.306216999999833,
+      "embeddingMs": 6.452581999999893,
       "strategies": [
         {
           "strategy": "vector",
@@ -1894,7 +1898,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.3333333333333333
           },
-          "latencyMs": 1.4402069999996456,
+          "latencyMs": 2.0921699999998964,
           "rerank": null,
           "error": null
         },
@@ -1915,7 +1919,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 1.1549650000001748,
+          "latencyMs": 1.9447799999998097,
           "rerank": null,
           "error": null
         },
@@ -1936,7 +1940,7 @@
             "precisionAtK": 0.2,
             "reciprocalRank": 0.25
           },
-          "latencyMs": 1.3634139999999206,
+          "latencyMs": 2.725358000000142,
           "rerank": null,
           "error": null
         }

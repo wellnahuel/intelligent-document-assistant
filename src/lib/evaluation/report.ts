@@ -150,6 +150,22 @@ export function formatConsoleSummary(report: EvaluationReport): string {
 
   lines.push("");
 
+  const denominatorNotes = report.strategies
+    .filter(
+      (strategy) =>
+        !strategy.skipped &&
+        strategy.metricCaseCount < strategy.answerableCaseCount,
+    )
+    .map(
+      (strategy) =>
+        `  ${strategy.strategy}: metrics over ${strategy.metricCaseCount}/${strategy.answerableCaseCount} answerable cases; ${strategy.failedCaseCount} failed`,
+    );
+
+  if (denominatorNotes.length > 0) {
+    lines.push(...denominatorNotes);
+    lines.push("");
+  }
+
   for (const strategy of report.strategies) {
     if (strategy.skipped || strategy.failedCaseCount > 0) {
       continue;
