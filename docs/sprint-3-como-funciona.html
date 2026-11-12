@@ -1,0 +1,1852 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Intelligent Document Assistant — Cómo funciona la búsqueda vectorial (Sprint 3)</title>
+<!--
+  Generar el PDF:
+  google-chrome --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
+    --no-pdf-header-footer --run-all-compositor-stages-before-draw \
+    --virtual-time-budget=3000 \
+    --print-to-pdf="docs/sprint-3-como-funciona.pdf" \
+    "file:///ruta/al/proyecto/docs/sprint-3-como-funciona.html"
+-->
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 15mm 26mm;
+  }
+
+  :root {
+    --ink: #1d1b18;
+    --muted: #5f5a53;
+    --faint: #8a857d;
+    --line: #e4dfd5;
+    --paper: #f8f6f2;
+    --white: #ffffff;
+    --accent: #5146c8;
+    --accent-deep: #3f36a8;
+    --accent-soft: #edeafd;
+    --violet: #6d28d9;
+    --violet-soft: #f5f3ff;
+    --amber: #8a5a00;
+    --amber-soft: #fdf0d5;
+    --green: #17724a;
+    --green-soft: #e3f3ea;
+    --red: #b3261e;
+    --red-soft: #fce9e7;
+    --mono: "DejaVu Sans Mono", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    color: var(--ink);
+    background: #ffffff;
+    font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.62;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  p {
+    margin: 0 0 3mm;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  h1,
+  h2 {
+    font-family: Georgia, "Liberation Serif", serif;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin-bottom: 4mm;
+    font-size: 20pt;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    margin: 5mm 0 1.5mm;
+    font-size: 11.8pt;
+    letter-spacing: -0.01em;
+  }
+
+  .kicker {
+    margin: 0 0 2mm;
+    color: var(--accent-deep);
+    font-size: 8.2pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .lead {
+    color: var(--muted);
+    font-size: 11.2pt;
+    line-height: 1.62;
+  }
+
+  .small {
+    color: var(--faint);
+    font-size: 9pt;
+  }
+
+  code {
+    padding: 0.4mm 1.2mm;
+    border-radius: 4px;
+    background: #f1eee8;
+    color: #2a2723;
+    font-family: var(--mono);
+    font-size: 8.5pt;
+  }
+
+  pre {
+    margin: 3mm 0 5mm;
+    padding: 4mm 4.5mm;
+    overflow: hidden;
+    break-inside: avoid;
+    border-radius: 10px;
+    background: #171522;
+    color: #f1efe8;
+    font-family: var(--mono);
+    font-size: 8.1pt;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .break {
+    break-before: page;
+  }
+
+  .avoid {
+    break-inside: avoid;
+  }
+
+  /* Portada */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 252mm;
+    padding: 18mm 18mm 16mm;
+    border-radius: 24px;
+    background:
+      radial-gradient(520px 340px at 88% 8%, rgba(109, 40, 217, 0.42), transparent 65%),
+      radial-gradient(480px 300px at 8% 92%, rgba(81, 70, 200, 0.4), transparent 65%),
+      #15131f;
+    color: #ffffff;
+    break-after: page;
+  }
+
+  .cover-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6mm;
+  }
+
+  .cover-badge {
+    padding: 2mm 3.5mm;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ddd6fe;
+    font-size: 8.2pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cover-brand {
+    color: #c4b5fd;
+    font-size: 8.8pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .cover-main {
+    display: grid;
+    grid-template-columns: 1.35fr 0.85fr;
+    align-items: center;
+    gap: 12mm;
+    margin: 8mm 0;
+  }
+
+  .cover-kicker {
+    margin-bottom: 5mm;
+    color: #c4b5fd;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .cover h1 {
+    margin-bottom: 5mm;
+    font-size: 34pt;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+
+  .cover-sub {
+    max-width: 88mm;
+    margin: 0;
+    color: #d6d0e6;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .ticket {
+    position: relative;
+    padding: 7mm 6mm 6mm;
+    border-radius: 4px;
+    background: #fffdf7;
+    color: #1b1916;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+    transform: rotate(1.3deg);
+  }
+
+  .ticket::before,
+  .ticket::after {
+    position: absolute;
+    top: 50%;
+    width: 6mm;
+    height: 6mm;
+    border-radius: 50%;
+    background: #15131f;
+    content: "";
+  }
+
+  .ticket::before {
+    left: -3mm;
+  }
+
+  .ticket::after {
+    right: -3mm;
+  }
+
+  .ticket-title {
+    margin: 0 0 4mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 1px dashed #cbc4b8;
+    font-family: var(--mono);
+    font-size: 7.7pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    padding: 1.4mm 0;
+    border-bottom: 1px dotted #e4dfd5;
+    font-size: 7.9pt;
+  }
+
+  .ticket-row span {
+    color: #6f6960;
+  }
+
+  .ticket-note {
+    margin-top: 4mm;
+    color: #8a5a00;
+    font-size: 7.8pt;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .cover-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-top: 5mm;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    color: #a8a2b8;
+    font-size: 8.6pt;
+  }
+
+  .cover-foot p {
+    margin: 0;
+  }
+
+  /* Secciones */
+  .section {
+    break-inside: auto;
+  }
+
+  .callout {
+    margin: 5mm 0;
+    padding: 4.5mm 5mm;
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    background: var(--accent-soft);
+    break-inside: avoid;
+  }
+
+  .callout.amber {
+    border-left-color: #f59e0b;
+    background: var(--amber-soft);
+  }
+
+  .callout.violet {
+    border-left-color: var(--violet);
+    background: var(--violet-soft);
+  }
+
+  .callout.green {
+    border-left-color: var(--green);
+    background: var(--green-soft);
+  }
+
+  .callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Tablas */
+  table {
+    width: 100%;
+    margin: 3mm 0 4mm;
+    border-collapse: collapse;
+    font-size: 8.8pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  th {
+    padding: 2.4mm 2.6mm;
+    border-bottom: 1px solid #cfc7b9;
+    background: #f1eee8;
+    color: #3b3731;
+    font-size: 8.3pt;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 1.9mm 2.4mm;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fcfbf8;
+  }
+
+  td strong {
+    color: var(--ink);
+  }
+
+  /* Pasos */
+  .step {
+    display: grid;
+    grid-template-columns: 10mm 1fr;
+    gap: 4mm;
+    margin-bottom: 4.5mm;
+    break-inside: avoid;
+  }
+
+  .step-num {
+    display: grid;
+    place-items: center;
+    width: 9mm;
+    height: 9mm;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  .step-body {
+    min-width: 0;
+  }
+
+  .step h3 {
+    margin: 0 0 1mm;
+    font-size: 11.4pt;
+  }
+
+  .analogy {
+    margin: 0 0 1.5mm;
+    color: var(--violet);
+    font-size: 9.5pt;
+    font-style: italic;
+  }
+
+  .tech {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .step-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Diagrama */
+  .flow {
+    margin: 4mm 0 5mm;
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfbf8;
+  }
+
+  .flow-box {
+    position: relative;
+    padding: 2.7mm 3.8mm;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 9px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .flow-box.server {
+    border-left-color: var(--violet);
+  }
+
+  .flow-box.back {
+    border-left-color: var(--green);
+  }
+
+  .flow-box .flow-label {
+    display: block;
+    margin-bottom: 0.8mm;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .flow-box strong {
+    display: block;
+    font-size: 9.7pt;
+  }
+
+  .flow-box span.desc {
+    display: block;
+    margin-top: 0.8mm;
+    color: var(--muted);
+    font-size: 8.7pt;
+    line-height: 1.45;
+  }
+
+  .flow-arrow {
+    margin: 0.8mm 0;
+    color: var(--accent);
+    font-size: 11pt;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .boundary {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin: 2.5mm 0;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .boundary::before,
+  .boundary::after {
+    flex: 1;
+    border-top: 1.5px dashed #cfc7b9;
+    content: "";
+  }
+
+  /* Límites */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3mm;
+    margin: 4mm 0 5mm;
+  }
+
+  .stat {
+    padding: 3.5mm;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    break-inside: avoid;
+  }
+
+  .stat strong {
+    display: block;
+    color: var(--accent-deep);
+    font-size: 15pt;
+    line-height: 1.2;
+  }
+
+  .stat span {
+    display: block;
+    margin-top: 1mm;
+    color: var(--muted);
+    font-size: 8.2pt;
+    line-height: 1.35;
+  }
+
+  .stat.mono strong {
+    font-family: var(--mono);
+    font-size: 12pt;
+  }
+
+  /* Tarjetas */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5mm;
+    margin: 4mm 0 4mm;
+  }
+
+  .card {
+    padding: 3.4mm 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .card .tag {
+    display: inline-block;
+    margin-bottom: 2mm;
+    padding: 1mm 2.2mm;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card h3 {
+    margin: 0 0 1.5mm;
+    font-size: 10.6pt;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 8.8pt;
+    line-height: 1.48;
+  }
+
+  /* Modelo de datos */
+  .model {
+    display: grid;
+    grid-template-columns: 1fr 16mm 1fr;
+    gap: 3mm;
+    align-items: center;
+    margin: 4mm 0 5mm;
+  }
+
+  .model-card {
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .model-label {
+    display: block;
+    margin-bottom: 1.5mm;
+    color: var(--accent-deep);
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .model-card strong {
+    display: block;
+    margin-bottom: 2mm;
+    font-family: var(--mono);
+    font-size: 10pt;
+  }
+
+  .model-card ul {
+    margin: 0;
+    padding-left: 4mm;
+    color: var(--muted);
+    font-size: 8.4pt;
+    line-height: 1.55;
+  }
+
+  .model-card li {
+    margin-bottom: 0.6mm;
+  }
+
+  .model-link {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Glosario */
+  .glossary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 6mm;
+    margin-top: 3mm;
+  }
+
+  .glossary div {
+    break-inside: avoid;
+  }
+
+  .glossary dt {
+    margin-top: 2.5mm;
+    font-size: 9.2pt;
+    font-weight: 700;
+  }
+
+  .glossary dd {
+    margin: 0.5mm 0 0;
+    color: var(--muted);
+    font-size: 9pt;
+    line-height: 1.48;
+  }
+
+  /* Preguntas */
+  .qa {
+    margin-bottom: 3.5mm;
+    break-inside: avoid;
+  }
+
+  .qa .q {
+    margin: 0 0 1mm;
+    font-size: 10.2pt;
+    font-weight: 700;
+  }
+
+  .qa .a {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .checklist {
+    margin: 3mm 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .checklist li {
+    position: relative;
+    margin-bottom: 1.5mm;
+    padding-left: 7mm;
+    color: var(--muted);
+    font-size: 9.4pt;
+  }
+
+  .checklist li::before {
+    position: absolute;
+    top: 0.2mm;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 4.2mm;
+    height: 4.2mm;
+    border: 1.2px solid #b8b1a5;
+    border-radius: 4px;
+    color: transparent;
+    content: "✓";
+    font-size: 7pt;
+    font-weight: 700;
+  }
+
+  pre.tree {
+    padding: 3.5mm 4mm;
+    font-size: 7.2pt;
+    line-height: 1.32;
+  }
+
+  .review {
+    margin: 2mm 0 0;
+    padding-left: 5mm;
+    color: var(--muted);
+    font-size: 9.2pt;
+  }
+
+  .review li {
+    margin-bottom: 1.2mm;
+  }
+
+  .review li::marker {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .footer {
+    position: fixed;
+    right: 0;
+    bottom: 5mm;
+    left: 0;
+    color: #a8a2b8;
+    font-size: 7.3pt;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+
+  .footer strong {
+    color: #7b7469;
+  }
+</style>
+</head>
+<body>
+<!-- ============================================================ -->
+<!-- Portada                                                      -->
+<!-- ============================================================ -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="cover-badge">Proyecto 3 · Sprint 3</span>
+    <span class="cover-brand">Intelligent Document Assistant</span>
+  </div>
+
+  <div class="cover-main">
+    <div>
+      <p class="cover-kicker">Documento de estudio</p>
+      <h1>Cómo se<br>busca el<br>archivo</h1>
+      <p class="cover-sub">La analogía del mapa semántico: cada fragmento recibe una coordenada, y una pregunta encuentra las coordenadas más cercanas.</p>
+    </div>
+
+    <div class="ticket">
+      <p class="ticket-title">FICHA DE BÚSQUEDA #003</p>
+      <div class="ticket-row"><span>Modelo</span><strong>multilingual-e5-small</strong></div>
+      <div class="ticket-row"><span>Dimensiones</span><strong>384</strong></div>
+      <div class="ticket-row"><span>Prefijos</span><strong>passage / query</strong></div>
+      <div class="ticket-row"><span>Métrica</span><strong>distancia coseno</strong></div>
+      <div class="ticket-row"><span>Búsqueda</span><strong>exacta</strong></div>
+      <div class="ticket-row"><span>Respuesta LLM</span><strong>Todavía no</strong></div>
+      <div class="ticket-row"><span>Total</span><strong>Sprint 3</strong></div>
+      <div class="ticket-note">El archivo ya sabe cortar.<br>Ahora aprende a ubicar.</div>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <p>Next.js 16 · TypeScript · PostgreSQL + pgvector · Transformers.js</p>
+    <p>Cada fragmento conserva su documento y su página.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- La idea central                                              -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La idea central</p>
+  <h2>El archivo ya sabe cortar; ahora aprende a ubicar</h2>
+
+  <p class="lead">En el Sprint 1 el archivo aprendió a leer: recibió un PDF, extrajo el texto y guardó cada página con su número. En el Sprint 2 aprendió a recortar: dividió cada página en fragmentos trazables. En el Sprint 3 damos el paso que faltaba: cada fragmento recibe una <strong>coordenada numérica</strong>, llamada <strong>embedding</strong>, y una pregunta puede encontrar las coordenadas más cercanas.</p>
+
+  <p>La pregunta del sprint ya no es «¿cómo cortamos?». Es anterior a la respuesta generativa: <strong>¿cómo encontramos los fragmentos que hablan de lo mismo que la pregunta, aunque no repitan las mismas palabras?</strong> Todavía no le pedimos al modelo que redacte nada. Primero construimos el bibliotecario; el redactor llega en el Sprint 4.</p>
+
+  <div class="callout">
+    <p><strong>La tesis del Sprint 3:</strong> un embedding no es una palabra clave ni una traducción. Es una coordenada en un espacio construido por el modelo. Dos textos que hablan de temas parecidos quedan cerca, y la distancia coseno nos dice cuánto.</p>
+  </div>
+
+  <h3>El reparto de roles</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>En el mapa</th>
+        <th>En la aplicación</th>
+        <th>Dónde vive</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Ficha temática</strong></td>
+        <td>El fragmento que ya existe desde el Sprint 2</td>
+        <td><code>DocumentChunk</code></td>
+      </tr>
+      <tr>
+        <td><strong>Coordenada</strong></td>
+        <td>El vector de 384 números del fragmento</td>
+        <td><code>ChunkEmbedding.embedding</code></td>
+      </tr>
+      <tr>
+        <td><strong>Modelo</strong></td>
+        <td>E5-small, con sus prefijos y su pooling</td>
+        <td><code>lib/embeddings/provider.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>Regla de comparación</strong></td>
+        <td>La distancia coseno entre dos vectores</td>
+        <td>Operador <code>&lt;=&gt;</code> de pgvector</td>
+      </tr>
+      <tr>
+        <td><strong>Filtro de compatibilidad</strong></td>
+        <td>Modelo, revisión y dimensión usados</td>
+        <td><code>ChunkEmbedding</code></td>
+      </tr>
+      <tr>
+        <td><strong>Búsqueda</strong></td>
+        <td>Los fragmentos más cercanos a una pregunta</td>
+        <td><code>lib/embeddings/search.ts</code></td>
+      </tr>
+      <tr>
+        <td><strong>Mostrador</strong></td>
+        <td>La pantalla de diagnóstico</td>
+        <td><code>/search</code></td>
+      </tr>
+      <tr>
+        <td><strong>Respuesta generativa</strong></td>
+        <td>Todavía no existe</td>
+        <td>Sprint 4 en adelante</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- Qué es un embedding                                          -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El mapa</p>
+  <h2>Qué es un embedding, sin magia</h2>
+
+  <p class="lead">Un embedding es una lista de números que representa un texto. No es una descripción que podamos leer ni una traducción: es una posición en un espacio de muchas dimensiones. El modelo aprende a ubicar textos con significados parecidos en lugares parecidos.</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">Lo que es</span>
+      <h3>Una coordenada semántica</h3>
+      <p>«El contrato se puede cancelar con treinta días de aviso» y «Para rescindir el acuerdo hay un plazo de un mes» pueden quedar cerca aunque no compartan casi palabras.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Lo que no es</span>
+      <h3>Una palabra clave</h3>
+      <p>Una búsqueda por palabra clave exige coincidencia exacta. Un embedding compara significado: puede encontrar una cláusula relevante aunque la pregunta use sinónimos o cambie la redacción.</p>
+    </div>
+  </div>
+
+  <h3>384 números, no un string</h3>
+
+  <p>Para este proyecto, cada fragmento se convierte en un vector de <strong>384 dimensiones</strong>. No podemos leer esos números como una frase, pero sí compararlos. La dirección del vector es lo que importa; dos vectores que apuntan hacia el mismo lado representan ideas cercanas.</p>
+
+  <pre>"El período de garantía del producto es de dos años."
+→ [0.13, -0.08, 0.41, …]  ← 384 números
+
+"La garantía cubre el producto durante 24 meses."
+→ [0.11, -0.05, 0.39, …]  ← otra coordenada cercana
+
+"El pago debe realizarse dentro de los primeros diez días."
+→ [0.02, 0.27, -0.18, …]  ← una zona más lejana</pre>
+
+  <h3>Los prefijos de E5</h3>
+
+  <p>E5 fue entrenado con dos formatos de entrada: <code>passage:</code> para los documentos y <code>query:</code> para las preguntas. No son adornos. Le indican al modelo qué tipo de texto está viendo y ayudan a que la comparación funcione como fue entrenada.</p>
+
+  <pre>embedPassages(["El contrato se puede cancelar…"])
+  → "passage: El contrato se puede cancelar…"
+
+embedQuery("¿Cómo cancelo el contrato?")
+  → "query: ¿Cómo cancelo el contrato?"</pre>
+
+  <div class="callout amber">
+    <p><strong>Si cambiás el prefijo, cambiás el vector.</strong> El modelo no ve un texto neutro: ve el texto con el formato con el que fue entrenado. Omitir <code>passage:</code> o <code>query:</code> no rompe la aplicación, pero degrada la calidad de la recuperación.</p>
+  </div>
+
+</section>
+
+<!-- ============================================================ -->
+<!-- Similitud y distancia coseno                                 -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">La métrica</p>
+  <h2>Similitud coseno y distancia coseno</h2>
+
+  <p class="lead">La forma más común de comparar dos embeddings es medir el ángulo entre ellos. La similitud coseno vale 1 cuando los vectores apuntan en la misma dirección, 0 cuando son perpendiculares y −1 cuando apuntan en direcciones opuestas.</p>
+
+  <pre>similitud(A, B) = (A · B) / (‖A‖ · ‖B‖)
+
+Si A y B están normalizados, ‖A‖ = ‖B‖ = 1:
+similitud(A, B) = A · B</pre>
+
+  <p>Ejemplo con dos dimensiones:</p>
+
+  <pre>A = [1, 0]
+B = [0.9, 0.1]
+
+A · B = 1 × 0.9 + 0 × 0.1 = 0.9
+‖A‖ = 1
+‖B‖ = √(0.9² + 0.1²) ≈ 0.9055
+similitud ≈ 0.9 / 0.9055 ≈ 0.994</pre>
+
+  <p>Los vectores apuntan casi en la misma dirección. En cambio, <code>[1, 0]</code> y <code>[0, 1]</code> son perpendiculares y su similitud es 0.</p>
+
+  <h3>La distancia es el complemento</h3>
+
+  <p>pgvector no devuelve similitud: devuelve <strong>distancia coseno</strong> con el operador <code>&lt;=&gt;</code>. La relación es simple:</p>
+
+  <pre>distancia = 1 − similitud
+
+similitud 1.0  → distancia 0.0   ← misma dirección
+similitud 0.0  → distancia 1.0   ← perpendicular
+similitud −1.0 → distancia 2.0   ← dirección opuesta</pre>
+
+  <p>Por eso la búsqueda ordena por distancia <strong>ascendente</strong>: la distancia más chica es el fragmento más parecido. En la interfaz mostramos la distancia y también <code>1 − distancia</code> como porcentaje, para que sea más fácil de leer.</p>
+
+  <table class="avoid">
+    <thead>
+      <tr>
+        <th>Concepto</th>
+        <th>Valor</th>
+        <th>Qué significa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Similitud</strong></td>
+        <td>1</td>
+        <td>Los vectores apuntan en la misma dirección: textos muy parecidos.</td>
+      </tr>
+      <tr>
+        <td><strong>Similitud</strong></td>
+        <td>0</td>
+        <td>Vectores perpendiculares: sin relación semántica evidente.</td>
+      </tr>
+      <tr>
+        <td><strong>Distancia</strong></td>
+        <td>0</td>
+        <td>El fragmento es idéntico o casi idéntico a la consulta.</td>
+      </tr>
+      <tr>
+        <td><strong>Distancia</strong></td>
+        <td>1</td>
+        <td>No hay una dirección compartida; el resultado es poco relevante.</td>
+      </tr>
+      <tr>
+        <td><strong>Distancia</strong></td>
+        <td>2</td>
+        <td>Direcciones opuestas. En la práctica, muy lejos.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>El operador <code>&lt;=&gt;</code> en pgvector</h3>
+
+  <pre>SELECT
+  c.id,
+  c.content,
+  p."pageNumber",
+  e.embedding &lt;=&gt; $1::vector AS distance
+FROM "ChunkEmbedding" e
+JOIN "DocumentChunk" c ON c.id = e."chunkId"
+JOIN "DocumentPage" p ON p.id = c."documentPageId"
+WHERE e."modelId" = $2
+  AND e."modelRevision" = $3
+  AND e.dimensions = $4
+ORDER BY e.embedding &lt;=&gt; $1::vector ASC
+LIMIT $5;</pre>
+
+  <div class="callout green">
+    <p><strong>Menor distancia, mayor similitud.</strong> La búsqueda no aplica un umbral en este sprint: devuelve los <code>topK</code> más cercanos aunque estén lejos. El umbral se decidirá cuando midamos la calidad con preguntas de evaluación.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- El modelo local                                               -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">La decisión local</p>
+  <h2>El modelo corre en tu máquina</h2>
+
+  <p class="lead">Para empezar, el proyecto usa <code>Transformers.js</code> con el modelo multilingüe <code>Xenova/multilingual-e5-small</code>. La inferencia ocurre en el proceso de Node.js: el texto de tus documentos no viaja a un proveedor externo para generar embeddings.</p>
+
+  <div class="flow">
+    <div class="flow-box">
+      <span class="flow-label">Navegador</span>
+      <strong>1. «Generar embeddings»</strong>
+      <span class="desc">La isla cliente hace <code>POST /api/documents/[id]/embeddings</code>. Solo indica si quiere completar o regenerar.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="boundary">Frontera cliente / servidor</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · Route Handler</span>
+      <strong>2. Validar id y cuerpo</strong>
+      <span class="desc">El id debe tener un formato seguro. El cuerpo acepta <code>{ "regenerate": true | false }</code>. Un cuerpo inválido devuelve <strong>400</strong>.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · proveedor</span>
+      <strong>3. Cargar el modelo una vez</strong>
+      <span class="desc"><code>EmbeddingProvider</code> carga el pipeline de forma lazy y lo reutiliza. En desarrollo, el singleton vive en <code>globalThis</code> para sobrevivir a recargas de módulos.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · inferencia</span>
+      <strong>4. Generar el vector</strong>
+      <span class="desc">Cada texto recibe su prefijo. El modelo aplica mean pooling y normalización L2. El resultado debe tener exactamente 384 números finitos.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box back">
+      <span class="flow-label">PostgreSQL · pgvector</span>
+      <strong>5. Guardar la coordenada</strong>
+      <span class="desc">El vector se envía como parámetro y se castea con <code>::vector</code>. Se guarda con el modelo, la revisión, la dimensión y el chunk.</span>
+    </div>
+  </div>
+
+  <h3>Carga lazy y una sola instancia</h3>
+
+  <p class="tech">La primera llamada descarga el modelo y sus archivos de tokenización en <code>.cache/transformers/</code>. Las llamadas siguientes reutilizan la instancia cargada. Si la carga falla, la promesa se limpia para permitir un reintento; no se cachea el error para siempre.</p>
+
+  <pre>// Simplificado: la idea del singleton
+let providerPromise = null;
+
+export function getEmbeddingProvider() {
+  if (!providerPromise) {
+    providerPromise = loadExtractor()
+      .then((extractor) => createEmbeddingProvider(extractor, model))
+      .catch((error) => {
+        providerPromise = null;
+        throw error;
+      });
+  }
+
+  return providerPromise;
+}</pre>
+
+  <h3>Qué se guarda con cada vector</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Dato</th>
+        <th>Por qué importa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong><code>chunkId</code></strong></td>
+        <td>Une el vector con el fragmento y su página. Es la trazabilidad del Sprint 2.</td>
+      </tr>
+      <tr>
+        <td><strong><code>modelId</code></strong></td>
+        <td>Identifica el modelo que generó el vector. No se comparan vectores de modelos distintos.</td>
+      </tr>
+      <tr>
+        <td><strong><code>modelRevision</code></strong></td>
+        <td>Fija la versión exacta del modelo. Por defecto usamos un commit de Hugging Face, no <code>main</code>.</td>
+      </tr>
+      <tr>
+        <td><strong><code>dimensions</code></strong></td>
+        <td>Confirma que el vector entra en la columna <code>vector(384)</code>.</td>
+      </tr>
+      <tr>
+        <td><strong><code>createdAt</code></strong></td>
+        <td>Permite saber cuándo se generó o regeneró la fila.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <p><strong>La primera vez puede tardar.</strong> El archivo ONNX fp32 pesa unos <strong>470 MB</strong>. La descarga se guarda en <code>.cache/transformers/</code>, que está ignorada por git. Si cambiás de modelo o de revisión, se descarga otro conjunto de archivos. El texto de los documentos no se envía a Hugging Face; solo se descargan los archivos del modelo.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- pgvector y Prisma                                            -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">La persistencia</p>
+  <h2>pgvector guarda vectores; Prisma guarda el resto</h2>
+
+  <p class="lead">Prisma modela las entidades y relaciones habituales. El tipo <code>vector</code> de pgvector es una extensión de PostgreSQL que Prisma no trata como un escalar normal. Por eso el esquema declara la columna como <code>Unsupported("vector(384)")</code> y las operaciones vectoriales usan SQL parametrizado.</p>
+
+  <div class="model">
+    <div class="model-card">
+      <span class="model-label">La ficha</span>
+      <strong>DocumentChunk</strong>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>documentPageId</code></li>
+        <li><code>chunkIndex</code></li>
+        <li><code>content</code></li>
+        <li><code>startChar</code>, <code>endChar</code></li>
+        <li><code>embeddings</code> → N vectores</li>
+      </ul>
+    </div>
+
+    <div class="model-link">1 — N</div>
+
+    <div class="model-card">
+      <span class="model-label">La coordenada</span>
+      <strong>ChunkEmbedding</strong>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>chunkId</code></li>
+        <li><code>modelId</code></li>
+        <li><code>modelRevision</code></li>
+        <li><code>dimensions</code></li>
+        <li><code>embedding vector(384)</code></li>
+        <li><code>createdAt</code></li>
+        <li><code>unique(chunkId, modelId, modelRevision)</code></li>
+        <li><code>onDelete: Cascade</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Por qué SQL parametrizado</h3>
+
+  <p class="tech">Prisma Client no puede leer ni escribir el campo <code>embedding</code>. Las inserciones y búsquedas usan <code>Prisma.sql</code> con <code>$executeRaw</code> y <code>$queryRaw</code>. El vector se envía como texto y se castea con <code>::vector</code>. Nunca se concatena texto del usuario en la consulta y no se usa <code>$queryRawUnsafe</code>.</p>
+
+  <pre>INSERT INTO "ChunkEmbedding" (
+  "id", "chunkId", "modelId",
+  "modelRevision", "dimensions", "embedding"
+)
+VALUES ($1, $2, $3, $4, $5, $6::vector)
+ON CONFLICT ("chunkId", "modelId", "modelRevision")
+DO UPDATE SET
+  "dimensions" = EXCLUDED."dimensions",
+  "embedding" = EXCLUDED."embedding",
+  "createdAt" = CURRENT_TIMESTAMP;</pre>
+
+  <h3>La migración habilita la extensión</h3>
+
+  <p>La migración empieza con <code>CREATE EXTENSION IF NOT EXISTS vector</code> y después crea la tabla. La columna es <code>vector(384)</code>, no <code>vector</code> sin tamaño: PostgreSQL rechaza un vector de otra dimensión, y esa es una protección útil.</p>
+
+  <pre>CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE "ChunkEmbedding" (
+  "id" TEXT NOT NULL,
+  "chunkId" TEXT NOT NULL,
+  "modelId" TEXT NOT NULL,
+  "modelRevision" TEXT NOT NULL,
+  "dimensions" INTEGER NOT NULL,
+  "embedding" vector(384) NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ChunkEmbedding_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "ChunkEmbedding_chunkId_modelId_modelRevision_key"
+  ON "ChunkEmbedding"("chunkId", "modelId", "modelRevision");
+
+ALTER TABLE "ChunkEmbedding"
+  ADD CONSTRAINT "ChunkEmbedding_chunkId_fkey"
+  FOREIGN KEY ("chunkId") REFERENCES "DocumentChunk"("id")
+  ON DELETE CASCADE ON UPDATE CASCADE;</pre>
+
+  <div class="callout green">
+    <p><strong>La red de seguridad:</strong> el unique impide dos vectores del mismo chunk, modelo y revisión. La cascada impide vectores huérfanos cuando se borra un chunk, una página o un documento. La dimensión fija impide guardar un vector de otro tamaño.</p>
+  </div>
+
+  <div class="callout amber">
+    <p><strong>Por qué no JSON:</strong> podrías guardar 384 números en un JSON, pero PostgreSQL no sabría compararlos con <code>&lt;=&gt;</code>, no tendría <code>vector_dims</code> y no podría usar índices vectoriales. pgvector convierte la lista en un tipo con operaciones reales. Tampoco agregamos HNSW/IVFFlat todavía: el corpus es chico y la búsqueda exacta es más fácil de inspeccionar.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Generación                                                   -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La generación</p>
+  <h2>Generar embeddings sin duplicar</h2>
+
+  <p class="lead">La acción se puede ejecutar muchas veces. Repetirla no debe crear una pila de vectores para el mismo fragmento. Esa propiedad se llama <strong>idempotencia</strong>, y acá tiene dos capas.</p>
+
+  <div class="flow">
+    <div class="flow-box">
+      <span class="flow-label">Navegador</span>
+      <strong>1. Generar o regenerar</strong>
+      <span class="desc">El panel del documento envía <code>{ "regenerate": false }</code> para completar pendientes o <code>{ "regenerate": true }</code> para rehacer todos.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · lectura</span>
+      <strong>2. Buscar los chunks</strong>
+      <span class="desc">Se leen todos los fragmentos del documento. Si no hay ninguno, responde <strong>409 DOCUMENT_WITHOUT_CHUNKS</strong>.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · compatibilidad</span>
+      <strong>3. Omitir los existentes</strong>
+      <span class="desc">Sin regeneración, se buscan las filas que ya tienen el mismo <code>modelId</code>, <code>modelRevision</code> y <code>dimensions</code>. Esos chunks no se vuelven a procesar.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · lotes</span>
+      <strong>4. Inferencia por lote</strong>
+      <span class="desc">Los pendientes se procesan en lotes de <code>EMBEDDING_BATCH_SIZE</code> (4 por defecto). Cada lote recibe sus prefijos y devuelve sus vectores.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">PostgreSQL · upsert</span>
+      <strong>5. Guardar con ON CONFLICT</strong>
+      <span class="desc">Una sola sentencia inserta el lote. Si ya existe la clave, actualiza el vector en lugar de duplicarlo.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box back">
+      <span class="flow-label">Navegador · resultado</span>
+      <strong>6. Mostrar conteos</strong>
+      <span class="desc">La UI muestra generados, omitidos, fallidos y el conteo final. Si un lote falló, el estado es <code>partial</code>; si fallaron todos, <code>failed</code>.</span>
+    </div>
+  </div>
+
+  <h3>Idempotencia en dos capas</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capa</th>
+        <th>Qué evita</th>
+        <th>Dónde está</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Omisión previa</strong></td>
+        <td>Volver a generar filas que ya existen para el mismo modelo y revisión.</td>
+        <td><code>findExistingChunkIds</code></td>
+      </tr>
+      <tr>
+        <td><strong>ON CONFLICT</strong></td>
+        <td>Duplicados por una carrera o por una repetición inesperada. Actualiza la fila.</td>
+        <td><code>upsertEmbeddingBatch</code></td>
+      </tr>
+      <tr>
+        <td><strong>Regeneración explícita</strong></td>
+        <td>Que se reescriban vectores existentes sin que la persona lo pida.</td>
+        <td><code>{ "regenerate": true }</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Fallos parciales</h3>
+
+  <p>Un documento puede tener muchos lotes. Si uno falla, no queremos mentir diciendo que todo salió bien, pero tampoco queremos tirar el trabajo de los lotes que sí funcionaron. El resultado tiene tres estados:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Estado</th>
+        <th>Cuándo aparece</th>
+        <th>Qué debería hacer la persona</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong><code>complete</code></strong></td>
+        <td>Todos los chunks pendientes se generaron o se omitieron sin errores.</td>
+        <td>Nada. El documento está listo para buscar.</td>
+      </tr>
+      <tr>
+        <td><strong><code>partial</code></strong></td>
+        <td>Al menos un lote falló y al menos otro se guardó.</td>
+        <td>Revisar los lotes fallidos y volver a intentar. Los vectores anteriores de los lotes que fallaron siguen intactos.</td>
+      </tr>
+      <tr>
+        <td><strong><code>failed</code></strong></td>
+        <td>Ningún lote se pudo guardar.</td>
+        <td>Revisar la terminal: puede ser el modelo, la conexión o la base.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="small">Los errores incluyen el número de lote y la etapa: <code>embedding</code> si falló la inferencia, <code>persistence</code> si falló PostgreSQL. La respuesta del API nunca incluye el texto de los documentos.</p>
+
+  <div class="callout amber">
+    <p><strong>Regenerar chunks borra sus embeddings.</strong> La cascada de <code>ChunkEmbedding → DocumentChunk</code> elimina los vectores cuando los fragmentos viejos se reemplazan. Después de regenerar fragmentos hay que volver a generar embeddings. No es un bug: es la consecuencia de que el vector pertenezca a un chunk concreto.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Búsqueda                                                     -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La búsqueda</p>
+  <h2>Buscar por significado, no por coincidencia</h2>
+
+  <p class="lead">La pantalla <code>/search</code> recibe una pregunta, genera su embedding con el prefijo <code>query:</code> y busca los fragmentos más cercanos. Todavía no hay una respuesta redactada: solo los fragmentos que el sistema considera relevantes.</p>
+
+  <div class="flow">
+    <div class="flow-box">
+      <span class="flow-label">Navegador</span>
+      <strong>1. Escribir la pregunta</strong>
+      <span class="desc">La persona elige una pregunta y un <code>topK</code>. La UI valida el largo y el rango antes de enviar.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · validación</span>
+      <strong>2. Rechazar entradas inválidas</strong>
+      <span class="desc">Pregunta vacía, de más de 1000 caracteres o <code>topK</code> fuera de rango devuelven <strong>400</strong>. La pregunta se recorta con <code>trim()</code>.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · índice</span>
+      <strong>3. Contar vectores compatibles</strong>
+      <span class="desc">Si no hay embeddings para el modelo, la revisión y la dimensión actuales, devuelve <code>indexedChunkCount: 0</code> sin cargar el modelo.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">Servidor · query</span>
+      <strong>4. Generar el vector de la pregunta</strong>
+      <span class="desc"><code>embedQuery</code> agrega <code>query:</code>, ejecuta el modelo y valida 384 dimensiones finitas.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box server">
+      <span class="flow-label">PostgreSQL · pgvector</span>
+      <strong>5. Buscar y ordenar</strong>
+      <span class="desc">La consulta filtra por modelo, revisión y dimensión, ordena por <code>&lt;=&gt;</code> ascendente y limita a <code>topK</code>. No se aplica un umbral.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+
+    <div class="flow-box back">
+      <span class="flow-label">Navegador · resultados</span>
+      <strong>6. Mostrar documento y página</strong>
+      <span class="desc">Cada resultado muestra contenido, documento, página, distancia y similitud. No se devuelve el vector completo.</span>
+    </div>
+  </div>
+
+  <h3>La consulta SQL</h3>
+
+  <pre>SELECT
+  c.id            AS "chunkId",
+  c.content       AS "content",
+  p."pageNumber"  AS "pageNumber",
+  d."originalFilename" AS "documentName",
+  e.embedding &lt;=&gt; $1::vector AS "distance"
+FROM "ChunkEmbedding" e
+JOIN "DocumentChunk" c ON c.id = e."chunkId"
+JOIN "DocumentPage" p ON p.id = c."documentPageId"
+JOIN "Document" d ON d.id = p."documentId"
+WHERE e."modelId" = $2
+  AND e."modelRevision" = $3
+  AND e.dimensions = $4
+ORDER BY e.embedding &lt;=&gt; $1::vector ASC
+LIMIT $5;</pre>
+
+  <p class="tech">El vector de la pregunta se envía como parámetro y se castea con <code>::vector</code>. El modelo, la revisión, la dimensión y el <code>topK</code> también son parámetros. La consulta no concatena texto del usuario.</p>
+
+  <h3>Qué se filtra y qué se devuelve</h3>
+
+  <table class="avoid">
+    <thead>
+      <tr>
+        <th>Filtro o campo</th>
+        <th>Por qué</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong><code>modelId</code></strong></td>
+        <td>Evita comparar vectores de modelos distintos.</td>
+      </tr>
+      <tr>
+        <td><strong><code>modelRevision</code></strong></td>
+        <td>Evita mezclar versiones del mismo modelo.</td>
+      </tr>
+      <tr>
+        <td><strong><code>dimensions</code></strong></td>
+        <td>Confirma que el vector entra en la columna y es comparable.</td>
+      </tr>
+      <tr>
+        <td><strong><code>topK</code></strong></td>
+        <td>Limita la cantidad de resultados. Por defecto 5; máximo 20.</td>
+      </tr>
+      <tr>
+        <td><strong>Distancia</strong></td>
+        <td>Se muestra para inspeccionar la recuperación. No se usa como umbral.</td>
+      </tr>
+      <tr>
+        <td><strong>Similitud</strong></td>
+        <td>Se calcula como <code>1 − distancia</code> para que sea más legible.</td>
+      </tr>
+      <tr>
+        <td><strong>Vector</strong></td>
+        <td><strong>No</strong> se devuelve en la API ni se muestra en la interfaz.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <p><strong>La regla de oro:</strong> si no hay embeddings del modelo actual, la búsqueda devuelve cero resultados. No mezcla vectores viejos, no inventa un modelo por defecto y no descarga el modelo solo para buscar en un índice vacío.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- La interfaz                                                  -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La interfaz</p>
+  <h2>Qué ves en la pantalla</h2>
+
+  <p class="lead">El detalle del documento conserva el texto y los fragmentos del Sprint 2 y agrega un panel de embeddings. La pantalla de búsqueda es un mostrador de diagnóstico: no redacta, solo muestra qué recuperó.</p>
+
+  <pre class="avoid">Documento: documento-de-prueba.pdf          [ Regenerar todos ]
+
+Embeddings
+Modelo Xenova/multilingual-e5-small · revisión 761b726dd34f · 384 dimensiones
+2 de 2 fragmentos con embeddings
+El modelo corre localmente. La primera ejecución puede descargar cientos de MB.
+
+Búsqueda
+Pregunta: ¿Cuál es el período de garantía del producto?     topK: [5]
+[ Buscar fragmentos ]
+
+#1  documento-de-prueba.pdf   Página 1   distancia 0.1366   similitud 86.3%
+    El período de garantía del producto es de dos años.
+#2  documento-de-prueba.pdf   Página 2   distancia 0.2238   similitud 77.6%
+    El asistente divide el texto en fragmentos y conserva los metadatos.</pre>
+
+  <table class="avoid">
+    <thead>
+      <tr>
+        <th>Elemento</th>
+        <th>Qué muestra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Panel de embeddings</strong></td>
+        <td>Modelo, revisión, dimensiones, conteo y botón para generar o regenerar.</td>
+      </tr>
+      <tr>
+        <td><strong>Generar embeddings</strong></td>
+        <td>Completa solo los fragmentos que no tienen vector para el modelo actual.</td>
+      </tr>
+      <tr>
+        <td><strong>Regenerar todos</strong></td>
+        <td>Vuelve a generar todos los vectores del documento. Es una acción explícita.</td>
+      </tr>
+      <tr>
+        <td><strong>Estado de carga</strong></td>
+        <td>Avisa que la primera ejecución puede descargar el modelo y tardar.</td>
+      </tr>
+      <tr>
+        <td><strong>Estado parcial</strong></td>
+        <td>Muestra cuántos se generaron, cuántos fallaron y en qué lote.</td>
+      </tr>
+      <tr>
+        <td><strong>Pantalla de búsqueda</strong></td>
+        <td>Pregunta, <code>topK</code>, resultados con documento, página, distancia y similitud.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin índice</strong></td>
+        <td>«Todavía no hay embeddings para este modelo. Generá embeddings desde un documento.»</td>
+      </tr>
+      <tr>
+        <td><strong>Sin resultados</strong></td>
+        <td>Mensaje para probar otra pregunta. No se inventa una respuesta.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cómo probarlo con el PDF de prueba</h3>
+
+  <p>Usá <code>samples/documento-de-prueba.pdf</code>. Tiene dos páginas con las frases que aparecen en los resultados de ejemplo. Si el documento ya está en la biblioteca, no lo subas de nuevo: la aplicación no deduplica y crearías otro documento.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pregunta</th>
+        <th>Resultado esperado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>«¿Cuál es el período de garantía del producto?»</td>
+        <td>Primero la <strong>página 1</strong>, con la frase de la garantía.</td>
+      </tr>
+      <tr>
+        <td>«¿Qué hace el asistente con el texto del documento?»</td>
+        <td>Primero la <strong>página 2</strong>, con la frase de los fragmentos y metadatos.</td>
+      </tr>
+      <tr>
+        <td>Pregunta vacía o de más de 1000 caracteres</td>
+        <td><code>400 INVALID_SEARCH_QUERY</code>.</td>
+      </tr>
+      <tr>
+        <td><code>topK</code> en 0, 21, <code>null</code> o texto</td>
+        <td><code>400 INVALID_TOP_K</code>.</td>
+      </tr>
+      <tr>
+        <td>Otro <code>EMBEDDING_MODEL_ID</code> o revisión</td>
+        <td><code>indexedChunkCount: 0</code> y <code>results: []</code> hasta regenerar.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <p><strong>La evidencia de este sprint:</strong> la pregunta por la garantía devolvió primero la página 1 con distancia 0,1366; la pregunta por el texto del documento devolvió primero la página 2 con distancia 0,1368. Los resultados quedaron ordenados de menor a mayor distancia y sin vectores en la respuesta.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Límites                                                      -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Lo que todavía no hace</p>
+  <h2>Los límites que conviene revisar</h2>
+
+  <p class="lead">Ninguno de estos límites rompe la búsqueda vectorial. Son decisiones de alcance y puntos para el próximo sprint.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Límite</th>
+        <th>Qué significa</th>
+        <th>Cuándo revisarlo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Sin autenticación</strong></td>
+        <td>La búsqueda es global sobre la biblioteca local. No hay usuarios ni permisos por documento.</td>
+        <td>Antes de exponer la app a Internet.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin OCR</strong></td>
+        <td>Un PDF escaneado como imagen se rechaza porque no tiene texto seleccionable.</td>
+        <td>Cuando haya documentos escaneados reales.</td>
+      </tr>
+      <tr>
+        <td><strong>Inferencia en CPU</strong></td>
+        <td>La generación puede tardar varios segundos o minutos según la cantidad de chunks y el hardware.</td>
+        <td>Si el corpus crece o la latencia molesta.</td>
+      </tr>
+      <tr>
+        <td><strong>Dependencia de red inicial</strong></td>
+        <td>La primera ejecución descarga el modelo. Después usa la caché, aunque Transformers.js puede resolver metadatos remotos.</td>
+        <td>Si se despliega en un entorno sin salida a Internet.</td>
+      </tr>
+      <tr>
+        <td><strong>Ventana de 512 tokens</strong></td>
+        <td>El chunker mide caracteres, no tokens. Un fragmento largo puede truncarse en el modelo.</td>
+        <td>Al ajustar el tamaño de chunk con el tokenizador real.</td>
+      </tr>
+      <tr>
+        <td><strong>Dimensión y precisión fijas</strong></td>
+        <td><code>vector(384)</code> y fp32. Cambiar de modelo o de precisión exige migración y regeneración.</td>
+        <td>Si se evalúa otro modelo de embeddings.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin umbral de distancia</strong></td>
+        <td>Siempre se devuelven hasta <code>topK</code> resultados, aunque sean poco relevantes.</td>
+        <td>Cuando haya preguntas de evaluación y una métrica de calidad.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin índice ANN</strong></td>
+        <td>La búsqueda exacta recorre todas las filas compatibles. Es O(n).</td>
+        <td>Cuando el corpus haga medible la latencia.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin reranking ni híbrida</strong></td>
+        <td>La recuperación es solo vectorial; no combina BM25 ni reordena con otro modelo.</td>
+        <td>Después de medir la recuperación actual.</td>
+      </tr>
+      <tr>
+        <td><strong>Sin respuesta generativa</strong></td>
+        <td>La búsqueda no llama a un LLM. No hay chat ni citas redactadas.</td>
+        <td>Sprint 4.</td>
+      </tr>
+      <tr>
+        <td><strong>Vectores viejos no se borran</strong></td>
+        <td>Si cambiás el modelo, las filas anteriores quedan en la tabla para comparar.</td>
+        <td>Cuando se defina una política de limpieza.</td>
+      </tr>
+      <tr>
+        <td><strong>Prisma Studio</strong></td>
+        <td>No puede deserializar la columna <code>vector</code>; para inspeccionar la tabla se usa <code>psql</code>.</td>
+        <td>Si se necesita una consola visual.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">Alcance</span>
+      <h3>No hay LLM todavía</h3>
+      <p>El Sprint 3 termina en la recuperación. La respuesta generativa es el siguiente paso, no una parte escondida de este.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Rendimiento</span>
+      <h3>Exacto antes que aproximado</h3>
+      <p>HNSW e IVFFlat quedan para cuando el corpus justifique medir la diferencia. Primero se aprende con el orden exacto.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Mapa del código                                              -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">El mapa de archivos</p>
+  <h2>Dónde vive cada parte de la búsqueda</h2>
+
+  <p class="lead">Si mañana tenés que explicar el Sprint 3, este es el orden en el que conviene abrir los archivos.</p>
+
+  <pre class="tree">src/
+├── app/
+│   ├── api/
+│   │   ├── documents/[id]/embeddings/route.ts  ← generar vectores
+│   │   └── search/route.ts                     ← buscar fragmentos
+│   ├── documents/[id]/page.tsx                 ← detalle + panel
+│   └── search/page.tsx                         ← pantalla de búsqueda
+├── components/
+│   ├── documents/
+│   │   ├── DocumentEmbeddingsPanel.tsx         ← generar/regenerar
+│   │   ├── DocumentChunkViewer.tsx             ← fragmentos + evento
+│   │   └── DocumentDetail.tsx                  ← composición
+│   └── search/
+│       └── SearchPanel.tsx                     ← formulario y resultados
+├── lib/
+│   ├── embeddings/
+│   │   ├── config.ts                           ← modelo, lotes y límites
+│   │   ├── vector.ts                           ← 384, NaN, pgvector
+│   │   ├── provider-core.ts                    ← prefijos y pooling
+│   │   ├── provider.ts                         ← carga lazy
+│   │   ├── store.ts                            ← SQL parametrizado
+│   │   ├── generate.ts                         ← idempotencia y lotes
+│   │   ├── search.ts                           ← búsqueda coseno
+│   │   ├── summary.ts                          ← conteo por documento
+│   │   └── input.ts                            ← validación de entrada
+│   └── client/read-error.ts                    ← errores seguros
+└── tests/
+    ├── chunking.test.mjs
+    └── unit/
+        ├── embeddings.test.ts
+        ├── embeddings-boundaries.test.ts
+        ├── embeddings-generate.test.ts
+        └── embeddings-sql-params.test.ts
+
+prisma/schema.prisma
+prisma/migrations/20261112153534_add_chunk_embeddings/</pre>
+
+  <h3>Checklist del Sprint 3</h3>
+  <ul class="checklist">
+    <li>Podés generar embeddings para un documento con chunks.</li>
+    <li>Cada vector tiene 384 dimensiones finitas y se guarda con su modelo y revisión.</li>
+    <li>Repetir la generación no duplica filas.</li>
+    <li>La regeneración explícita reemplaza los vectores existentes.</li>
+    <li>Un fallo parcial se reporta como <code>partial</code>, no como éxito total.</li>
+    <li>La búsqueda filtra por modelo, revisión y dimensión.</li>
+    <li>Los resultados se ordenan por distancia ascendente y muestran documento y página.</li>
+    <li>La pregunta vacía, larga o con <code>topK</code> inválido se rechaza.</li>
+    <li>No se devuelven vectores en la API ni en la interfaz.</li>
+    <li>No hay respuesta generativa, reranking, búsqueda híbrida ni índice ANN.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<!-- Checklist y comandos                                         -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Comandos y lectura</p>
+  <h2>Cómo probarlo y en qué orden leer</h2>
+
+  <h3>Cómo probarlo</h3>
+  <pre>npm run dev
+npm test
+npm run typecheck
+npm run lint
+
+# Generar embeddings:
+curl -X POST http://localhost:3000/api/documents/&lt;id&gt;/embeddings \
+  -H "Content-Type: application/json" -d '{}'
+
+# Regenerar todos:
+curl -X POST http://localhost:3000/api/documents/&lt;id&gt;/embeddings \
+  -H "Content-Type: application/json" -d '{"regenerate":true}'
+
+# Buscar:
+curl -X POST http://localhost:3000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"¿Cuál es el período de garantía?","topK":5}'</pre>
+
+  <h3>Para revisar el código</h3>
+  <ol class="review">
+    <li><code>src/lib/embeddings/vector.ts</code> — validación, formato pgvector y similitud.</li>
+    <li><code>src/lib/embeddings/provider-core.ts</code> — prefijos, pooling y normalización.</li>
+    <li><code>src/lib/embeddings/provider.ts</code> — carga lazy y singleton.</li>
+    <li><code>src/lib/embeddings/store.ts</code> — SQL parametrizado, upsert y búsqueda.</li>
+    <li><code>src/lib/embeddings/generate.ts</code> — lotes, idempotencia y fallos parciales.</li>
+    <li><code>src/lib/embeddings/search.ts</code> — validación y búsqueda exacta.</li>
+    <li><code>prisma/schema.prisma</code> — relaciones, unique y cascada.</li>
+    <li><code>src/components/search/SearchPanel.tsx</code> — estados de la UI.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<!-- Preguntas de repaso                                          -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Para comprobar que entendiste</p>
+  <h2>Seis preguntas de repaso</h2>
+
+  <p class="lead">Estas son las preguntas que conviene poder responder sin mirar el código. Si salen, entendiste los embeddings, la distancia y el filtro de compatibilidad.</p>
+
+  <div class="qa">
+    <p class="q">1. ¿Qué representa un embedding y por qué no es una palabra clave?</p>
+    <p class="a">Representa el significado de un texto como una coordenada numérica. Una palabra clave compara coincidencias exactas; un embedding compara cercanía semántica, aunque se usen sinónimos o distinta redacción. No es una traducción legible: es una posición en un espacio vectorial.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">2. ¿Qué diferencia hay entre similitud coseno y distancia coseno?</p>
+    <p class="a">La similitud es el coseno del ángulo: 1 es «misma dirección», 0 es perpendicular. La distancia es <code>1 − similitud</code>: 0 es idéntico y valores mayores son más lejanos. pgvector <code>&lt;=&gt;</code> devuelve distancia; por eso ordenamos ascendente.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">3. ¿Por qué usamos <code>passage:</code> para documentos y <code>query:</code> para preguntas con E5?</p>
+    <p class="a">Porque el modelo fue entrenado con esos prefijos. Le indican qué tipo de texto está viendo y ayudan a que la comparación funcione como fue entrenada. No son opcionales: omitirlos degrada la recuperación.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">4. ¿Por qué no conviene comparar embeddings generados con modelos distintos?</p>
+    <p class="a">Porque cada modelo construye su propio espacio vectorial. Dos vectores de modelos distintos pueden parecer cercanos sin significar lo mismo. Por eso guardamos <code>modelId</code>, <code>modelRevision</code> y <code>dimensions</code>, y filtramos por ellos.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">5. ¿Qué aporta pgvector sobre guardar una lista de números como JSON?</p>
+    <p class="a">Un tipo nativo <code>vector</code>, operadores de distancia como <code>&lt;=&gt;</code>, funciones como <code>vector_dims</code> y la posibilidad de agregar índices ANN. En JSON podrías guardar los números, pero PostgreSQL no sabría compararlos semánticamente.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">6. ¿Por qué empezamos con búsqueda exacta antes de agregar HNSW?</p>
+    <p class="a">Porque es correcta, simple y fácil de inspeccionar. HNSW intercambia algo de exactitud por velocidad. Primero hay que medir si el corpus y la latencia realmente lo necesitan; agregarlo antes sería optimizar sin datos.</p>
+  </div>
+
+  <div class="callout violet">
+    <p><strong>La respuesta corta:</strong> el Sprint 3 convierte cada fragmento en una coordenada, guarda esa coordenada con su modelo y su revisión, y busca las coordenadas más cercanas a una pregunta. Todavía no redacta la respuesta; primero aprende a encontrar los fragmentos correctos.</p>
+  </div>
+
+</section>
+
+<!-- ============================================================ -->
+<!-- Glosario                                                     -->
+<!-- ============================================================ -->
+<section class="section break">
+  <p class="kicker">Glosario</p>
+  <h2>Los términos que conviene tener a mano</h2>
+
+  <dl class="glossary">
+    <div>
+      <dt>Embedding</dt>
+      <dd>Una lista de números que representa el significado de un texto. En este proyecto tiene 384 dimensiones y se usa para comparar fragmentos con preguntas.</dd>
+    </div>
+    <div>
+      <dt>Vector</dt>
+      <dd>La lista de números en sí. Se guarda en PostgreSQL con el tipo <code>vector(384)</code> de pgvector.</dd>
+    </div>
+    <div>
+      <dt>Similitud coseno</dt>
+      <dd>El coseno del ángulo entre dos vectores. Vale 1 para la misma dirección, 0 para vectores perpendiculares y −1 para direcciones opuestas.</dd>
+    </div>
+    <div>
+      <dt>Distancia coseno</dt>
+      <dd>El complemento de la similitud: <code>1 − similitud</code>. pgvector la calcula con <code>&lt;=&gt;</code>. Menor distancia significa mayor similitud.</dd>
+    </div>
+    <div>
+      <dt>pgvector</dt>
+      <dd>Una extensión de PostgreSQL que agrega el tipo <code>vector</code>, operadores de distancia y funciones para inspeccionar vectores.</dd>
+    </div>
+    <div>
+      <dt>E5</dt>
+      <dd>La familia de modelos de embeddings usada en el sprint. La variante <code>multilingual-e5-small</code> produce 384 dimensiones y espera los prefijos <code>passage:</code> y <code>query:</code>.</dd>
+    </div>
+    <div>
+      <dt>Mean pooling</dt>
+      <dd>Promediar los vectores de todos los tokens de un texto para obtener un único vector. Es la estrategia que usa el pipeline configurado.</dd>
+    </div>
+    <div>
+      <dt>Normalización L2</dt>
+      <dd>Escalar el vector para que su longitud sea 1. Con vectores normalizados, el producto punto coincide con la similitud coseno.</dd>
+    </div>
+    <div>
+      <dt>topK</dt>
+      <dd>La cantidad máxima de resultados que devuelve la búsqueda. Por defecto 5; máximo 20 en este sprint.</dd>
+    </div>
+    <div>
+      <dt>Distancia exacta</dt>
+      <dd>Comparar la pregunta contra todos los vectores compatibles y ordenar. No usa un índice aproximado. Es O(n).</dd>
+    </div>
+    <div>
+      <dt>HNSW / IVFFlat</dt>
+      <dd>Índices aproximados de pgvector. Intercambian algo de exactitud por velocidad. No se usan en este sprint.</dd>
+    </div>
+    <div>
+      <dt>Idempotencia</dt>
+      <dd>La propiedad de una operación que, ejecutada varias veces, produce el mismo estado final. Generar embeddings es idempotente por la omisión previa y el <code>ON CONFLICT</code>.</dd>
+    </div>
+    <div>
+      <dt>Fallo parcial</dt>
+      <dd>Un resultado donde algunos lotes se guardaron y otros no. Se reporta como <code>partial</code>; nunca como éxito total.</dd>
+    </div>
+    <div>
+      <dt>RAG</dt>
+      <dd>Retrieval-Augmented Generation: recuperar fragmentos relevantes y usarlos como contexto para generar una respuesta. El Sprint 3 cubre la recuperación; el Sprint 4 agrega la generación.</dd>
+    </div>
+  </dl>
+
+  <div class="callout green">
+    <p><strong>La frase para llevarte:</strong> el Sprint 1 construyó el archivo. El Sprint 2 construyó el índice de fichas. El Sprint 3 le dio a cada ficha una coordenada y construyó el mapa para encontrarla. Todavía no hay redactor, pero ya hay bibliotecario: una pregunta puede recuperar los fragmentos correctos y decir de qué documento y de qué página salieron.</p>
+  </div>
+
+  <p class="small" style="text-align:center; margin-top:6mm;">Intelligent Document Assistant · Proyecto 3 · Sprint 3 · Documento de estudio</p>
+</section>
+
+<div class="footer"><strong>Intelligent Document Assistant</strong> · Sprint 3 · Cómo funciona la búsqueda vectorial</div>
+
+</body>
+</html>

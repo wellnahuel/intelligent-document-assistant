@@ -325,3 +325,9 @@ Al final:
 ### L6 — Closure
 
 - T10 is complete with the final Sprint 3 report in the conversation: embedding explanation, end-to-end trace, files/dependencies/environment variables, idempotency and partial-failure behavior, manual review checklist, limitations and commands.
+
+### L7 — Study guide and delivery (2026-11-12)
+
+- Added `docs/sprint-3-como-funciona.html` and `docs/sprint-3-como-funciona.pdf` (19 pages, Chrome headless) as the Sprint 3 study guide. The HTML reuses the Sprint 2 print design and documents embeddings, cosine distance, local inference, pgvector, generation, partial failures, search, limits, review questions and glossary.
+- README now links the Sprint 3 guide next to the Sprint 1 and Sprint 2 guides.
+- Delivery: commit the guide, push `feat/sprint-3-embeddings`, fast-forward `main` to the feature branch, and push `origin main`; no PR requested.

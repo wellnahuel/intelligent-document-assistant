@@ -21,6 +21,13 @@ Este es el tercer hito del proyecto de RAG. Ya existen documentos, páginas y ch
 - Pruebas unitarias con Vitest para las funciones puras y los prefijos del proveedor.
 - Documentación de decisiones, límites y comprobaciones manuales.
 
+## Documentación del sprint
+
+- `docs/sprint-3-como-funciona.pdf` — guía de estudio del Sprint 3 (19 páginas): embeddings, distancia coseno, pgvector, generación idempotente, búsqueda y límites.
+- `docs/sprint-3-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
+
+Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-funciona.pdf` y `docs/sprint-2-como-funciona.pdf`.
+
 ## Qué no incluye (a propósito)
 
 - Respuestas generativas, chat o llamadas a un LLM.
