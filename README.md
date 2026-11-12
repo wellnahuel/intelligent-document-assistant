@@ -1,38 +1,35 @@
-# Intelligent Document Assistant — Sprint 2
+# Intelligent Document Assistant — Sprint 3
 
-Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables y revisar el resultado en una biblioteca de documentos.
+Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales** y buscar los fragmentos más cercanos a una pregunta con **pgvector**.
 
-Este es el segundo hito del proyecto de RAG: ya existe texto por página y ahora se generan **chunks** con tamaño y solapamiento configurables. Todavía **no** hay embeddings, búsqueda vectorial ni respuestas generativas. El objetivo es verificar que la materia prima —texto, página y rango de caracteres— queda bien preparada antes de vectorizarla.
+Este es el tercer hito del proyecto de RAG. Ya existen documentos, páginas y chunks; ahora cada chunk puede tener un vector de 384 dimensiones, guardado junto con el modelo y la revisión que lo generaron. La búsqueda devuelve los fragmentos recuperados, su documento, su página y la distancia coseno. **Todavía no hay una respuesta generativa**: eso corresponde al Sprint 4.
 
 > **Solo para desarrollo local.** Esta versión no incluye autenticación ni aislamiento entre usuarios. No la expongas a Internet ni la uses con documentos reales.
 
 ## Qué incluye
 
-- Formulario de carga de PDF con límites visibles y estados de carga, vacío, éxito y error.
-- Validación en el servidor: archivo presente, tamaño, tipo declarado, cabecera PDF y cantidad de páginas.
-- Extracción de texto por página con PDF.js, conservando el número de página.
-- Persistencia en PostgreSQL con Prisma: `Document`, `DocumentPage` y `DocumentChunk`.
-- Chunking por página con corte por párrafos, oraciones y palabras, overlap configurable y offsets de caracteres.
-- Generación/regeneración idempotente de fragmentos dentro de una transacción.
-- Biblioteca con nombre, tamaño, páginas, fecha y estado.
-- Vista de detalle con el texto extraído, los fragmentos ordenados por página, su rango de caracteres y los parámetros usados.
-- PostgreSQL local con una imagen compatible con pgvector, aunque este sprint todavía no almacene vectores.
-- README con configuración, comandos, decisiones y límites.
-
-## Documentación del sprint
-
-- `docs/sprint-1-como-funciona.pdf` — recorrido del Sprint 1 explicado con la analogía del archivo de una biblioteca.
-- `docs/sprint-1-como-funciona.html` — fuente editable del PDF; se convierte con Chrome headless.
-- `docs/sprint-2-como-funciona.pdf` — continuación del Sprint 2: chunking, overlap, trazabilidad, idempotencia y límites.
-- `docs/sprint-2-como-funciona.html` — fuente editable del PDF del Sprint 2; se convierte con Chrome headless.
+- Todo lo del Sprint 1: carga de PDF, validación, extracción por página y biblioteca.
+- Todo lo del Sprint 2: chunking con overlap, offsets de caracteres y regeneración idempotente.
+- `EmbeddingProvider` local con `Transformers.js` y el modelo multilingüe `Xenova/multilingual-e5-small`.
+- Prefijos E5 `passage: ` y `query: `, pooling mean y normalización L2.
+- Validación de vectores de exactamente 384 dimensiones y rechazo de `NaN`/`Infinity`.
+- Migración con `CREATE EXTENSION IF NOT EXISTS vector` y tabla `ChunkEmbedding`.
+- Generación de embeddings por documento, en lotes pequeños, con omisión de los ya existentes y regeneración explícita.
+- Resultado `complete`, `partial` o `failed`; un fallo de un lote no se presenta como éxito total.
+- Búsqueda exacta con el operador `<=>` de pgvector, filtrada por modelo, revisión y dimensión.
+- Pantalla `/search` con pregunta, topK configurable (5 por defecto), documento, página, distancia y similitud.
+- Pruebas unitarias con Vitest para las funciones puras y los prefijos del proveedor.
+- Documentación de decisiones, límites y comprobaciones manuales.
 
 ## Qué no incluye (a propósito)
 
+- Respuestas generativas, chat o llamadas a un LLM.
+- Reranking o búsqueda híbrida.
+- Índices HNSW o IVFFlat.
 - OCR para PDFs escaneados.
-- Embeddings, consultas a pgvector, búsqueda semántica o híbrida, reranking y chat.
-- Claves de OpenRouter o cualquier variable de IA.
 - Autenticación, permisos por documento, rate limiting o aislamiento entre usuarios.
-- Almacenamiento del archivo binario original.
+- Almacenamiento del archivo PDF original.
+- Un proveedor de embeddings remoto o una clave de OpenRouter.
 
 ## Stack
 
@@ -41,20 +38,22 @@ Este es el segundo hito del proyecto de RAG: ya existe texto por página y ahora
 | Framework | Next.js 16 (App Router) + React 19 |
 | Lenguaje | TypeScript en modo `strict` |
 | Estilos | CSS Modules, sin Tailwind |
-| Base de datos | PostgreSQL 17 con imagen pgvector, vía Docker |
+| Base de datos | PostgreSQL 17 con pgvector, vía Docker |
 | ORM | Prisma 7 + `@prisma/adapter-pg` |
 | Extracción | PDF.js (`pdfjs-dist` 6) |
 | Chunking | Módulo TypeScript puro, sin dependencias de IA |
-| Tests del chunker | `node:test` + `--experimental-strip-types` (sin dependencias nuevas) |
-| Runtime de carga | Node.js (`export const runtime = "nodejs"`) |
+| Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local |
+| Modelo | `Xenova/multilingual-e5-small` (384 dimensiones) |
+| Tests | `node:test` para el chunker + Vitest para embeddings |
 
 ## Requisitos
 
-- **Node.js 22.13 o superior** (probado con 22.13.1). `pdfjs-dist` 6 lo requiere.
+- **Node.js 22.13 o superior** (probado con 22.13.1). `pdfjs-dist` 6 y Transformers.js lo requieren.
 - **npm 10 o superior**.
 - **Docker** con Docker Compose.
 - Puerto **3000** libre para Next.js.
-- Puerto **5434** libre para PostgreSQL en el host. Se eligió ese puerto para no chocar con instalaciones locales que ya usan 5432 o 5433; puedes cambiarlo en `.env` y `docker-compose.yml`.
+- Puerto **5434** libre para PostgreSQL en el host.
+- Espacio en disco y conexión a Internet la primera vez que se usa el modelo. El archivo ONNX fp32 pesa unos **470 MB** y se guarda en `.cache/transformers/`; después los archivos se reutilizan desde la caché, aunque Transformers.js puede seguir consultando metadatos remotos para resolver el modelo.
 
 ## Puesta en marcha
 
@@ -68,19 +67,17 @@ npm install
 # 3. PostgreSQL
 docker compose up -d
 
-# 4. Cliente de Prisma (Prisma 7 ya no lo genera solo con migrate)
+# 4. Cliente de Prisma
 npm run db:generate
 
-# 5. Migración inicial
+# 5. Migraciones (incluye CREATE EXTENSION vector)
 npm run db:migrate
 
 # 6. Servidor de desarrollo
 npm run dev
 ```
 
-Abre <http://localhost:3000> y sube un PDF con texto seleccionable.
-
-El orden importa: `.env` debe existir antes de `db:generate`, y la base debe estar saludable antes de `db:migrate`.
+Abre <http://localhost:3000>, sube un PDF con texto seleccionable, genera los fragmentos y después los embeddings. La primera generación de embeddings descarga el modelo y puede tardar varios minutos; las siguientes usan la caché.
 
 ### Detener y reiniciar
 
@@ -94,6 +91,12 @@ docker compose up -d
 npm run db:migrate
 ```
 
+La caché del modelo se puede borrar sin afectar la base:
+
+```bash
+rm -rf .cache/transformers
+```
+
 ## Variables de entorno
 
 | Variable | Obligatoria | Valor por defecto | Descripción |
@@ -103,9 +106,16 @@ npm run db:migrate
 | `MAX_PDF_PAGES` | No | `50` | Cantidad máxima de páginas. |
 | `CHUNK_TARGET_CHARS` | No | `1200` | Tamaño objetivo de cada fragmento, en caracteres. |
 | `CHUNK_OVERLAP_CHARS` | No | `150` | Caracteres que se repiten desde el fragmento anterior. |
-| `CHUNK_MIN_CHARS` | No | `100` | Tamaño mínimo del último fragmento antes de fusionarlo con el anterior. |
+| `CHUNK_MIN_CHARS` | No | `100` | Tamaño mínimo del último fragmento antes de fusionarlo. |
+| `EMBEDDING_MODEL_ID` | No | `Xenova/multilingual-e5-small` | Modelo local de Transformers.js. |
+| `EMBEDDING_MODEL_REVISION` | No | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` | Commit de Hugging Face usado para descargar el modelo. |
+| `EMBEDDING_CACHE_DIR` | No | `.cache/transformers` | Carpeta de caché del modelo. Está ignorada por git. |
+| `EMBEDDING_BATCH_SIZE` | No | `4` | Chunks por lote de inferencia y escritura. Rango: 1–16. |
+| `SEARCH_DEFAULT_TOP_K` | No | `5` | Cantidad de resultados por defecto. |
+| `SEARCH_MAX_TOP_K` | No | `20` | Máximo permitido para `topK`. |
+| `SEARCH_QUERY_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta. |
 
-Los límites se leen en cada request. Un valor inválido (no entero, menor que el mínimo permitido o un overlap mayor o igual al objetivo) genera una advertencia en la terminal y se usan los valores por defecto. Los tres parámetros de chunking se validan en conjunto.
+Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y el proveedor valida que el modelo produzca exactamente 384 números. Cambiar de modelo exige una migración y regenerar los vectores.
 
 ## Scripts
 
@@ -116,7 +126,10 @@ Los límites se leen en cada request. Un valor inválido (no entero, menor que e
 | `npm run start` | Servidor de producción (requiere `build`). |
 | `npm run lint` | ESLint con la configuración de Next.js. |
 | `npm run typecheck` | `tsc --noEmit` con TypeScript estricto. |
-| `npm run test:chunking` | Tests del chunker puro con el runner nativo de Node. |
+| `npm test` | Ejecuta los tests del chunker y los tests unitarios de embeddings. |
+| `npm run test:chunking` | Tests del chunker con el runner nativo de Node. |
+| `npm run test:unit` | Tests de embeddings con Vitest. |
+| `npm run test:unit:watch` | Vitest en modo watch. |
 | `npm run db:generate` | Genera el cliente de Prisma en `src/generated/prisma`. |
 | `npm run db:migrate` | Aplica migraciones en desarrollo. |
 | `npm run db:deploy` | Aplica migraciones en un entorno desplegado. |
@@ -128,101 +141,153 @@ Los límites se leen en cada request. Un valor inválido (no entero, menor que e
 ```text
 .
 ├── prisma/
-│   ├── schema.prisma              # Document, DocumentPage, DocumentChunk
-│   └── migrations/                # Migraciones SQL (inicial + chunks)
+│   ├── schema.prisma              # Document, DocumentPage, DocumentChunk, ChunkEmbedding
+│   └── migrations/                # Inicial, chunks y embeddings/pgvector
 ├── src/
 │   ├── app/
-│   │   ├── api/documents/
-│   │   │   ├── route.ts           # GET (lista) y POST (carga)
-│   │   │   └── [id]/
-│   │   │       ├── route.ts       # GET de un documento con páginas y chunks
-│   │   │       └── chunks/route.ts # POST de generación de fragmentos
-│   │   ├── documents/[id]/page.tsx # Vista de detalle (Server Component)
-│   │   ├── error.tsx              # Error boundary de la app
-│   │   ├── not-found.tsx          # Página 404 en español
-│   │   ├── layout.tsx             # Shell, cabecera y pie
-│   │   ├── page.tsx               # Biblioteca (lee datos en el servidor)
-│   │   └── globals.css            # Reset y tokens de diseño
-│   ├── components/documents/
-│   │   ├── DocumentLibrary.tsx    # Isla cliente: carga y refresco
-│   │   ├── UploadForm.tsx         # Selección y validación de UX
-│   │   ├── DocumentDetail.tsx     # Render de metadatos, texto y layout
-│   │   ├── DocumentChunkViewer.tsx# Isla cliente: genera y lista chunks
-│   │   └── StatusBadge.tsx        # Procesado / Error / Pendiente
+│   │   ├── api/
+│   │   │   ├── documents/
+│   │   │   │   ├── route.ts       # GET (lista) y POST (carga)
+│   │   │   │   └── [id]/
+│   │   │   │       ├── route.ts   # GET de un documento con páginas y chunks
+│   │   │   │       ├── chunks/route.ts
+│   │   │   │       └── embeddings/route.ts
+│   │   │   └── search/route.ts    # POST de búsqueda vectorial
+│   │   ├── documents/[id]/page.tsx
+│   │   ├── search/page.tsx        # Pantalla de diagnóstico
+│   │   ├── error.tsx
+│   │   ├── not-found.tsx
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── documents/
+│   │   │   ├── DocumentLibrary.tsx
+│   │   │   ├── UploadForm.tsx
+│   │   │   ├── DocumentDetail.tsx
+│   │   │   ├── DocumentChunkViewer.tsx
+│   │   │   ├── DocumentEmbeddingsPanel.tsx
+│   │   │   └── StatusBadge.tsx
+│   │   └── search/
+│   │       └── SearchPanel.tsx    # Formulario y resultados de la búsqueda
 │   ├── generated/prisma/          # Cliente generado (ignorado por git)
 │   └── lib/
 │       ├── chunking/
-│       │   ├── chunk-text.ts      # Algoritmo puro y testeable
-│       │   └── config.ts          # Parámetros desde el entorno
-│       ├── config.ts              # Límites de upload y DATABASE_URL
-│       ├── db.ts                  # PrismaClient + adapter pg
+│       │   ├── chunk-text.ts
+│       │   └── config.ts
+│       ├── client/
+│       │   └── read-error.ts      # Lectura segura de errores de la API
+│       ├── config.ts
+│       ├── db.ts
 │       ├── documents/
-│       │   ├── chunks.ts          # Regeneración transaccional
-│       │   ├── create-document.ts # Transacción de creación
-│       │   ├── dto.ts             # Fechas ISO para la API
-│       │   ├── queries.ts         # Listado y detalle con chunks
-│       │   └── types.ts           # Tipos compartidos con el cliente
-│       ├── errors.ts              # AppError + códigos HTTP
-│       ├── format.ts              # Bytes y fechas
-│       ├── http.ts                # Traducción de errores a JSON seguro
+│       │   ├── chunks.ts
+│       │   ├── create-document.ts
+│       │   ├── dto.ts
+│       │   ├── id.ts              # Validación compartida del id
+│       │   ├── queries.ts
+│       │   └── types.ts
+│       ├── embeddings/
+│       │   ├── config.ts          # Modelo, lotes y límites de búsqueda
+│       │   ├── generate.ts        # Generación por lotes y resultado parcial
+│       │   ├── input.ts           # Validación de pregunta, topK y cuerpo
+│       │   ├── load-provider.ts   # Traducción de errores del modelo
+│       │   ├── provider.ts        # Carga lazy y singleton del modelo
+│       │   ├── provider-core.ts   # Prefijos, pooling y validación
+│       │   ├── search.ts          # Búsqueda exacta por distancia coseno
+│       │   ├── store.ts           # Prisma + SQL parametrizado de vectores
+│       │   ├── summary.ts         # Conteo por documento para la UI
+│       │   ├── types.ts
+│       │   └── vector.ts          # Validación y formato pgvector
+│       ├── errors.ts
+│       ├── format.ts
+│       ├── http.ts
 │       └── pdf/
-│           ├── validation.ts      # Validación real del archivo
-│           ├── extract-text.ts    # Recorrido de páginas con PDF.js
-│           └── pdfjs-config.ts    # Ruta de las fuentes estándar
+│           ├── validation.ts
+│           ├── extract-text.ts
+│           └── pdfjs-config.ts
 ├── tests/
-│   └── chunking.test.mjs          # Tests del algoritmo puro
+│   ├── chunking.test.mjs
+│   └── unit/
+│       ├── embeddings.test.ts
+│       ├── embeddings-boundaries.test.ts
+│       ├── embeddings-generate.test.ts
+│       └── embeddings-sql-params.test.ts
 ├── samples/
-│   └── documento-de-prueba.pdf    # PDF de 2 páginas para probar la carga
+│   └── documento-de-prueba.pdf
 ├── scripts/
-│   └── generate-sample-pdf.mjs    # Regenera el PDF de prueba
+│   └── generate-sample-pdf.mjs
 ├── docker-compose.yml
-├── prisma.config.ts               # Configuración de Prisma 7
+├── prisma.config.ts
 ├── next.config.ts
+├── vitest.config.ts
 └── package.json
 ```
 
-## Flujo completo de una carga
+## Flujo completo de una carga (Sprint 1)
 
-1. **Selección del archivo.** `UploadForm` acepta un PDF por clic o arrastre. Hace una comprobación local de tamaño y tipo para dar feedback rápido; no es la validación autoritativa.
-2. **Envío.** `DocumentLibrary.handleUpload` construye `FormData`, agrega el campo `file` y hace `POST /api/documents`.
-3. **Lectura del formulario.** El Route Handler usa `await request.formData()`. Un formulario inválido se traduce a un error 400 seguro.
-4. **Validación en servidor.** `validatePdfUpload` comprueba:
-   - que el campo sea un archivo;
-   - que no esté vacío;
-   - que `File.size` no supere el límite;
-   - que el MIME declarado sea `application/pdf`;
-   - que los primeros 1024 bytes contengan la firma `%PDF-`;
-   - que el tamaño real leído coincida con el límite.
-5. **Extracción.** `extractPdfPages` abre el documento con PDF.js, verifica `numPages`, recorre cada página con `getPage` + `getTextContent`, normaliza espacios y saltos de línea, y conserva `pageNumber`. Si ninguna página tiene texto, rechaza el archivo.
-6. **Persistencia.** `createDocumentWithPages` abre una transacción de Prisma: crea el `Document` y luego inserta todas las `DocumentPage` con `createMany`. Si algo falla, no queda ningún registro parcial.
-7. **Respuesta.** El endpoint devuelve `201` con el resumen del documento. La isla cliente lo agrega a la lista y muestra el aviso de éxito con un enlace al detalle.
-8. **Lectura.** `/documents/[id]` es un Server Component que consulta el documento y sus páginas ordenadas por `pageNumber`; la API `GET /api/documents/[id]` expone el mismo contenido en JSON.
+1. **Selección del archivo.** `UploadForm` acepta un PDF por clic o arrastre y hace una comprobación local de tamaño y tipo para dar feedback rápido.
+2. **Envío.** `DocumentLibrary.handleUpload` construye `FormData` y hace `POST /api/documents`.
+3. **Validación en servidor.** `validatePdfUpload` comprueba campo, tamaño, MIME declarado, firma `%PDF-` y tamaño real.
+4. **Extracción.** `extractPdfPages` abre el PDF con PDF.js, verifica `numPages`, recorre cada página y normaliza espacios conservando `pageNumber`.
+5. **Persistencia.** `createDocumentWithPages` crea el `Document` y todas las `DocumentPage` en una transacción. Si algo falla, no queda un registro parcial.
+6. **Lectura.** `/documents/[id]` es un Server Component que consulta el documento, sus páginas y sus chunks. La API `GET /api/documents/[id]` expone lo mismo en JSON.
 
-## Flujo de generación de fragmentos
+## Flujo de generación de fragmentos (Sprint 2)
 
-1. **Acción.** En el detalle, el botón “Generar fragmentos” (o “Regenerar fragmentos”) llama a `POST /api/documents/[id]/chunks`. Es una isla cliente: no envía parámetros, porque el servidor decide la configuración.
-2. **Validación.** El Route Handler comprueba que el id tenga un formato seguro antes de consultar la base. Un id inválido devuelve `400`; uno inexistente, `404`.
-3. **Configuración.** `getChunkingConfig()` lee `CHUNK_TARGET_CHARS`, `CHUNK_OVERLAP_CHARS` y `CHUNK_MIN_CHARS`, valida la combinación y usa valores por defecto si algo no cierra.
-4. **Transacción.** `regenerateDocumentChunks` lee el documento y sus páginas dentro de una transacción, borra los chunks anteriores de esas páginas y genera los nuevos con `chunkText`. Si una inserción falla, el borrado también se revierte.
-5. **Trazabilidad.** Cada `DocumentChunk` guarda `documentPageId`, `chunkIndex`, `startChar` y `endChar`. El contenido es exactamente el rango `[startChar, endChar)` del texto normalizado de esa página.
-6. **Respuesta y UI.** El endpoint devuelve todos los chunks generados agrupados por página. La isla reemplaza su estado y muestra el éxito, la cantidad de fragmentos o el error. La vista nunca mezcla fragmentos de páginas distintas.
+1. En el detalle, “Generar fragmentos” llama a `POST /api/documents/[id]/chunks`.
+2. El Route Handler valida el id y lee la configuración `CHUNK_*`.
+3. `regenerateDocumentChunks` borra los chunks anteriores de las páginas y crea los nuevos dentro de una transacción.
+4. Cada `DocumentChunk` guarda `documentPageId`, `chunkIndex`, `content`, `startChar` y `endChar`.
+5. La UI muestra los fragmentos por página, su rango de caracteres y los parámetros usados.
 
-El algoritmo se puede leer como un proceso de tres tamices:
+El chunker corta primero por párrafos, después por oraciones y al final por palabras. El overlap copia el final del fragmento anterior al principio del siguiente, procurando no cortar palabras.
 
-1. **Párrafos:** se corta en los saltos de párrafo y se van uniendo párrafos completos mientras entren en el objetivo.
-2. **Oraciones:** si un párrafo no entra, se parte después de `.`, `?`, `!` o `…`.
-3. **Palabras:** si una oración tampoco entra, se corta entre palabras; una palabra gigante se divide a la fuerza para garantizar avance.
+## Flujo de embeddings y búsqueda (Sprint 3)
 
-Después se agrega el overlap: el fragmento siguiente empieza un poco antes de su contenido nuevo, retrocediendo hasta el comienzo de una palabra para no cortarla. El objetivo se mide sobre el contenido nuevo; por eso un fragmento con overlap puede superar levemente los 1.200 caracteres.
+### Generación
+
+1. En el detalle del documento, el panel **Embeddings** llama a `POST /api/documents/[id]/embeddings` con `{ "regenerate": false }` o `{ "regenerate": true }`.
+2. El servidor valida el id y el cuerpo, y busca los chunks del documento. Si no hay chunks, responde `409`.
+3. `findExistingChunkIds` consulta las filas compatibles con el `modelId`, `modelRevision` y `dimensions` actuales. Sin `regenerate`, esos chunks se omiten.
+4. Los chunks pendientes se procesan en lotes de `EMBEDDING_BATCH_SIZE`.
+5. Para cada lote, `EmbeddingProvider.embedPassages` agrega `"passage: "` a cada texto, ejecuta el modelo, aplica mean pooling y normalización, y valida que cada vector tenga 384 números finitos.
+6. `upsertEmbeddingBatch` inserta el lote con una sola sentencia parametrizada. El `ON CONFLICT` sobre `(chunkId, modelId, modelRevision)` actualiza la fila existente en lugar de duplicarla.
+7. Si un lote falla, se registra el número de lote y la etapa (`embedding` o `persistence`), y se continúa con los demás. El resultado final indica `complete`, `partial` o `failed`.
+8. La UI actualiza el conteo y muestra el detalle de los lotes fallidos.
+
+### Búsqueda
+
+1. `/search` envía `{ "query": "...", "topK": 5 }` a `POST /api/search`.
+2. El servidor valida la pregunta (no vacía, máximo `SEARCH_QUERY_MAX_CHARS`) y `topK` (entero entre 1 y `SEARCH_MAX_TOP_K`).
+3. Si no hay embeddings para el modelo actual, devuelve `indexedChunkCount: 0` sin cargar el modelo.
+4. Si hay embeddings, `EmbeddingProvider.embedQuery` agrega `"query: "`, genera el vector y lo valida.
+5. La consulta SQL usa `<=>` para calcular distancia coseno, filtra por `modelId`, `modelRevision` y `dimensions`, ordena ascendente y limita a `topK`.
+6. La API devuelve contenido, documento, página, `chunkIndex`, distancia y similitud (`1 - distancia`). No devuelve el vector.
+7. La UI muestra los resultados en orden, con el documento y la página de origen.
+
+### Qué es un embedding
+
+Un embedding es una lista de números que representa un texto. No es una palabra clave ni una traducción legible: es una posición en un espacio vectorial construida por el modelo. Textos con temas parecidos suelen quedar cerca. E5 produce vectores de 384 dimensiones para este proyecto.
+
+### Similitud y distancia coseno
+
+La similitud coseno mide el ángulo entre dos vectores:
+
+```text
+similitud(A, B) = (A · B) / (||A|| * ||B||)
+```
+
+Si los vectores están normalizados, el denominador vale 1 y la similitud es el producto punto. pgvector calcula **distancia coseno** con `<=>`:
+
+```text
+distancia = 1 - similitud
+```
+
+Menor distancia significa mayor similitud. La UI muestra la distancia y también `1 - distancia` como porcentaje para facilitar la lectura. No se aplica un umbral: se muestran los `topK` más cercanos aunque estén lejos.
 
 ## Modelo de datos
 
 ```prisma
-enum DocumentStatus {
-  PROCESSED
-  FAILED
-}
-
 model Document {
   id               String         @id @default(cuid())
   originalFilename String
@@ -245,55 +310,48 @@ model DocumentPage {
   chunks     DocumentChunk[]
 
   @@unique([documentId, pageNumber])
+  @@index([documentId])
 }
 
 model DocumentChunk {
-  id             String       @id @default(cuid())
+  id             String          @id @default(cuid())
   documentPageId String
   chunkIndex     Int
   content        String
   startChar      Int
   endChar        Int
-  createdAt      DateTime     @default(now())
-  documentPage   DocumentPage @relation(fields: [documentPageId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  documentPage   DocumentPage    @relation(fields: [documentPageId], references: [id], onDelete: Cascade)
+  embeddings     ChunkEmbedding[]
 
   @@unique([documentPageId, chunkIndex])
   @@index([documentPageId])
 }
+
+model ChunkEmbedding {
+  id            String        @id @default(cuid())
+  chunkId       String
+  modelId       String
+  modelRevision String
+  dimensions    Int
+  embedding     Unsupported("vector(384)")
+  createdAt     DateTime      @default(now())
+  chunk         DocumentChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, modelId, modelRevision])
+  @@index([modelId, modelRevision])
+}
 ```
 
-`DocumentPage` conserva la relación entre el texto y su página. `DocumentChunk` agrega la relación con la página y el orden dentro de ella. Esa cadena es la que permitirá construir citas verificables: documento → página → rango de caracteres.
+Prisma 7 no trata `vector` como un escalar normal. El campo aparece como `Unsupported("vector(384)")`: la columna existe en PostgreSQL, pero no se puede leer ni escribir desde el cliente tipado. Por eso las inserciones y búsquedas vectoriales usan `prisma.$executeRaw`/`prisma.$queryRaw` con `Prisma.sql` y parámetros. El resto de las relaciones y conteos sí usa Prisma.
+
+La clave foránea con `onDelete: Cascade` hace que al borrar un chunk (o una página o un documento) también se borren sus embeddings. Regenerar los chunks de un documento, por lo tanto, elimina los embeddings anteriores y obliga a regenerarlos.
 
 ## API
 
 ### `POST /api/documents`
 
-`multipart/form-data` con el campo `file`.
-
-```bash
-curl -X POST http://localhost:3000/api/documents \
-  -F "file=@./documento.pdf;type=application/pdf"
-```
-
-Respuesta `201`:
-
-```json
-{
-  "document": {
-    "id": "cm...",
-    "originalFilename": "documento.pdf",
-    "mimeType": "application/pdf",
-    "sizeBytes": 1086,
-    "pageCount": 2,
-    "status": "PROCESSED",
-    "errorMessage": null,
-    "createdAt": "2026-11-11T08:40:25.891Z",
-    "updatedAt": "2026-11-11T08:40:25.891Z"
-  }
-}
-```
-
-> En `curl`, indica `;type=application/pdf`. El servidor valida el MIME declarado además de la cabecera.
+`multipart/form-data` con el campo `file`. Responde `201` con el resumen del documento.
 
 ### `GET /api/documents`
 
@@ -301,14 +359,26 @@ Devuelve `{ "documents": [...] }` ordenados por fecha de creación descendente.
 
 ### `GET /api/documents/[id]`
 
-Devuelve el documento con `pages` ordenadas por `pageNumber` y, dentro de cada página, sus `chunks` ordenados por `chunkIndex`.
+Devuelve el documento con `pages` ordenadas por `pageNumber` y sus `chunks` ordenados por `chunkIndex`.
 
 ### `POST /api/documents/[id]/chunks`
 
-Genera o regenera los fragmentos de todas las páginas del documento. No recibe cuerpo: los parámetros salen de las variables `CHUNK_*` del servidor. Es idempotente; repetir la llamada reemplaza los fragmentos anteriores dentro de una transacción.
+Genera o regenera los fragmentos. No recibe cuerpo; los parámetros salen de `CHUNK_*`. Es idempotente: reemplaza los fragmentos anteriores dentro de una transacción.
+
+### `POST /api/documents/[id]/embeddings`
+
+Genera embeddings para los chunks del documento.
 
 ```bash
-curl -X POST http://localhost:3000/api/documents/<id>/chunks
+# Generar solo los pendientes
+curl -X POST http://localhost:3000/api/documents/<id>/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+# Regenerar todos los del modelo/revisión actual
+curl -X POST http://localhost:3000/api/documents/<id>/embeddings \
+  -H "Content-Type: application/json" \
+  -d '{"regenerate":true}'
 ```
 
 Respuesta `200`:
@@ -316,37 +386,61 @@ Respuesta `200`:
 ```json
 {
   "documentId": "cm...",
-  "chunkCount": 3,
-  "pageCount": 2,
-  "chunking": {
-    "targetChars": 1200,
-    "overlapChars": 150,
-    "minChars": 100
+  "model": {
+    "modelId": "Xenova/multilingual-e5-small",
+    "modelRevision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+    "dimensions": 384
   },
-  "pages": [
-    {
-      "pageId": "cm...",
-      "pageNumber": 1,
-      "chunks": [
-        {
-          "id": "cm...",
-          "documentPageId": "cm...",
-          "chunkIndex": 0,
-          "content": "Texto del fragmento...",
-          "startChar": 0,
-          "endChar": 1180
-        }
-      ]
-    }
-  ]
+  "chunkCount": 2,
+  "embeddedChunkCount": 2,
+  "generatedCount": 2,
+  "skippedCount": 0,
+  "failedCount": 0,
+  "status": "complete",
+  "errors": []
 }
 ```
 
-Una página sin texto devuelve `chunks: []` y no genera registros. El endpoint no devuelve trazas internas ni registra el contenido de los documentos en la terminal.
+Si un lote falla, `status` es `partial` (si otro lote funcionó) o `failed` (si no funcionó ninguno), y `errors` indica el lote y la etapa. Si el documento no tiene chunks, responde `409` con `DOCUMENT_WITHOUT_CHUNKS`.
 
-### `GET /documents/[id]`
+### `POST /api/search`
 
-Vista HTML del documento. Si el id no existe, responde `404` con la página `not-found`.
+```bash
+curl -X POST http://localhost:3000/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"¿Cuál es el período de garantía?","topK":5}'
+```
+
+Respuesta `200`:
+
+```json
+{
+  "search": {
+    "query": "¿Cuál es el período de garantía?",
+    "topK": 5,
+    "model": {
+      "modelId": "Xenova/multilingual-e5-small",
+      "modelRevision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "dimensions": 384
+    },
+    "indexedChunkCount": 2,
+    "results": [
+      {
+        "chunkId": "cm...",
+        "documentId": "cm...",
+        "documentName": "documento-de-prueba.pdf",
+        "pageNumber": 1,
+        "chunkIndex": 0,
+        "content": "El período de garantía del producto es de dos años.",
+        "distance": 0.13657888232091797,
+        "similarity": 0.863421117679082
+      }
+    ]
+  }
+}
+```
+
+Los resultados se ordenan por distancia ascendente. No se devuelve el vector. No se aplica un umbral de distancia. Si no hay embeddings para el modelo actual, `indexedChunkCount` es `0` y `results` es `[]`.
 
 ### Errores
 
@@ -355,8 +449,8 @@ Todas las respuestas de error tienen la misma forma:
 ```json
 {
   "error": {
-    "code": "NO_EXTRACTABLE_TEXT",
-    "message": "No se encontró texto seleccionable en el PDF."
+    "code": "INVALID_SEARCH_QUERY",
+    "message": "Escribí una pregunta para buscar."
   }
 }
 ```
@@ -374,158 +468,165 @@ Todas las respuestas de error tienen la misma forma:
 | `CORRUPT_PDF` | 422 | PDF.js no pudo interpretar el archivo. |
 | `DOCUMENT_NOT_FOUND` | 404 | El id no existe. |
 | `INVALID_DOCUMENT_ID` | 400 | El id no tiene un formato seguro. |
+| `INVALID_REQUEST_BODY` | 400 | El cuerpo JSON es inválido, demasiado grande o tiene un campo con el tipo equivocado. |
+| `INVALID_SEARCH_QUERY` | 400 | La pregunta está vacía, no es texto o supera el límite. |
+| `INVALID_TOP_K` | 400 | `topK` no es un entero entre 1 y el máximo. |
+| `DOCUMENT_WITHOUT_CHUNKS` | 409 | Se intentaron generar embeddings sin fragmentos. |
+| `EMBEDDING_MODEL_UNAVAILABLE` | 503 | El modelo no se pudo cargar (descarga, caché o configuración). |
+| `EMBEDDING_QUERY_FAILED` | 500 | El modelo no pudo generar el vector de la pregunta. |
 | `INTERNAL_ERROR` | 500 | Error inesperado; el detalle queda en la terminal. |
 
 ## Decisiones técnicas
 
-### PDF.js en el servidor y con el build `legacy`
+### Embeddings locales
 
-La extracción ocurre en el Route Handler con `runtime = "nodejs"`. Se importa `pdfjs-dist/legacy/build/pdf.mjs` porque PDF.js 6 usa `Promise.try`, que no está disponible en Node 22; el bundle legacy incluye el polyfill necesario. Además, `serverExternalPackages: ["pdfjs-dist"]` evita que el bundler reescriba la resolución del worker.
+El modelo corre en el proceso de Node.js con `@huggingface/transformers` y ONNX Runtime. El texto no se envía a un proveedor externo. La contracara es que la primera ejecución descarga unos 470 MB y la inferencia compite por CPU con el resto del servidor.
 
-`pdfjs-config.ts` apunta a `node_modules/pdfjs-dist/standard_fonts` para que PDF.js pueda mapear fuentes no embebidas, como Helvetica, sin emitir advertencias. Si la ruta no existe, la extracción sigue funcionando.
+### Identificador y revisión del modelo
 
-### Texto por página desde el primer paso
+Cada fila guarda `modelId`, `modelRevision`, `dimensions` y el chunk. La revisión por defecto es un commit fijo de Hugging Face, no `main`, para que la descarga y los vectores sean reproducibles. La búsqueda filtra por los tres metadatos; si se cambia el modelo o la revisión, los vectores anteriores no se mezclan y hay que regenerarlos.
 
-Guardar un único bloque de texto habría sido más simple, pero impediría saber de qué página salió cada fragmento. `DocumentPage` mantiene esa correspondencia desde el inicio y prepara el terreno para las citas.
+La precisión también forma parte de la configuración: este sprint usa `fp32`. Cambiar a `q8` u otra variante exige regenerar los vectores y, si se hace de forma permanente, documentar la nueva configuración. La columna `vector(384)` es fija; un modelo con otra dimensión requiere una migración.
 
-### Chunking por caracteres, no por tokens
+### Prefijos E5
 
-En este sprint el objetivo se mide en caracteres porque es fácil de explicar, testear y depurar. Un carácter no es un token: cada modelo tokeniza distinto según el idioma, los acentos y los signos. Cuando se elija el modelo de embeddings, conviene medir con su tokenizador y comparar configuraciones con preguntas de evaluación. Los 1.200 caracteres son un punto de partida, no una regla universal.
+E5 fue entrenado con `passage: ` para documentos y `query: ` para preguntas. No son adornos: son parte del formato de entrada. El proveedor los aplica en un solo lugar y las pruebas verifican que se envíen.
 
-### Cortes estructurales antes que cortes fijos
+### Mean pooling y normalización
 
-Cortar cada 1.200 caracteres exactos es simple, pero puede partir una oración o una idea al medio. Por eso el chunker intenta primero párrafos, después oraciones y solo al final palabras. Los cortes por palabra son la red de seguridad para garantizar que el algoritmo siempre avance, incluso con una sola palabra más larga que el objetivo.
+La inferencia devuelve un vector por token. El pooling mean promedia los tokens de cada texto y la normalización L2 deja el vector con norma 1. Con vectores normalizados, el producto punto y la similitud coseno coinciden, y la distancia de pgvector es estable.
 
-### Overlap y palabras completas
+### Búsqueda exacta antes que ANN
 
-El overlap copia el final del fragmento anterior al principio del siguiente. Se calcula desde el inicio del chunk menos `CHUNK_OVERLAP_CHARS`, pero se avanza hasta el comienzo de la palabra siguiente para no entregar una palabra cortada. Por eso el overlap real puede ser algo menor que el configurado. El tamaño objetivo se mide sobre el contenido nuevo; un chunk con overlap puede superarlo.
+El corpus es chico. `ORDER BY embedding <=> $1` recorre todas las filas compatibles y devuelve el orden exacto, que es fácil de inspeccionar y explicar. HNSW o IVFFlat serían una optimización prematura: primero hay que medir cuándo la búsqueda exacta deja de ser suficiente.
 
-### Chunks de una sola página
+### SQL parametrizado
 
-Cada invocación del chunker recibe el texto de **una** página y devuelve offsets dentro de ese texto. Esto evita ambigüedad en las citas y hace que la regeneración sea independiente por página. La contracara: si un párrafo continúa en la página siguiente, el corte coincide con el límite de página. Se acepta por ahora.
+Las operaciones vectoriales usan `Prisma.sql` y `$queryRaw`/`$executeRaw`. El vector se envía como texto y se castea con `::vector`; la pregunta, el modelo, la revisión, la dimensión y el `topK` son parámetros. No se usa `$queryRawUnsafe` ni se concatena texto del usuario.
 
-### Idempotencia y transacción
+### Idempotencia en dos capas
 
-Regenerar no debe duplicar filas. La operación borra los chunks de las páginas del documento y crea los nuevos dentro de la misma transacción. La restricción `@@unique([documentPageId, chunkIndex])` es una segunda red de seguridad. Un fallo en cualquier inserción revierte el borrado y deja los chunks anteriores intactos. La operación nunca toca `Document` ni `DocumentPage`.
+1. Antes de generar, se consultan los chunks que ya tienen una fila compatible y se omiten.
+2. El `INSERT` usa `ON CONFLICT ("chunkId", "modelId", "modelRevision") DO UPDATE`, así que una carrera o una repetición actualiza en lugar de duplicar.
 
-### Validación duplicada
+`regenerate: true` es la única forma de volver a generar filas existentes. La UI lo muestra como “Regenerar todos” y no lo ejecuta implícitamente.
 
-La UI valida para dar feedback inmediato. El servidor vuelve a validar todo porque el navegador no es confiable: el nombre, el MIME y el tamaño declarados pueden no coincidir con el contenido. La comprobación de cabecera busca `%PDF-` en los primeros 1024 bytes, que es más tolerante que exigirlo en el byte 0.
+### Fallos parciales
 
-El nombre original se conserva solo como metadato de visualización. Se eliminan controles y separadores de ruta, y nunca se usa para construir una ruta del sistema de archivos.
+Cada lote es una unidad: si la inferencia o la escritura falla, se cuentan sus chunks como fallidos y se sigue con el próximo lote. La respuesta indica cuántos se generaron, omitieron y fallaron, y qué lotes fallaron. La UI usa un mensaje de error distinto para `partial` y `failed`; nunca muestra “completado” si hubo fallos. Los embeddings anteriores de un lote que no se pudo regenerar quedan intactos.
 
-### Transacción y el estado `FAILED`
+### Sin logs de contenido
 
-La extracción ocurre **antes** de cualquier escritura. Si el PDF no se puede leer o no tiene texto, no se crea ningún `Document`; el cliente recibe el error y la base queda limpia. Por eso el pipeline síncrono actual solo persiste documentos con estado `PROCESSED`.
+La terminal registra el modelo, la revisión, la cantidad de lotes y los errores técnicos. No registra el texto de los documentos ni la pregunta completa. Los errores que se devuelven al cliente son mensajes seguros, sin trazas internas.
 
-El valor `FAILED` queda definido en el enum y soportado por la UI para un pipeline asíncrono futuro, donde el documento se registra primero y se marca como fallido después. El estado “pendiente” que se ve durante la carga es un estado **del cliente**, no una fila de la base.
+### Prisma y `Unsupported`
 
-### Sin almacenamiento del binario
+Prisma modela las entidades y relaciones normales, pero no puede leer ni escribir `vector(384)` desde el cliente tipado. El esquema declara la columna como `Unsupported` para que las migraciones la creen y para que Prisma Studio no intente deserializarla. Las consultas vectoriales viven en `src/lib/embeddings/store.ts`. Prisma Studio no puede abrir la tabla `ChunkEmbedding` sin errores de deserialización; para inspeccionarla se usa `psql`.
 
-El archivo se procesa en memoria y se descarta. No se escribe en disco ni se usa el nombre original como ruta. Esto reduce la superficie de seguridad y mantiene el foco del sprint en el pipeline de texto.
+### Descarga y caché del modelo
 
-### Prisma 7
-
-Prisma 7 requiere ESM (`"type": "module"`), el generador `prisma-client` con `output` explícito, un driver adapter (`@prisma/adapter-pg` + `pg`) y `prisma.config.ts`. `prisma migrate dev` ya no ejecuta `prisma generate`, por eso el setup incluye `npm run db:generate` antes de la migración.
-
-### Server Components + una isla cliente
-
-La biblioteca se lee en el servidor (`page.tsx` → `listDocuments`) y se pasa como props iniciales a `DocumentLibrary`. Esa isla cliente maneja la carga y el refresco a través de la API. El detalle también es un Server Component. Así no se envían credenciales ni acceso a la base al navegador, y el build no necesita una conexión a PostgreSQL.
-
-### Puerto 5434
-
-El `docker-compose.yml` publica PostgreSQL en el puerto **5434** del host para evitar conflictos con otras instalaciones locales. Si lo cambias, actualiza también `DATABASE_URL` en `.env`.
+La primera llamada descarga el modelo y sus archivos de tokenización en `.cache/transformers/`. El proceso reutiliza una sola instancia del pipeline; en desarrollo, el singleton vive en `globalThis` para sobrevivir a recargas de módulos. Si la carga falla, la promesa se limpia para permitir un reintento.
 
 ## Seguridad y límites conocidos
 
-- **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir y leer documentos. No exponer públicamente.
+- **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir, leer y buscar en todos los documentos. La búsqueda es global sobre la biblioteca local; no hay usuarios ni permisos por documento. No exponer públicamente.
 - **Sin OCR:** un PDF escaneado como imagen se rechaza con “No se encontró texto seleccionable en el PDF.”.
-- **Límites en memoria:** 10 MB y 50 páginas por defecto. La extracción es síncrona y ocurre en el proceso de Next.js; varias cargas simultáneas consumen memoria.
-- **Calidad de extracción:** depende del PDF. Algunos diseños complejos pueden perder orden de lectura o separar palabras de forma distinta a la esperada.
-- **Párrafos en PDFs:** PDF.js emite un salto por línea, pero no conserva las líneas en blanco. Por eso el texto extraído suele no contener `\n\n` y el chunker ve un solo párrafo por página, cortando por oraciones. El algoritmo sí respeta párrafos cuando el texto normalizado los conserva (está cubierto por los tests). Mejorar la detección de párrafos en la extracción queda para otro sprint.
-- **Detección de oraciones heurística:** el corte ocurre después de `.`, `?`, `!` o `…` seguidos de espacio. Abreviaturas como “Dr.” o “EE. UU.” pueden tratarse como fin de oración. Afecta el punto de corte, no la trazabilidad.
-- **Sin deduplicación:** subir el mismo PDF dos veces crea dos documentos.
-- **Sin progreso en tiempo real:** la UI muestra “Procesando…” mientras espera la respuesta, pero no hay porcentaje por página.
-- **Sin rate limiting:** no hay protección contra abuso. Se trabajará antes de un despliegue público.
-- **Límite de plataforma:** si algún día se despliega en Vercel, el límite de cuerpo de una función puede ser menor que 10 MB. Para este sprint, el entorno es local.
-- **Sin almacenamiento de originales:** no se puede volver a descargar el PDF desde la aplicación.
-- **Tamaño en caracteres, no en tokens:** el objetivo de 1.200 caracteres es una aproximación. Todavía no se mide con el tokenizador del modelo de embeddings.
-- **Parámetros no persistidos por documento:** el detalle muestra la configuración vigente del servidor. Si cambias las variables después de generar, los chunks existentes conservan sus rangos anteriores hasta que regeneres.
-- **Regeneración concurrente:** dos pedidos simultáneos sobre el mismo documento no están serializados con un lock explícito. La transacción y el unique protegen la integridad, pero uno de los pedidos podría fallar con `500`. No es un escenario esperado en esta versión local.
-- **Cortes en el límite de página:** un párrafo que continúa en la página siguiente se corta en ese límite; el overlap no cruza páginas.
-- **Chunks ya generados:** los documentos subidos antes del Sprint 2 no tienen fragmentos hasta que se ejecuta la acción.
+- **Límites en memoria:** 10 MB y 50 páginas por defecto. La extracción es síncrona y ocurre en el proceso de Next.js.
+- **Inferencia en CPU:** la generación de embeddings puede tardar varios segundos o minutos según la cantidad de chunks y el hardware. La primera ejecución incluye la descarga del modelo.
+- **Dependencia de red la primera vez:** sin conexión a Hugging Face, el modelo no se puede descargar. Después los archivos se reutilizan desde la caché local, pero Transformers.js puede seguir resolviendo metadatos remotos; no se verificó un arranque completamente offline.
+- **Límite de tokens del modelo:** E5 tiene una ventana de 512 tokens. El chunker mide caracteres, no tokens; un chunk de 1.200 caracteres puede truncarse en algunos idiomas. La pregunta también se trunca si supera la ventana, aunque la API limite los caracteres.
+- **Dimensión fija:** `vector(384)` está atado a E5-small. Cambiar a un modelo de otra dimensión exige migración, cambio de constante y regeneración.
+- **Precisión fija:** el sprint usa `fp32`. Cambiar de precisión puede cambiar los vectores; hay que regenerarlos y documentarlo.
+- **Vectores de modelos anteriores:** no se borran automáticamente. Quedan en la tabla para comparar y se pueden eliminar con SQL. No se mezclan en la búsqueda porque el filtro usa el modelo y la revisión actuales.
+- **Sin índice ANN:** la búsqueda exacta es O(n) sobre las filas compatibles. Con un corpus grande habrá que medir y evaluar HNSW/IVFFlat.
+- **Sin umbral de distancia:** la búsqueda siempre devuelve hasta `topK` resultados, incluso si son poco relevantes. El umbral se decidirá con evaluación.
+- **Sin reranking ni búsqueda híbrida:** la recuperación es solo vectorial.
+- **Sin respuesta generativa:** el Sprint 4 pasará los fragmentos a un modelo de lenguaje.
+- **Sin progreso en tiempo real:** la UI muestra “Generando…” mientras espera; no hay porcentaje por lote.
+- **Sin rate limiting:** no hay protección contra abuso.
+- **Regeneración concurrente:** dos pedidos simultáneos sobre el mismo documento pueden competir. El `ON CONFLICT` y la transacción protegen la integridad, pero el resultado de cada pedido puede ser distinto. No es un escenario esperado en esta versión local.
+- **Regenerar chunks borra embeddings:** la cascada elimina los vectores de los chunks reemplazados. Hay que volver a generarlos.
+- **Prisma Studio:** no puede leer la tabla `ChunkEmbedding` por el tipo `vector`.
+- **Build de producción:** esta entrega se validó con `tsc`, ESLint, tests y `next dev`. No se ejecutó `npm run build` (regla del proyecto). Si se despliega, revisar el empaquetado de `@huggingface/transformers`, `onnxruntime-node` y `sharp`.
 
 ## Cómo probar manualmente
 
-1. Usa el PDF incluido en `samples/documento-de-prueba.pdf` (2 páginas, texto seleccionable y acentos) o genera uno propio.
-   Para regenerarlo:
-   ```bash
-   npm run sample:pdf
-   ```
-2. Súbelo desde la interfaz.
-3. Verifica que aparece en la lista con el estado **Procesado**.
-4. Abre el documento y revisa que cada página conserve su texto.
-5. Pulsa **Generar fragmentos**. Deben aparecer los fragmentos en orden, con su página de origen, su rango de caracteres y los parámetros usados.
-6. Pulsa **Regenerar fragmentos** dos veces. La cantidad de fragmentos no debe crecer ni duplicarse.
-7. Prueba un PDF escaneado: debe mostrarse el mensaje de “No se encontró texto seleccionable en el PDF.” y no debe aparecer ningún registro nuevo.
+1. Usa `samples/documento-de-prueba.pdf` o sube un PDF con texto seleccionable.
+2. Abre el documento y pulsa **Generar fragmentos** si todavía no tiene.
+3. Pulsa **Generar embeddings**. La primera vez puede descargar el modelo; revisa la terminal y `.cache/transformers/`.
+4. Verifica que el panel muestre “2 de 2 fragmentos con embeddings” (o el total del documento).
+5. Pulsa **Regenerar todos** y confirma que la cantidad de filas no cambia.
+6. Ve a **Buscar** y prueba:
+   - “¿Cuál es el período de garantía del producto?” → debe recuperar la página 1.
+   - “¿Qué hace el asistente con el texto?” → debe recuperar la página 2.
+7. Confirma que cada resultado muestra documento, página, distancia y similitud.
+8. Prueba una pregunta vacía y una de más de 1.000 caracteres: la API debe responder `400`.
+9. Prueba `topK` en `0`, `21` o como texto: debe responder `400`.
+10. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y busca: `indexedChunkCount` debe ser `0` hasta que generes los vectores del nuevo modelo/revisión.
+11. Si regeneras los chunks de un documento, vuelve a generar sus embeddings.
 
-Consultas directas a la base:
+Consultas útiles:
 
 ```bash
 docker exec -it ida-postgres psql -U ida -d ida
-
-SELECT id, "originalFilename", "pageCount", status FROM "Document";
-SELECT "pageNumber", left(text, 80) FROM "DocumentPage" ORDER BY "pageNumber";
-SELECT "documentPageId", "chunkIndex", "startChar", "endChar", length(content)
-FROM "DocumentChunk"
-ORDER BY "documentPageId", "chunkIndex";
 ```
 
-Para comprobar la idempotencia y la trazabilidad:
-
 ```sql
--- No debe haber índices repetidos dentro de una página.
-SELECT "documentPageId", "chunkIndex", count(*)
-FROM "DocumentChunk"
-GROUP BY 1, 2
+-- Estado general
+SELECT count(*) FROM "Document";
+SELECT count(*) FROM "DocumentPage";
+SELECT count(*) FROM "DocumentChunk";
+SELECT count(*) FROM "ChunkEmbedding";
+
+-- Dimensiones y metadatos
+SELECT "chunkId", "modelId", left("modelRevision", 12), dimensions,
+       vector_dims(embedding) AS stored_dims
+FROM "ChunkEmbedding";
+
+-- Duplicados por chunk/modelo/revisión (debe devolver 0 filas)
+SELECT "chunkId", "modelId", "modelRevision", count(*)
+FROM "ChunkEmbedding"
+GROUP BY 1, 2, 3
 HAVING count(*) > 1;
 
--- Cada chunk debe pertenecer a una página del documento esperado.
-SELECT c.id, p."pageNumber"
-FROM "DocumentChunk" c
-JOIN "DocumentPage" p ON p.id = c."documentPageId"
-JOIN "Document" d ON d.id = p."documentId"
-WHERE d.id = '<id>';
+-- La extensión debe estar instalada
+\dx vector
 ```
 
 ## Verificación de esta entrega
 
-Comprobado en este entorno:
+Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 
 - `npm run typecheck` ✅
 - `npm run lint` ✅
-- `npm run test:chunking` ✅ (12 tests: normalización, párrafos, oraciones, palabras, palabra gigante, overlap, borde del overlap, mínimo, trazabilidad y validación)
-- `npx prisma migrate status` ✅ (2 migraciones aplicadas, esquema al día)
-- Smoke test HTTP del Sprint 2 ✅: página corta (1 fragmento), página larga (3 + 3), varios párrafos (2), oración muy larga (3 + 3), documento con página vacía (1 + 0), regeneración repetida 3 veces con el mismo conteo y el mismo hash de contenido, id inválido `400`, id inexistente `404`, `GET` al endpoint de generación `405`, API de detalle con chunks ordenados y HTML con página, rango y parámetros.
-- SQL ✅: 0 rangos fuera de límites; `content` coincide con `substring(page.text, startChar, endChar)` en el 100% de las filas; 0 índices duplicados o discontinuos; overlap real de 143–148 caracteres (≤150); 0 chunks sin página.
-- Rollback ✅: un trigger temporal que hacía fallar una inserción produjo `500` seguro y dejó intactos los 6 chunks anteriores; al quitarlo, la regeneración volvió a funcionar.
-- Cascada ✅: borrar una página eliminó solo sus 3 chunks; borrar los documentos de prueba dejó 0 documentos, 0 páginas y 0 chunks.
-- Configuración inválida ✅: con `CHUNK_TARGET_CHARS=100` y `CHUNK_OVERLAP_CHARS=200`, la app registró la advertencia y usó los valores por defecto `1200/150/100`.
-
-No se ejecutó `next build` durante esta entrega. La validación se hizo con `tsc`, ESLint, tests del chunker y pruebas HTTP contra `next dev`.
+- `npm run test:chunking` ✅ (12 tests)
+- `npm run test:unit` ✅ (37 tests en 4 archivos: dimensión, NaN, Infinity, formato pgvector, prefijos, validación de pregunta/topK, orquestación idempotente, resultado parcial y parámetros SQL)
+- `npx prisma migrate status` ✅ (3 migraciones aplicadas; `vector` 0.8.7 instalada)
+- Esquema ✅: `ChunkEmbedding` con `embedding vector(384)`, unique `(chunkId, modelId, modelRevision)`, índice por modelo y FK con `ON DELETE CASCADE`.
+- Inferencia real ✅: modelo descargado y cargado en 101,6 s; vectores de 384 dimensiones, todos finitos y con norma 1.000000. En una prueba directa del modelo con dos pasajes de ejemplo fuera de la base, la pregunta de cancelación quedó más cerca del pasaje de cancelación (0,884) que del pasaje de pago (0,793).
+- Generación ✅: 2 chunks → 2 embeddings; segunda ejecución → 0 generados, 2 omitidos; regeneración explícita → 2 generados y 2 filas totales.
+- SQL ✅: `vector_dims(embedding) = 384` en todas las filas; 0 duplicados por chunk/modelo/revisión; autosimilitud 1.000000.
+- Búsqueda ✅: la pregunta “¿Cuál es el período de garantía del producto?” devolvió primero la página 1 (distancia 0,1366) y la pregunta “¿Qué hace el asistente con el texto del documento?” devolvió primero la página 2 (distancia 0,1368). Orden ascendente y documento/página correctos.
+- Validación ✅: pregunta vacía y de 1.001 caracteres → `400`; `topK` 0, 21, `null` y string → `400`; cuerpo inválido → `400`; id inválido → `400`; documento inexistente → `404`; documento sin chunks → `409`; modelo inválido → `503`.
+- Fallo parcial ✅: un trigger temporal hizo fallar el segundo lote con `EMBEDDING_BATCH_SIZE=1`; la API devolvió `status: "partial"`, 1 generado y 1 fallido. Al quitar el trigger, la regeneración devolvió `complete` con 2 generados.
+- Aislamiento de modelo ✅: con `EMBEDDING_MODEL_ID=test/other-model` y `EMBEDDING_MODEL_REVISION=test-revision`, la búsqueda devolvió `indexedChunkCount: 0` sin cargar el modelo ni mezclar vectores.
+- Cascada ✅: borrar un chunk dentro de una transacción eliminó su embedding; el `ROLLBACK` restauró las 2 filas.
+- UI ✅: `GET /`, `GET /documents/[id]` y `GET /search` responden `200` con el panel de embeddings, el enlace de búsqueda y el formulario. No se automatizó una interacción de navegador; la API y el HTML renderizado son las evidencias de este entorno.
+- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y `next dev`.
 
 ## Próximo sprint
 
-Embeddings: elegir un modelo, definir la dimensión del vector, vectorizar los chunks y medir la recuperación con preguntas de evaluación. El tamaño de chunk se ajustará con el tokenizador del modelo elegido.
+Sprint 4: pasar los fragmentos recuperados a un modelo generativo y construir una respuesta con citas verificables. Antes de eso conviene definir un umbral de recuperación, medir la calidad con preguntas de evaluación y decidir si el corpus necesita un índice ANN.
 
 ## Orden sugerido para revisar el código
 
-1. `src/lib/chunking/chunk-text.ts` — algoritmo puro, sin Prisma ni UI.
-2. `tests/chunking.test.mjs` — casos que fijan el comportamiento esperado.
-3. `src/lib/chunking/config.ts` — parámetros y validación desde el entorno.
-4. `src/lib/documents/chunks.ts` — transacción e idempotencia.
-5. `src/app/api/documents/[id]/chunks/route.ts` — validación del id y traducción de errores.
-6. `prisma/schema.prisma` — relación `DocumentPage` → `DocumentChunk` y restricciones.
-7. `src/components/documents/DocumentChunkViewer.tsx` — estados de la isla cliente.
-8. `src/components/documents/DocumentDetail.tsx` — composición del detalle.
-9. `src/lib/pdf/extract-text.ts` — de dónde sale el texto que consume el chunker.
+1. `src/lib/embeddings/vector.ts` — validación, formato pgvector y similitud.
+2. `src/lib/embeddings/provider-core.ts` — prefijos E5, pooling mean, normalización y contrato del proveedor.
+3. `src/lib/embeddings/provider.ts` — carga lazy, revisión fijada y singleton.
+4. `src/lib/embeddings/config.ts` — modelo, lotes y límites.
+5. `prisma/schema.prisma` y `prisma/migrations/20261112153534_add_chunk_embeddings/migration.sql` — tabla y extensión.
+6. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert y búsqueda `<=>`.
+7. `src/lib/embeddings/generate.ts` — lotes, idempotencia y resultado parcial.
+8. `src/lib/embeddings/search.ts` — validación, embedding de la pregunta y respuesta.
+9. `src/app/api/documents/[id]/embeddings/route.ts` y `src/app/api/search/route.ts` — contratos HTTP.
+10. `src/components/documents/DocumentEmbeddingsPanel.tsx` y `src/components/search/SearchPanel.tsx` — estados de la UI.

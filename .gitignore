@@ -24,6 +24,9 @@ yarn-debug.log*
 yarn-error.log*
 coverage
 
+# Local Transformers.js model cache (can be hundreds of MB)
+/.cache/
+
 # Operating system
 .DS_Store
 Thumbs.db
