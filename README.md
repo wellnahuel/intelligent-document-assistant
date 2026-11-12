@@ -31,10 +31,12 @@ Este es el cuarto hito del proyecto de RAG. El recorrido completo es **indexar �
 
 ## Documentación del sprint
 
+- `docs/sprint-4-como-funciona.pdf` — guía de estudio del Sprint 4 (20 páginas): RAG, recuperación por documento, contexto, OpenRouter, citas verificadas, pruebas reales, límites y checklist para el Sprint 5.
+- `docs/sprint-4-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - `docs/sprint-3-como-funciona.pdf` — guía de estudio del Sprint 3 (19 páginas): embeddings, distancia coseno, pgvector, generación idempotente, búsqueda y límites.
-- `docs/sprint-3-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
+- `docs/sprint-3-como-funciona.html` — fuente editable de la guía anterior.
 
-Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-funciona.pdf` y `docs/sprint-2-como-funciona.pdf`. El Sprint 4 se documenta en este README y en `odd/tasks/sprint-4-rag-answers.md`.
+Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funciona.pdf` y `docs/sprint-2-como-funciona.pdf`.
 
 ## Qué no incluye (a propósito)
 

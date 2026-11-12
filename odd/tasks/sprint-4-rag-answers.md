@@ -324,3 +324,11 @@ Al finalizar:
 - Final evidence: `npm run typecheck` ✅, `npm run lint` ✅, 12/12 chunking + 65/65 Vitest in 10 files ✅, `git diff --check` ✅, Prisma schema up to date (3 migrations) ✅, HTTP probes ✅, real retrieval probe ✅, no-evidence probe ✅, no secret literal in client chunks ✅.
 - Risk line: item 2 (security: external provider, server-only key, prompt-injection boundary) and item 5 (dependency `zod`). Independent verifier returned pass-with-advisories; advisories were corrected and the probe suite committed. Native receipt review was unavailable in this runtime and is recorded as typed unavailable, never PASS.
 - Final report: end-to-end flow, files, environment variables, citation verification, limitations, manual tests and suggested reading order delivered in the conversation. No push, PR or merge requested; delivery is local to the feature branch.
+
+### L7 — Study guide and closing (2026-11-12)
+
+- Added `docs/sprint-4-como-funciona.html` and `docs/sprint-4-como-funciona.pdf` (20 pages, A4, Chrome headless) as the Sprint 4 study guide.
+- The guide covers the full RAG pipeline, document-scoped retrieval, context budget, system prompt and abstention, prompt injection limits, OpenRouter client and error handling, server-side citation validation, `/api/ask`, `/ask` UI, observability, limits, real verification evidence, file map, manual tests, eight review questions, glossary and a Sprint 5 checklist.
+- The guide reuses the Sprint 1–3 print design and was checked with `pdfinfo` (20 pages, A4), `pdftotext` (content present, no blank pages), a scan for key-like strings and absolute paths (0), and visual inspection of the cover, flow, API, UI and closing pages.
+- README now links the Sprint 4 guide and keeps the Sprint 1–3 guides available.
+- Commit: `docs(sprint-4): add study guide and close the sprint` (HEAD of the feature branch).
