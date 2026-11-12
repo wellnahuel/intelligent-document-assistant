@@ -103,7 +103,7 @@ export function selectPromptSources(
       pageNumber: chunk.pageNumber,
       chunkIndex: chunk.chunkIndex,
       contextText,
-      excerpt: createExcerpt(content),
+      excerpt: createExcerpt(contextText),
       retrievalDistance: chunk.distance,
     });
 

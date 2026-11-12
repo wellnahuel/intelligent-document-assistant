@@ -32,9 +32,9 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, missing-config and no-e
 | T3 | S6 | inline | done | `src/lib/rag/openrouter.ts`; mocked success/timeout/HTTP/malformed/embedded-error tests |
 | T4 | S9 | inline | done | `src/app/api/ask/route.ts`, `errors.ts`, safe logging in `ask.ts` |
 | T5 | S10 | inline | done | `src/app/ask/page.tsx`, `components/ask/AskPanel.tsx`, CSS Modules, nav and Sprint 4 labels |
-| T6 | S12 | inline | done | `tests/unit/rag-*.test.ts`, updated `embeddings-sql-params.test.ts`; 61 Vitest tests pass |
+| T6 | S12 | inline | done | `tests/unit/rag-*.test.ts`, verifier probe regressions, updated `embeddings-sql-params.test.ts`; 65 Vitest tests pass |
 | T7 | S13 | inline | done | `README.md`, `.env.example`, this feature document |
-| T8 | S13 | inline | done | typecheck, lint, 12 chunking + 61 Vitest, HTTP probes, real retrieval and no-evidence probes |
+| T8 | S13 | inline | done | typecheck, lint, 12 chunking + 65 Vitest, HTTP probes, real retrieval and no-evidence probes |
 | T9 | S1–S15 | inline | pending | Final report pending |
 
 Route note: T1–T9 are sequential and share the same types, API contract and UI labels. There is no pair of independent units with disjoint edit surfaces that justifies parallel writers, so the parent works inline. The feature names high-risk items 2 (security: external provider, server-only secret, prompt-injection boundary) and 5 (new dependency `zod`); one independent verifier runs at the end, as rarely as possible.
@@ -298,11 +298,11 @@ Al finalizar:
 - The OpenRouter client sends only `model`, `messages` and `stream: false`. No `temperature` or `top_p`, because not every model accepts them.
 - A 200 response containing an `error` object is treated as a provider failure, matching OpenRouter's documented behavior. Provider bodies and secrets are never logged or returned.
 - The no-evidence path returns before configuration and provider checks, so an unindexed document still produces a useful answer when OpenRouter is not configured.
-- Error codes added: `INVALID_ASK_QUESTION`, `OPENROUTER_NOT_CONFIGURED`, `RAG_PROVIDER_TIMEOUT`, `RAG_PROVIDER_ERROR`, `RAG_INVALID_PROVIDER_RESPONSE`.
+- Error codes added: `INVALID_ASK_QUESTION`, `OPENROUTER_NOT_CONFIGURED`, `RAG_PROVIDER_TIMEOUT`, `RAG_PROVIDER_ERROR`.
 
 ### L4 — Verification evidence (2026-11-12)
 
-- `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:chunking` ✅ 12/12, `npm run test:unit` ✅ 61/61 in 9 files, `npm test` ✅.
+- `npm run typecheck` ✅, `npm run lint` ✅, `npm run test:chunking` ✅ 12/12, `npm run test:unit` ✅ 65/65 in 10 files, `npm test` ✅.
 - HTTP probes on the existing `next dev` server: invalid JSON `400`, empty question `400`, 1001-char question `400`, invalid id `400`, missing document `404`, extra field `400`, 20 KB body `400`.
 - Indexed sample document with no OpenRouter configuration: `503 OPENROUTER_NOT_CONFIGURED` after a real local retrieval (`retrieval=1833ms`, model loaded). Reaching the configuration check proves retrieval returned chunks and the prompt was built.
 - Temporary document without embeddings: `200` with `noEvidence: true`, `noEvidenceReason: "no_embeddings"`, `sources: []`, `model: null`; server log `retrieval=12ms sources=0 provider=skipped`. The document row was deleted after the probe.
@@ -310,10 +310,13 @@ Al finalizar:
 - OpenRouter success/timeout/HTTP/malformed/embedded-error paths validated with mocked `fetch`. No real provider call was executed because no API key is available.
 - `npm run build` was not executed per project rule. Browser-level interaction was not automated.
 
-### L5 — Native review and independent verification
+### L5 — Native review and independent verification (2026-11-12)
 
 - `gentle-ai review assess --cwd . --agent opencode --base-ref <previous> --committed-only --json` returned `risk: high` with reason `unassessable`: the active OpenCode runtime is not eligible for immutable receipt review. `changed_paths` was 0 for every call. The typed unavailable result is preserved; no PASS was invented and the user-owned review mode was not toggled.
-- Independent verifier: pending.
+- `gentle-ai-verify` reviewed `6a9498d..HEAD` in scratch `/tmp/opencode/sprint4-verify.OT4IaA` and returned **pass-with-advisories**, no blockers.
+- Advisories corrected: removed the environment variable names from the client warning so the literal `OPENROUTER_API_KEY` is absent from client chunks; built the UI excerpt from the text actually sent to the model; attached HTTP 200 to provider errors returned inside a 200 body so logs show the real status; removed the nonexistent `RAG_INVALID_PROVIDER_RESPONSE` claim from this document; committed the verifier's probe suite as `tests/unit/rag-verification.test.ts`.
+- Verifier evidence: `git diff --check` clean; typecheck, lint, 12/12 chunking, 65/65 Vitest in 10 files; invalid-input HTTP probes; real retrieval `503` after `retrieval=1817ms`; no-evidence `200` with `retrieval=8ms`; `/`, `/search`, `/ask`, document detail and `/api/search` `200`; no new workspace files.
+- Remaining limitations: real OpenRouter network success was not executed (no key); production `next build` was not run per project rule; browser interaction not automated.
 
 ### L6 — Closure
 

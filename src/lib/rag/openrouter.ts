@@ -163,6 +163,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "malformed",
       "OpenRouter returned a response that is not valid JSON.",
+      response.status,
     );
   }
 
@@ -172,6 +173,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "malformed",
       "OpenRouter returned an unexpected response shape.",
+      response.status,
     );
   }
 
@@ -179,6 +181,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "upstream",
       "OpenRouter reported a provider error.",
+      response.status,
     );
   }
 
@@ -188,6 +191,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "upstream",
       "OpenRouter returned no completion choices.",
+      response.status,
     );
   }
 
@@ -195,6 +199,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "upstream",
       "OpenRouter reported a provider error in the completion.",
+      response.status,
     );
   }
 
@@ -204,6 +209,7 @@ export async function requestChatCompletion(input: {
     throw new OpenRouterError(
       "malformed",
       "OpenRouter returned an empty completion.",
+      response.status,
     );
   }
 

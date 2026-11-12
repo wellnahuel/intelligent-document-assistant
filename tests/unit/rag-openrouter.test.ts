@@ -149,7 +149,7 @@ describe("OpenRouter Chat Completions client", () => {
         user: "u",
         fetchImpl,
       }),
-    ).rejects.toMatchObject({ kind: "malformed" });
+    ).rejects.toMatchObject({ kind: "malformed", status: 200 });
   });
 
   it("rejects a 200 response that only contains an error object", async () => {
@@ -164,7 +164,7 @@ describe("OpenRouter Chat Completions client", () => {
         user: "u",
         fetchImpl,
       }),
-    ).rejects.toMatchObject({ kind: "upstream" });
+    ).rejects.toMatchObject({ kind: "upstream", status: 200 });
   });
 
   it("rejects an empty completion", async () => {

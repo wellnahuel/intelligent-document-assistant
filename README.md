@@ -260,7 +260,8 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       ├── rag-generate.test.ts
 │       ├── rag-input.test.ts
 │       ├── rag-openrouter.test.ts
-│       └── rag-prompt.test.ts
+│       ├── rag-prompt.test.ts
+│       └── rag-verification.test.ts
 ├── samples/
 │   └── documento-de-prueba.pdf
 ├── scripts/
@@ -742,8 +743,8 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (61 tests en 9 archivos; incluye prompt, citas, entrada Zod, cliente OpenRouter mockeado, camino sin fuentes y filtro SQL por documento)
-- `npm test` ✅ (12 + 61)
+- `npm run test:unit` ✅ (65 tests en 10 archivos; incluye prompt, citas, entrada Zod, cliente OpenRouter mockeado, camino sin fuentes, presupuesto de contexto y filtro SQL por documento)
+- `npm test` ✅ (12 + 65)
 - `npx prisma migrate status` ✅ (3 migraciones aplicadas; no se agregaron migraciones en este sprint)
 - Tipo y esquema ✅: `ChunkEmbedding` sigue usando `embedding vector(384)`, unique `(chunkId, modelId, modelRevision)`, índice por modelo y FK con `ON DELETE CASCADE`.
 - Retrieval real ✅: `POST /api/ask` sobre `documento-de-prueba.pdf` cargó el modelo local y ejecutó la búsqueda; la configuración faltante se detectó después del retrieval, con `retrieval=1833ms` y el modelo listo. Esto prueba que el documento tenía embeddings, que se recuperaron chunks y que se armó el prompt.

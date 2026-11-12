@@ -128,10 +128,10 @@ export function AskPanel({
     <div className={styles.panel}>
       {!providerConfigured ? (
         <p className={styles.configWarning} role="status">
-          El servidor no tiene configurados <code>OPENROUTER_API_KEY</code> y{" "}
-          <code>OPENROUTER_MODEL</code>. La recuperación funciona, pero la
-          generación va a responder con un error seguro hasta completar la
-          configuración.
+          El servidor no tiene configurada la generación de respuestas. La
+          recuperación funciona, pero la generación va a responder con un error
+          seguro hasta completar la API key y el modelo en el entorno del
+          servidor.
         </p>
       ) : null}
 
