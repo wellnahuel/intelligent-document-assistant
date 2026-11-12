@@ -310,9 +310,10 @@ Al finalizar:
 - OpenRouter success/timeout/HTTP/malformed/embedded-error paths validated with mocked `fetch`. No real provider call was executed because no API key is available.
 - `npm run build` was not executed per project rule. Browser-level interaction was not automated.
 
-### L5 — Independent verification and corrections
+### L5 — Native review and independent verification
 
-- Pending.
+- `gentle-ai review assess --cwd . --agent opencode --base-ref <previous> --committed-only --json` returned `risk: high` with reason `unassessable`: the active OpenCode runtime is not eligible for immutable receipt review. `changed_paths` was 0 for every call. The typed unavailable result is preserved; no PASS was invented and the user-owned review mode was not toggled.
+- Independent verifier: pending.
 
 ### L6 — Closure
 

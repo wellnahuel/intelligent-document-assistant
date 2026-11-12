@@ -1,8 +1,8 @@
-# Intelligent Document Assistant — Sprint 3
+# Intelligent Document Assistant — Sprint 4
 
-Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales** y buscar los fragmentos más cercanos a una pregunta con **pgvector**.
+Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
 
-Este es el tercer hito del proyecto de RAG. Ya existen documentos, páginas y chunks; ahora cada chunk puede tener un vector de 384 dimensiones, guardado junto con el modelo y la revisión que lo generaron. La búsqueda devuelve los fragmentos recuperados, su documento, su página y la distancia coseno. **Todavía no hay una respuesta generativa**: eso corresponde al Sprint 4.
+Este es el cuarto hito del proyecto de RAG. El recorrido completo es **indexar → recuperar → generar**: los documentos se procesan y se vectorizan localmente; la pregunta se convierte en un vector con el mismo modelo; los chunks del documento elegido se envían como contexto a OpenRouter; y el servidor valida las citas antes de mostrarlas. La respuesta es de un solo turno: todavía no hay historial de conversación, herramientas ni agentes.
 
 > **Solo para desarrollo local.** Esta versión no incluye autenticación ni aislamiento entre usuarios. No la expongas a Internet ni la uses con documentos reales.
 
@@ -17,8 +17,16 @@ Este es el tercer hito del proyecto de RAG. Ya existen documentos, páginas y ch
 - Generación de embeddings por documento, en lotes pequeños, con omisión de los ya existentes y regeneración explícita.
 - Resultado `complete`, `partial` o `failed`; un fallo de un lote no se presenta como éxito total.
 - Búsqueda exacta con el operador `<=>` de pgvector, filtrada por modelo, revisión y dimensión.
-- Pantalla `/search` con pregunta, topK configurable (5 por defecto), documento, página, distancia y similitud.
-- Pruebas unitarias con Vitest para las funciones puras y los prefijos del proveedor.
+- Pantalla `/search` con pregunta, topK configurable (5 por defecto), documento, página, distancia y similitud. Sigue disponible como diagnóstico de recuperación.
+- Pantalla `/ask` con selector de documento, pregunta, respuesta, estado de carga y fuentes expandibles.
+- Recuperación filtrada por documento con el mismo modelo, revisión y prefijo `query: ` del Sprint 3.
+- Contexto limitado con `RAG_TOP_K` y `RAG_MAX_CONTEXT_CHARS`.
+- Identificadores temporales `[S1]`, `[S2]`, ... que el servidor mapea a chunks reales.
+- System prompt que trata las fuentes como datos de referencia, no como instrucciones, y permite abstenerse.
+- Cliente de OpenRouter Chat Completions sin streaming, con timeout y errores seguros.
+- Validación y limpieza de citas: los IDs inventados no generan metadata ni se muestran como fuentes válidas.
+- Fuentes verificadas con documento, página, fragmento, distancia y estado de cita.
+- Pruebas unitarias con Vitest para prompt, citas, entrada, cliente HTTP mockeado y camino sin evidencia.
 - Documentación de decisiones, límites y comprobaciones manuales.
 
 ## Documentación del sprint
@@ -26,17 +34,19 @@ Este es el tercer hito del proyecto de RAG. Ya existen documentos, páginas y ch
 - `docs/sprint-3-como-funciona.pdf` — guía de estudio del Sprint 3 (19 páginas): embeddings, distancia coseno, pgvector, generación idempotente, búsqueda y límites.
 - `docs/sprint-3-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 
-Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-funciona.pdf` y `docs/sprint-2-como-funciona.pdf`.
+Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-funciona.pdf` y `docs/sprint-2-como-funciona.pdf`. El Sprint 4 se documenta en este README y en `odd/tasks/sprint-4-rag-answers.md`.
 
 ## Qué no incluye (a propósito)
 
-- Respuestas generativas, chat o llamadas a un LLM.
+- Streaming de la respuesta.
+- Historial de conversación, herramientas o agentes.
 - Reranking o búsqueda híbrida.
+- Umbral universal de similitud.
 - Índices HNSW o IVFFlat.
 - OCR para PDFs escaneados.
 - Autenticación, permisos por documento, rate limiting o aislamiento entre usuarios.
 - Almacenamiento del archivo PDF original.
-- Un proveedor de embeddings remoto o una clave de OpenRouter.
+- Controles de prompt injection más allá de la instrucción del prompt.
 
 ## Stack
 
@@ -50,8 +60,10 @@ Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-f
 | Extracción | PDF.js (`pdfjs-dist` 6) |
 | Chunking | Módulo TypeScript puro, sin dependencias de IA |
 | Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local |
-| Modelo | `Xenova/multilingual-e5-small` (384 dimensiones) |
-| Tests | `node:test` para el chunker + Vitest para embeddings |
+| Modelo de embeddings | `Xenova/multilingual-e5-small` (384 dimensiones) |
+| Generación | OpenRouter Chat Completions vía `fetch` en el servidor |
+| Validación de entrada | Zod |
+| Tests | `node:test` para el chunker + Vitest para embeddings y RAG |
 
 ## Requisitos
 
@@ -61,12 +73,14 @@ Las guías de los sprints anteriores siguen disponibles en `docs/sprint-1-como-f
 - Puerto **3000** libre para Next.js.
 - Puerto **5434** libre para PostgreSQL en el host.
 - Espacio en disco y conexión a Internet la primera vez que se usa el modelo. El archivo ONNX fp32 pesa unos **470 MB** y se guarda en `.cache/transformers/`; después los archivos se reutilizan desde la caché, aunque Transformers.js puede seguir consultando metadatos remotos para resolver el modelo.
+- Una cuenta de OpenRouter con una API key y un ID de modelo compatible con Chat Completions. La clave se usa solo en el servidor.
 
 ## Puesta en marcha
 
 ```bash
 # 1. Variables de entorno locales
 cp .env.example .env
+# Completá OPENROUTER_API_KEY y OPENROUTER_MODEL en .env
 
 # 2. Dependencias
 npm install
@@ -118,11 +132,19 @@ rm -rf .cache/transformers
 | `EMBEDDING_MODEL_REVISION` | No | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` | Commit de Hugging Face usado para descargar el modelo. |
 | `EMBEDDING_CACHE_DIR` | No | `.cache/transformers` | Carpeta de caché del modelo. Está ignorada por git. |
 | `EMBEDDING_BATCH_SIZE` | No | `4` | Chunks por lote de inferencia y escritura. Rango: 1–16. |
-| `SEARCH_DEFAULT_TOP_K` | No | `5` | Cantidad de resultados por defecto. |
-| `SEARCH_MAX_TOP_K` | No | `20` | Máximo permitido para `topK`. |
-| `SEARCH_QUERY_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta. |
+| `SEARCH_DEFAULT_TOP_K` | No | `5` | Cantidad de resultados por defecto en `/search`. |
+| `SEARCH_MAX_TOP_K` | No | `20` | Máximo permitido para `topK` en `/search`. |
+| `SEARCH_QUERY_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta en `/search`. |
+| `OPENROUTER_API_KEY` | Sí, para generar respuestas | — | API key del servidor. Nunca debe tener el prefijo `NEXT_PUBLIC_`. |
+| `OPENROUTER_MODEL` | Sí, para generar respuestas | — | ID de modelo de OpenRouter, por ejemplo el que elijas de su catálogo. No hay un modelo gratuito garantizado. |
+| `RAG_TOP_K` | No | `5` | Fragmentos recuperados para `/api/ask`. Rango: 1–20. |
+| `RAG_MAX_CONTEXT_CHARS` | No | `8000` | Máximo de caracteres de fuentes enviados al modelo. Rango: 500–50000. |
+| `RAG_QUESTION_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta en `/api/ask`. Rango: 1–4000. |
+| `RAG_PROVIDER_TIMEOUT_MS` | No | `30000` | Timeout de la llamada a OpenRouter. Rango: 1000–120000. |
 
 Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y el proveedor valida que el modelo produzca exactamente 384 números. Cambiar de modelo exige una migración y regenerar los vectores.
+
+`OPENROUTER_API_KEY` y `OPENROUTER_MODEL` se leen solo en el servidor. Si faltan, `/api/ask` responde `503` con un mensaje seguro después de recuperar los fragmentos; el camino sin evidencia sigue funcionando sin llamar al proveedor. La clave no aparece en el bundle del navegador, en la API ni en los logs.
 
 ## Scripts
 
@@ -133,9 +155,9 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 | `npm run start` | Servidor de producción (requiere `build`). |
 | `npm run lint` | ESLint con la configuración de Next.js. |
 | `npm run typecheck` | `tsc --noEmit` con TypeScript estricto. |
-| `npm test` | Ejecuta los tests del chunker y los tests unitarios de embeddings. |
+| `npm test` | Ejecuta los tests del chunker y los tests unitarios de embeddings y RAG. |
 | `npm run test:chunking` | Tests del chunker con el runner nativo de Node. |
-| `npm run test:unit` | Tests de embeddings con Vitest. |
+| `npm run test:unit` | Tests de embeddings y RAG con Vitest. |
 | `npm run test:unit:watch` | Vitest en modo watch. |
 | `npm run db:generate` | Genera el cliente de Prisma en `src/generated/prisma`. |
 | `npm run db:migrate` | Aplica migraciones en desarrollo. |
@@ -159,9 +181,11 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │   │   │   │       ├── route.ts   # GET de un documento con páginas y chunks
 │   │   │   │       ├── chunks/route.ts
 │   │   │   │       └── embeddings/route.ts
-│   │   │   └── search/route.ts    # POST de búsqueda vectorial
+│   │   │   ├── search/route.ts    # POST de búsqueda vectorial
+│   │   │   └── ask/route.ts       # POST de pregunta + generación
 │   │   ├── documents/[id]/page.tsx
 │   │   ├── search/page.tsx        # Pantalla de diagnóstico
+│   │   ├── ask/page.tsx           # Pantalla de pregunta y respuesta
 │   │   ├── error.tsx
 │   │   ├── not-found.tsx
 │   │   ├── layout.tsx
@@ -175,8 +199,10 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │   │   │   ├── DocumentChunkViewer.tsx
 │   │   │   ├── DocumentEmbeddingsPanel.tsx
 │   │   │   └── StatusBadge.tsx
-│   │   └── search/
-│   │       └── SearchPanel.tsx    # Formulario y resultados de la búsqueda
+│   │   ├── search/
+│   │   │   └── SearchPanel.tsx    # Formulario y resultados de la búsqueda
+│   │   └── ask/
+│   │       └── AskPanel.tsx       # Pregunta, respuesta y fuentes verificadas
 │   ├── generated/prisma/          # Cliente generado (ignorado por git)
 │   └── lib/
 │       ├── chunking/
@@ -205,6 +231,17 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       │   ├── summary.ts         # Conteo por documento para la UI
 │       │   ├── types.ts
 │       │   └── vector.ts          # Validación y formato pgvector
+│       ├── rag/
+│       │   ├── ask.ts             # Orquestación: retrieval → prompt → proveedor
+│       │   ├── citations.ts       # Limpieza y validación de [S#]
+│       │   ├── config.ts          # Límites RAG y credenciales del servidor
+│       │   ├── generate.ts        # Presupuesto de contexto y respuesta final
+│       │   ├── input.ts           # Validación Zod de documentId y pregunta
+│       │   ├── openrouter.ts      # Cliente Chat Completions no streaming
+│       │   ├── prompt.ts          # System prompt y fuentes etiquetadas
+│       │   ├── queries.ts         # Opciones de documento para la UI
+│       │   ├── retrieval.ts       # Búsqueda filtrada por documento
+│       │   └── types.ts
 │       ├── errors.ts
 │       ├── format.ts
 │       ├── http.ts
@@ -218,7 +255,12 @@ Los valores inválidos generan una advertencia en la terminal y se usan los valo
 │       ├── embeddings.test.ts
 │       ├── embeddings-boundaries.test.ts
 │       ├── embeddings-generate.test.ts
-│       └── embeddings-sql-params.test.ts
+│       ├── embeddings-sql-params.test.ts
+│       ├── rag-citations.test.ts
+│       ├── rag-generate.test.ts
+│       ├── rag-input.test.ts
+│       ├── rag-openrouter.test.ts
+│       └── rag-prompt.test.ts
 ├── samples/
 │   └── documento-de-prueba.pdf
 ├── scripts/
@@ -271,6 +313,20 @@ El chunker corta primero por párrafos, después por oraciones y al final por pa
 5. La consulta SQL usa `<=>` para calcular distancia coseno, filtra por `modelId`, `modelRevision` y `dimensions`, ordena ascendente y limita a `topK`.
 6. La API devuelve contenido, documento, página, `chunkIndex`, distancia y similitud (`1 - distancia`). No devuelve el vector.
 7. La UI muestra los resultados en orden, con el documento y la página de origen.
+
+## Flujo de respuesta RAG (Sprint 4)
+
+1. `/ask` muestra un selector con los documentos y su cantidad de embeddings compatibles con el modelo actual.
+2. El formulario envía `{ "documentId": "...", "question": "..." }` a `POST /api/ask`.
+3. Zod valida el cuerpo; el id usa la misma validación que el resto de la app. Una pregunta vacía o demasiado larga se rechaza con `400`.
+4. El servidor busca el documento. Si no existe, responde `404`. Si no tiene embeddings compatibles, responde `200` con `noEvidence: true` sin cargar el modelo ni llamar a OpenRouter.
+5. `EmbeddingProvider.embedQuery` agrega `query: ` y genera el vector de la pregunta con el mismo modelo/revisión del índice.
+6. `findNearestChunksForDocument` ejecuta la búsqueda exacta `<=>` filtrada por documento, modelo, revisión y dimensión. Ordena por distancia ascendente y limita a `RAG_TOP_K`.
+7. `prepareRagPrompt` asigna `[S1]`, `[S2]`, ... en orden de recuperación y arma bloques con nombre de documento, página y texto. Solo incluye los bloques que caben en `RAG_MAX_CONTEXT_CHARS`; el último puede truncarse.
+8. El system prompt indica que las fuentes son datos de referencia, no instrucciones, y que el modelo debe abstenerse si no alcanza la evidencia.
+9. `requestChatCompletion` envía el prompt a OpenRouter sin streaming, con timeout y errores seguros. El servidor no envía `temperature` ni `top_p`, porque no todos los modelos los aceptan.
+10. `sanitizeAnswerCitations` conserva solo los `[S#]` que existen entre las fuentes. Los IDs inventados se eliminan del texto y nunca crean metadata.
+11. La API devuelve la respuesta, los IDs citados y **todas** las fuentes que llegaron al prompt, con documento, página, fragmento, distancia y estado de cita. La UI las muestra en una sección expandible.
 
 ### Qué es un embedding
 
@@ -449,6 +505,57 @@ Respuesta `200`:
 
 Los resultados se ordenan por distancia ascendente. No se devuelve el vector. No se aplica un umbral de distancia. Si no hay embeddings para el modelo actual, `indexedChunkCount` es `0` y `results` es `[]`.
 
+### `POST /api/ask`
+
+```bash
+curl -X POST http://localhost:3000/api/ask \
+  -H "Content-Type: application/json" \
+  -d '{"documentId":"cm...","question":"¿Cuál es el período de garantía?"}'
+```
+
+Respuesta `200` (resumida):
+
+```json
+{
+  "ask": {
+    "documentId": "cm...",
+    "documentName": "documento-de-prueba.pdf",
+    "question": "¿Cuál es el período de garantía?",
+    "answer": "El período de garantía del producto es de dos años [S1].",
+    "sources": [
+      {
+        "sourceId": "S1",
+        "documentId": "cm...",
+        "documentName": "documento-de-prueba.pdf",
+        "pageNumber": 1,
+        "chunkId": "cm...",
+        "excerpt": "El período de garantía del producto es de dos años.",
+        "retrievalDistance": 0.13657888232091797,
+        "cited": true
+      }
+    ],
+    "citedSourceIds": ["S1"],
+    "noEvidence": false,
+    "noEvidenceReason": null,
+    "model": "modelo/elegido-en-openrouter",
+    "usage": {
+      "promptTokens": 420,
+      "completionTokens": 32,
+      "totalTokens": 452,
+      "cost": 0.0002
+    },
+    "contextChars": 1120,
+    "retrieval": {
+      "topK": 5,
+      "retrievedCount": 2,
+      "indexedChunkCount": 2
+    }
+  }
+}
+```
+
+Sin embeddings compatibles, la respuesta es `200` con `noEvidence: true`, `sources: []`, `model: null` y sin llamada a OpenRouter. La configuración faltante responde `503`; un timeout del proveedor, `504`; un error HTTP, respuesta malformada o error embebido de OpenRouter, `502`.
+
 ### Errores
 
 Todas las respuestas de error tienen la misma forma:
@@ -481,6 +588,10 @@ Todas las respuestas de error tienen la misma forma:
 | `DOCUMENT_WITHOUT_CHUNKS` | 409 | Se intentaron generar embeddings sin fragmentos. |
 | `EMBEDDING_MODEL_UNAVAILABLE` | 503 | El modelo no se pudo cargar (descarga, caché o configuración). |
 | `EMBEDDING_QUERY_FAILED` | 500 | El modelo no pudo generar el vector de la pregunta. |
+| `INVALID_ASK_QUESTION` | 400 | La pregunta está vacía o supera `RAG_QUESTION_MAX_CHARS`. |
+| `OPENROUTER_NOT_CONFIGURED` | 503 | Faltan `OPENROUTER_API_KEY` u `OPENROUTER_MODEL` en el servidor. |
+| `RAG_PROVIDER_TIMEOUT` | 504 | OpenRouter no respondió dentro de `RAG_PROVIDER_TIMEOUT_MS`. |
+| `RAG_PROVIDER_ERROR` | 502 | OpenRouter devolvió un error, una respuesta malformada o un error embebido. |
 | `INTERNAL_ERROR` | 500 | Error inesperado; el detalle queda en la terminal. |
 
 ## Decisiones técnicas
@@ -522,9 +633,21 @@ Las operaciones vectoriales usan `Prisma.sql` y `$queryRaw`/`$executeRaw`. El ve
 
 Cada lote es una unidad: si la inferencia o la escritura falla, se cuentan sus chunks como fallidos y se sigue con el próximo lote. La respuesta indica cuántos se generaron, omitieron y fallaron, y qué lotes fallaron. La UI usa un mensaje de error distinto para `partial` y `failed`; nunca muestra “completado” si hubo fallos. Los embeddings anteriores de un lote que no se pudo regenerar quedan intactos.
 
+### Generación con OpenRouter
+
+El servidor usa `fetch` contra `https://openrouter.ai/api/v1/chat/completions` con `stream: false`. La API key vive en `OPENROUTER_API_KEY` y solo se lee en el servidor; nunca se envía al cliente. El modelo se configura con `OPENROUTER_MODEL` y no se asume que un modelo gratuito esté siempre disponible. Se usa `AbortSignal.timeout` y se distinguen timeout, error HTTP, error de red, respuesta malformada y error embebido en un `200`. OpenRouter documenta que una respuesta no streaming puede traer un objeto `error` sin `choices`; el cliente lo trata como fallo del proveedor.
+
+### Contexto y citas
+
+El prompt no envía el PDF completo: envía solo los fragmentos recuperados, con `[S1]`, `[S2]`, ... y su documento y página. El servidor conserva el mapeo de cada ID a un chunk real. Después de recibir la respuesta, elimina los IDs que no correspondan a una fuente recuperada y arma la metadata desde la base, no desde el texto del modelo. Por eso una cita inventada como `[S9]` no puede crear una página, un documento ni un fragmento nuevo. La UI muestra todas las fuentes que llegaron al prompt, estén citadas o no.
+
+### Sin evidencia
+
+Si el documento no tiene embeddings compatibles, la API devuelve `noEvidence: true` sin cargar el modelo de embeddings ni llamar a OpenRouter. Si el presupuesto de contexto no permite incluir ningún bloque, se devuelve el mismo estado con `noEvidenceReason: "context_budget"`. No se inventa un umbral de similitud: una distancia alta no convierte automáticamente un resultado en “sin evidencia”, porque esa calibración requiere datos de evaluación.
+
 ### Sin logs de contenido
 
-La terminal registra el modelo, la revisión, la cantidad de lotes y los errores técnicos. No registra el texto de los documentos ni la pregunta completa. Los errores que se devuelven al cliente son mensajes seguros, sin trazas internas.
+La terminal registra el modelo, la revisión, la cantidad de lotes, la duración del retrieval y la generación, el estado HTTP del proveedor, el usage y los errores técnicos. No registra el texto de los documentos, la pregunta completa, el prompt completo ni la API key. Los errores que se devuelven al cliente son mensajes seguros, sin trazas internas ni cuerpo del proveedor.
 
 ### Prisma y `Unsupported`
 
@@ -536,7 +659,7 @@ La primera llamada descarga el modelo y sus archivos de tokenización en `.cache
 
 ## Seguridad y límites conocidos
 
-- **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir, leer y buscar en todos los documentos. La búsqueda es global sobre la biblioteca local; no hay usuarios ni permisos por documento. No exponer públicamente.
+- **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir, leer, buscar y preguntar sobre cualquier documento de la biblioteca. `/ask` filtra los chunks por documento, pero no hay usuarios ni ownership: el filtro es de alcance de la pregunta, no de permisos. No exponer públicamente.
 - **Sin OCR:** un PDF escaneado como imagen se rechaza con “No se encontró texto seleccionable en el PDF.”.
 - **Límites en memoria:** 10 MB y 50 páginas por defecto. La extracción es síncrona y ocurre en el proceso de Next.js.
 - **Inferencia en CPU:** la generación de embeddings puede tardar varios segundos o minutos según la cantidad de chunks y el hardware. La primera ejecución incluye la descarga del modelo.
@@ -546,15 +669,21 @@ La primera llamada descarga el modelo y sus archivos de tokenización en `.cache
 - **Precisión fija:** el sprint usa `fp32`. Cambiar de precisión puede cambiar los vectores; hay que regenerarlos y documentarlo.
 - **Vectores de modelos anteriores:** no se borran automáticamente. Quedan en la tabla para comparar y se pueden eliminar con SQL. No se mezclan en la búsqueda porque el filtro usa el modelo y la revisión actuales.
 - **Sin índice ANN:** la búsqueda exacta es O(n) sobre las filas compatibles. Con un corpus grande habrá que medir y evaluar HNSW/IVFFlat.
-- **Sin umbral de distancia:** la búsqueda siempre devuelve hasta `topK` resultados, incluso si son poco relevantes. El umbral se decidirá con evaluación.
+- **Sin umbral de distancia:** la búsqueda siempre devuelve hasta `topK` resultados, incluso si son poco relevantes. El umbral se decidirá con evaluación en el Sprint 5.
 - **Sin reranking ni búsqueda híbrida:** la recuperación es solo vectorial.
-- **Sin respuesta generativa:** el Sprint 4 pasará los fragmentos a un modelo de lenguaje.
-- **Sin progreso en tiempo real:** la UI muestra “Generando…” mientras espera; no hay porcentaje por lote.
-- **Sin rate limiting:** no hay protección contra abuso.
+- **Sin streaming:** la respuesta se valida completa antes de mostrarse. Esto facilita comprobar citas, pero aumenta la espera percibida.
+- **Sin historial ni agentes:** cada pregunta es independiente; no hay memoria de la conversación ni herramientas.
+- **El documento sale del servidor:** a diferencia de los embeddings, la generación envía los fragmentos recuperados a OpenRouter. No uses documentos confidenciales en esta versión local sin evaluar ese intercambio.
+- **Prompt injection:** el system prompt indica tratar las fuentes como datos y no como instrucciones, pero no es una barrera de seguridad completa. Falta una capa de controles adicionales.
+- **Respuestas no garantizadas:** pedir “no alucines” reduce el riesgo, no lo elimina. La app muestra fuentes y citas para que una persona pueda revisar el origen.
+- **Sin evaluación de calidad:** no hay conjunto de preguntas, métrica de recuperación ni comparación de modelos. El Sprint 5 debe medir aciertos, abstención y citas.
+- **Sin rate limiting:** no hay protección contra abuso de la API ni del proveedor.
+- **Sin progreso en tiempo real:** la UI muestra “Generando respuesta…” mientras espera; no hay porcentaje ni streaming.
 - **Regeneración concurrente:** dos pedidos simultáneos sobre el mismo documento pueden competir. El `ON CONFLICT` y la transacción protegen la integridad, pero el resultado de cada pedido puede ser distinto. No es un escenario esperado en esta versión local.
 - **Regenerar chunks borra embeddings:** la cascada elimina los vectores de los chunks reemplazados. Hay que volver a generarlos.
 - **Prisma Studio:** no puede leer la tabla `ChunkEmbedding` por el tipo `vector`.
-- **Build de producción:** esta entrega se validó con `tsc`, ESLint, tests y `next dev`. No se ejecutó `npm run build` (regla del proyecto). Si se despliega, revisar el empaquetado de `@huggingface/transformers`, `onnxruntime-node` y `sharp`.
+- **Proveedor no verificado en red real:** en este entorno no hay `OPENROUTER_API_KEY`, así que la integración con OpenRouter se validó con `fetch` mockeado y con pruebas HTTP del camino sin configuración. No se afirma que una llamada real haya funcionado.
+- **Build de producción:** esta entrega se validó con `tsc`, ESLint, tests y `next dev`. No se ejecutó `npm run build` (regla del proyecto). Si se despliega, revisar el empaquetado de `@huggingface/transformers`, `onnxruntime-node`, `sharp` y `zod`.
 
 ## Cómo probar manualmente
 
@@ -567,10 +696,16 @@ La primera llamada descarga el modelo y sus archivos de tokenización en `.cache
    - “¿Cuál es el período de garantía del producto?” → debe recuperar la página 1.
    - “¿Qué hace el asistente con el texto?” → debe recuperar la página 2.
 7. Confirma que cada resultado muestra documento, página, distancia y similitud.
-8. Prueba una pregunta vacía y una de más de 1.000 caracteres: la API debe responder `400`.
-9. Prueba `topK` en `0`, `21` o como texto: debe responder `400`.
-10. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y busca: `indexedChunkCount` debe ser `0` hasta que generes los vectores del nuevo modelo/revisión.
-11. Si regeneras los chunks de un documento, vuelve a generar sus embeddings.
+8. Configura `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` en `.env` y reinicia el servidor. Sin esas variables, comprueba que `/api/ask` responde `503` después de recuperar fragmentos.
+9. Ve a **Preguntar**, elige el documento y pregunta algo cuya respuesta esté claramente en una página. Confirma que la respuesta cita `[S1]` (o el ID correspondiente) y que la fuente muestra la página correcta.
+10. Pregunta algo que no esté en el documento. El modelo debe decir que no encontró evidencia suficiente; si responde de todos modos, revisa las fuentes y no lo tomes como una respuesta respaldada.
+11. Abre el detalle de fuentes y confirma que aparecen todos los fragmentos enviados al modelo, incluso los que no fueron citados, con documento, página, excerpt y distancia.
+12. Fuerza un error del proveedor (por ejemplo, una API key inválida o un modelo inexistente) y comprueba que la UI muestra un mensaje entendible, sin claves, prompts ni respuestas crudas.
+13. Abre las herramientas del navegador y busca `OPENROUTER_API_KEY` en el bundle, Network y Local Storage: no debe aparecer.
+14. Prueba una pregunta vacía y una de más de `RAG_QUESTION_MAX_CHARS`: la API debe responder `400`.
+15. Prueba `RAG_TOP_K` en `0` o `21`: se usa el valor por defecto con una advertencia, no se rompe la app.
+16. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y pregunta: el documento debe quedar sin embeddings compatibles y la API debe devolver `noEvidence: true` sin llamar a OpenRouter.
+17. Si regeneras los chunks de un documento, vuelve a generar sus embeddings antes de preguntar.
 
 Consultas útiles:
 
@@ -607,33 +742,37 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (37 tests en 4 archivos: dimensión, NaN, Infinity, formato pgvector, prefijos, validación de pregunta/topK, orquestación idempotente, resultado parcial y parámetros SQL)
-- `npx prisma migrate status` ✅ (3 migraciones aplicadas; `vector` 0.8.7 instalada)
-- Esquema ✅: `ChunkEmbedding` con `embedding vector(384)`, unique `(chunkId, modelId, modelRevision)`, índice por modelo y FK con `ON DELETE CASCADE`.
-- Inferencia real ✅: modelo descargado y cargado en 101,6 s; vectores de 384 dimensiones, todos finitos y con norma 1.000000. En una prueba directa del modelo con dos pasajes de ejemplo fuera de la base, la pregunta de cancelación quedó más cerca del pasaje de cancelación (0,884) que del pasaje de pago (0,793).
-- Generación ✅: 2 chunks → 2 embeddings; segunda ejecución → 0 generados, 2 omitidos; regeneración explícita → 2 generados y 2 filas totales.
-- SQL ✅: `vector_dims(embedding) = 384` en todas las filas; 0 duplicados por chunk/modelo/revisión; autosimilitud 1.000000.
-- Búsqueda ✅: la pregunta “¿Cuál es el período de garantía del producto?” devolvió primero la página 1 (distancia 0,1366) y la pregunta “¿Qué hace el asistente con el texto del documento?” devolvió primero la página 2 (distancia 0,1368). Orden ascendente y documento/página correctos.
-- Validación ✅: pregunta vacía y de 1.001 caracteres → `400`; `topK` 0, 21, `null` y string → `400`; cuerpo inválido → `400`; id inválido → `400`; documento inexistente → `404`; documento sin chunks → `409`; modelo inválido → `503`.
-- Fallo parcial ✅: un trigger temporal hizo fallar el segundo lote con `EMBEDDING_BATCH_SIZE=1`; la API devolvió `status: "partial"`, 1 generado y 1 fallido. Al quitar el trigger, la regeneración devolvió `complete` con 2 generados.
-- Aislamiento de modelo ✅: con `EMBEDDING_MODEL_ID=test/other-model` y `EMBEDDING_MODEL_REVISION=test-revision`, la búsqueda devolvió `indexedChunkCount: 0` sin cargar el modelo ni mezclar vectores.
-- Cascada ✅: borrar un chunk dentro de una transacción eliminó su embedding; el `ROLLBACK` restauró las 2 filas.
-- UI ✅: `GET /`, `GET /documents/[id]` y `GET /search` responden `200` con el panel de embeddings, el enlace de búsqueda y el formulario. No se automatizó una interacción de navegador; la API y el HTML renderizado son las evidencias de este entorno.
-- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y `next dev`.
+- `npm run test:unit` ✅ (61 tests en 9 archivos; incluye prompt, citas, entrada Zod, cliente OpenRouter mockeado, camino sin fuentes y filtro SQL por documento)
+- `npm test` ✅ (12 + 61)
+- `npx prisma migrate status` ✅ (3 migraciones aplicadas; no se agregaron migraciones en este sprint)
+- Tipo y esquema ✅: `ChunkEmbedding` sigue usando `embedding vector(384)`, unique `(chunkId, modelId, modelRevision)`, índice por modelo y FK con `ON DELETE CASCADE`.
+- Retrieval real ✅: `POST /api/ask` sobre `documento-de-prueba.pdf` cargó el modelo local y ejecutó la búsqueda; la configuración faltante se detectó después del retrieval, con `retrieval=1833ms` y el modelo listo. Esto prueba que el documento tenía embeddings, que se recuperaron chunks y que se armó el prompt.
+- Sin embeddings ✅: un documento temporal sin embeddings (insertado y eliminado con SQL) devolvió `200`, `noEvidence: true`, `noEvidenceReason: "no_embeddings"`, `sources: []`, `model: null`, sin cargar el modelo y sin llamar al proveedor. El log mostró `retrieval=12ms sources=0 provider=skipped`.
+- Configuración faltante ✅: con una pregunta sobre un documento indexado y sin `OPENROUTER_API_KEY`/`OPENROUTER_MODEL`, la API devolvió `503` con `OPENROUTER_NOT_CONFIGURED`, sin claves ni stack traces.
+- Validación HTTP ✅: JSON inválido `400`; pregunta vacía `400`; pregunta de 1.001 caracteres `400`; id inválido `400`; documento inexistente `404`; campo extra `400`; cuerpo de 20.000 caracteres `400`.
+- Cliente OpenRouter ✅ (mockeado): éxito con `usage`, timeout, HTTP 429, JSON malformado, respuesta vacía y objeto `error` embebido en `200`. No se envió `temperature` ni `top_p`. La API key no aparece en los mensajes de error.
+- Citas ✅ (unitario): `[S1]`, `[S1][S2]`, `[S1, S2]`, IDs inventados, grupos mixtos y corchetes ajenos. Una respuesta con `[S9]` no crea una fuente S9 ni una página inventada.
+- Seguridad ✅: `OPENROUTER_API_KEY` no aparece en `.next/static`; la UI recibe solo un booleano de configuración. Los logs registran duración, estado y usage, no pregunta, prompt ni texto completo.
+- UI ✅: `GET /`, `GET /search` y `GET /ask` responden `200`; `/ask` muestra el selector con los documentos y su cantidad de embeddings, el formulario, la advertencia de configuración y los enlaces de navegación. No se automatizó una interacción de navegador.
+- Proveedor real ❌ no ejecutado: no hay API key en este entorno. El camino de éxito de OpenRouter se validó con `fetch` mockeado, no con una llamada de red real.
+- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests y `next dev`.
 
 ## Próximo sprint
 
-Sprint 4: pasar los fragmentos recuperados a un modelo generativo y construir una respuesta con citas verificables. Antes de eso conviene definir un umbral de recuperación, medir la calidad con preguntas de evaluación y decidir si el corpus necesita un índice ANN.
+Sprint 5: evaluar la calidad del RAG. Hay que construir un conjunto de preguntas con respuestas y páginas esperadas, medir recuperación (por ejemplo, si la página correcta aparece en el topK), medir abstención cuando no hay evidencia, revisar citas y decidir si hace falta un umbral de similitud, reranking o un índice ANN. También conviene comparar modelos y costos de OpenRouter con datos, no por intuición.
 
 ## Orden sugerido para revisar el código
 
 1. `src/lib/embeddings/vector.ts` — validación, formato pgvector y similitud.
 2. `src/lib/embeddings/provider-core.ts` — prefijos E5, pooling mean, normalización y contrato del proveedor.
-3. `src/lib/embeddings/provider.ts` — carga lazy, revisión fijada y singleton.
-4. `src/lib/embeddings/config.ts` — modelo, lotes y límites.
-5. `prisma/schema.prisma` y `prisma/migrations/20261112153534_add_chunk_embeddings/migration.sql` — tabla y extensión.
-6. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert y búsqueda `<=>`.
-7. `src/lib/embeddings/generate.ts` — lotes, idempotencia y resultado parcial.
-8. `src/lib/embeddings/search.ts` — validación, embedding de la pregunta y respuesta.
-9. `src/app/api/documents/[id]/embeddings/route.ts` y `src/app/api/search/route.ts` — contratos HTTP.
-10. `src/components/documents/DocumentEmbeddingsPanel.tsx` y `src/components/search/SearchPanel.tsx` — estados de la UI.
+3. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert, búsqueda global y búsqueda filtrada por documento.
+4. `src/lib/rag/config.ts` — límites, timeout y lectura server-only de las credenciales.
+5. `src/lib/rag/input.ts` — validación Zod.
+6. `src/lib/rag/retrieval.ts` — documento, embeddings y recuperación.
+7. `src/lib/rag/prompt.ts` — etiquetas `[S#]`, presupuesto de contexto y system prompt.
+8. `src/lib/rag/openrouter.ts` — cliente HTTP, timeout y errores del proveedor.
+9. `src/lib/rag/citations.ts` — limpieza de citas inventadas.
+10. `src/lib/rag/generate.ts` — unión de contexto, respuesta y metadata.
+11. `src/lib/rag/ask.ts` — orquestación y logging seguro.
+12. `src/app/api/ask/route.ts` — contrato HTTP.
+13. `src/components/ask/AskPanel.tsx` y `src/app/ask/page.tsx` — UI y estados.
