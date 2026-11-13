@@ -33,7 +33,7 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integrati
 | T6 | S8, S10, S11 | inline | done | `de08c16`; prompt-injection test, privacy copy, no raw HTML rendering |
 | T7 | S12 | inline | done | `216f05a`; 198 unit tests / 24 files, 12 integration tests against `ida_test` |
 | T8 | S11, S13 | inline | done | README, `.env.example`, manual two-account probe, commands |
-| T9 | S1–S13 | delegated | pending | Independent verification at feature end; native review if due |
+| T9 | S1–S13 | delegated | done | Independent verifier `PASS_WITH_ADVISORIES` (no blockers); advisory 1 fixed in `8865945`; advisory 5 covered by new reset test; README corrected. Native review not started. |
 
 Route note: the feature names high-risk items 1 (schema migration and existing-data backfill), 2 (auth, sessions and password storage), 3 (contract/response changes for protected resources) and 4 (SQL ownership filters). One independent verifier runs at the end, not per task. No parallel writers: the units share the schema, DAL and route surfaces, so parallel edits would collide. All implementation ran inline.
 
@@ -272,3 +272,19 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
 
 - T9 independent verification and native review decision at feature end.
 - No push, PR or merge requested.
+
+
+### L5 — Independent verification
+
+- Verifier ran in a scratch copy at `/tmp/opencode/s6-verify-N1xoJBoj` and did not modify the workspace.
+- Commands observed: typecheck, lint, `npm test`, `npm run test:integration`, `migrate status`, isolated `eval:seed`/`eval:retrieval`, plus its own SQL, route, auth and migration probes.
+- Verdict: `PASS_WITH_ADVISORIES`, no blockers. All S1–S13 met.
+- Advisories addressed:
+  1. `findExistingChunkIds` and `upsertEmbeddingBatch` now filter/verify the owner, so embedding helpers cannot persist outside the authenticated user scope. `8865945`.
+  2. README now distinguishes window rate limits (`Retry-After`) from document quota and provider rate limits (no forwarded header).
+  3. The ask 404 message change (`Documento no encontrado.`) is intentional and keeps the same code/status.
+  4. Malformed document ids now return `400 INVALID_DOCUMENT_ID` consistently in GET/DELETE; foreign valid ids still return `404`.
+  5. Fixed-window reset now has an integration test (12 integration tests total).
+  6. IP spoofing and `trustHost` are documented as local/proxy caveats.
+- Post-advisory parent spot check: `npm run test:integration` 12/12 and full `npm test` 198/198 passed.
+- Native `gentle-ai review assess` was not invoked; if RDD is due, T9's candidate is the work-unit commit that holds the high-risk migration/auth change, not the accumulated branch.
