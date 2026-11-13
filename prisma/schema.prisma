@@ -12,8 +12,22 @@ enum DocumentStatus {
   FAILED
 }
 
+// Sprint 6: every document belongs to one user. Credentials are stored only as
+// an Argon2id hash. Auth.js uses JWT sessions, so no Session/Account tables are
+// needed; the signed cookie is the session mechanism.
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  documents    Document[]
+}
+
 model Document {
   id               String         @id @default(cuid())
+  userId           String
   originalFilename String
   mimeType         String
   sizeBytes        Int
@@ -22,9 +36,23 @@ model Document {
   errorMessage     String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   pages            DocumentPage[]
 
   @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+// Persistent fixed-window rate limiting. The key is an opaque hash of the
+// subject (user id, email or IP); the row survives process restarts and is
+// shared by every replica using the same database.
+model RateLimitBucket {
+  key             String   @id
+  count           Int      @default(0)
+  windowStartedAt DateTime
+  expiresAt       DateTime
+
+  @@index([expiresAt])
 }
 
 model DocumentPage {
