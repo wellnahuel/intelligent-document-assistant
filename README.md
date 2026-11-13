@@ -1229,6 +1229,7 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - Generación real con OpenRouter ✅: con `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` configurados en `.env`, A preguntó “¿Cuánto dura la garantía del producto?” y recibió `El período de garantía del producto es de dos años. [S1]` con fuentes de su propio documento. B recibió una respuesta equivalente con fuentes del documento de B. No se registraron preguntas completas ni texto completo de documentos.
 - `npm run eval:seed` / `npm run eval:retrieval` ✅ sin cambios de contrato; el fixture ahora tiene dueño `eval-fixture-owner` y el CLI resuelve el `userId` antes de consultar. El reporte de referencia del Sprint 5 sigue siendo el artefacto histórico.
 - Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado; la integración sigue validada con `fetch` mockeado.
+- Native receipt review ❌ no disponible: OpenCode v2.2.7 devolvió `immutable_review_transport_unsupported`; se preservó el resultado tipado y no se inventó un PASS. La evidencia de verificación es el verificador independiente (`PASS_WITH_ADVISORIES`, sin blockers).
 - `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y probes HTTP reales.
 - No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-6-auth-and-rag-security`.
 
