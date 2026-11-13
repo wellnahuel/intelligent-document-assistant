@@ -17,8 +17,14 @@ export type AppErrorCode =
   | "EMBEDDING_MODEL_UNAVAILABLE"
   | "EMBEDDING_QUERY_FAILED"
   | "INVALID_ASK_QUESTION"
+  | "UNAUTHENTICATED"
+  | "RATE_LIMITED"
+  | "DOCUMENT_QUOTA_EXCEEDED"
+  | "REGISTRATION_FAILED"
   | "OPENROUTER_NOT_CONFIGURED"
   | "RAG_PROVIDER_TIMEOUT"
+  | "RAG_PROVIDER_RATE_LIMITED"
+  | "RAG_PROVIDER_QUOTA_EXCEEDED"
   | "RAG_PROVIDER_ERROR";
 
 const STATUS_BY_CODE: Record<AppErrorCode, number> = {
@@ -40,8 +46,14 @@ const STATUS_BY_CODE: Record<AppErrorCode, number> = {
   EMBEDDING_MODEL_UNAVAILABLE: 503,
   EMBEDDING_QUERY_FAILED: 500,
   INVALID_ASK_QUESTION: 400,
+  UNAUTHENTICATED: 401,
+  RATE_LIMITED: 429,
+  DOCUMENT_QUOTA_EXCEEDED: 429,
+  REGISTRATION_FAILED: 400,
   OPENROUTER_NOT_CONFIGURED: 503,
   RAG_PROVIDER_TIMEOUT: 504,
+  RAG_PROVIDER_RATE_LIMITED: 429,
+  RAG_PROVIDER_QUOTA_EXCEEDED: 503,
   RAG_PROVIDER_ERROR: 502,
 };
 
@@ -52,11 +64,17 @@ const STATUS_BY_CODE: Record<AppErrorCode, number> = {
 export class AppError extends Error {
   readonly code: AppErrorCode;
   readonly status: number;
+  readonly retryAfterSeconds: number | null;
 
-  constructor(code: AppErrorCode, message: string) {
+  constructor(
+    code: AppErrorCode,
+    message: string,
+    options?: { retryAfterSeconds?: number },
+  ) {
     super(message);
     this.name = "AppError";
     this.code = code;
     this.status = STATUS_BY_CODE[code];
+    this.retryAfterSeconds = options?.retryAfterSeconds ?? null;
   }
 }
