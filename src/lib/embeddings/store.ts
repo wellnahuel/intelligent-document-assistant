@@ -27,9 +27,12 @@ export type NearestChunkRow = {
   distance: number | string;
 };
 
-export async function documentExists(documentId: string): Promise<boolean> {
-  const document = await prisma.document.findUnique({
-    where: { id: documentId },
+export async function documentExistsForUser(
+  userId: string,
+  documentId: string,
+): Promise<boolean> {
+  const document = await prisma.document.findFirst({
+    where: { id: documentId, userId },
     select: { id: true },
   });
 
@@ -37,10 +40,16 @@ export async function documentExists(documentId: string): Promise<boolean> {
 }
 
 export async function listDocumentChunks(
+  userId: string,
   documentId: string,
 ): Promise<EmbeddableChunk[]> {
   const rows = await prisma.documentChunk.findMany({
-    where: { documentPage: { documentId } },
+    where: {
+      documentPage: {
+        documentId,
+        document: { userId },
+      },
+    },
     select: {
       id: true,
       content: true,
@@ -66,19 +75,27 @@ export async function listDocumentChunks(
 }
 
 export async function countDocumentChunks(
+  userId: string,
   documentId: string,
 ): Promise<number> {
   return prisma.documentChunk.count({
-    where: { documentPage: { documentId } },
+    where: {
+      documentPage: {
+        documentId,
+        document: { userId },
+      },
+    },
   });
 }
 
 /**
  * Returns the chunks that already have a compatible embedding for the exact
  * model configuration. A row with a different revision or dimension is not
- * considered compatible and will be regenerated.
+ * considered compatible and will be regenerated. The caller already scoped
+ * the chunk ids to the authenticated user's document.
  */
 export async function findExistingChunkIds(
+  userId: string,
   chunkIds: readonly string[],
   model: EmbeddingModelInfo,
 ): Promise<Set<string>> {
@@ -92,6 +109,11 @@ export async function findExistingChunkIds(
       modelId: model.modelId,
       modelRevision: model.modelRevision,
       dimensions: model.dimensions,
+      chunk: {
+        documentPage: {
+          document: { userId },
+        },
+      },
     },
     select: { chunkId: true },
   });
@@ -100,6 +122,7 @@ export async function findExistingChunkIds(
 }
 
 export async function countDocumentEmbeddings(
+  userId: string,
   documentId: string,
   model: EmbeddingModelInfo,
 ): Promise<number> {
@@ -109,13 +132,17 @@ export async function countDocumentEmbeddings(
       modelRevision: model.modelRevision,
       dimensions: model.dimensions,
       chunk: {
-        documentPage: { documentId },
+        documentPage: {
+          documentId,
+          document: { userId },
+        },
       },
     },
   });
 }
 
-export async function countIndexedEmbeddings(
+export async function countIndexedEmbeddingsForUser(
+  userId: string,
   model: EmbeddingModelInfo,
 ): Promise<number> {
   return prisma.chunkEmbedding.count({
@@ -123,6 +150,11 @@ export async function countIndexedEmbeddings(
       modelId: model.modelId,
       modelRevision: model.modelRevision,
       dimensions: model.dimensions,
+      chunk: {
+        documentPage: {
+          document: { userId },
+        },
+      },
     },
   });
 }
@@ -131,13 +163,34 @@ export async function countIndexedEmbeddings(
  * Inserts or replaces a batch of vectors in one statement. The conflict target
  * matches the unique constraint, so repeated runs cannot duplicate rows. The
  * vector is sent as a parameter and cast to ::vector, never concatenated.
+ *
+ * Before writing, the chunk ids are checked against the owner. Callers already
+ * receive them from a scoped query; this second check keeps the write helper
+ * from becoming a way to persist an embedding for another user's chunk.
  */
 export async function upsertEmbeddingBatch(
+  userId: string,
   rows: readonly EmbeddingToStore[],
   model: EmbeddingModelInfo,
 ): Promise<void> {
   if (rows.length === 0) {
     return;
+  }
+
+  const chunkIds = [...new Set(rows.map((row) => row.chunkId))];
+  const ownedCount = await prisma.documentChunk.count({
+    where: {
+      id: { in: chunkIds },
+      documentPage: {
+        document: { userId },
+      },
+    },
+  });
+
+  if (ownedCount !== chunkIds.length) {
+    throw new Error(
+      "Refusing to persist embeddings for chunks outside the authenticated user scope.",
+    );
   }
 
   const values = rows.map(
@@ -164,12 +217,14 @@ export async function upsertEmbeddingBatch(
 }
 
 /**
- * Exact cosine search. No ANN index is used in this sprint: the corpus is
- * small and exact ordering is easier to inspect while learning.
+ * Exact cosine search scoped to one authenticated user. The owner predicate
+ * is inside the SQL, before the rows are returned to the application, so no
+ * other user's chunk can reach a prompt or a citation.
  */
-export async function findNearestChunks(
+export async function findNearestChunksForUser(
   vector: readonly number[],
   model: EmbeddingModelInfo,
+  userId: string,
   topK: number,
 ): Promise<NearestChunkRow[]> {
   const vectorLiteral = formatVectorForSql(vector, model.dimensions);
@@ -190,6 +245,44 @@ export async function findNearestChunks(
     WHERE e."modelId" = ${model.modelId}
       AND e."modelRevision" = ${model.modelRevision}
       AND e."dimensions" = ${model.dimensions}
+      AND d."userId" = ${userId}
+    ORDER BY e."embedding" <=> ${vectorLiteral}::vector ASC
+    LIMIT ${topK}
+  `);
+}
+
+/**
+ * Same exact search as findNearestChunksForUser, scoped to one document and
+ * one owner. Both predicates are in SQL: a foreign document id returns no
+ * rows instead of being fetched and authorized later.
+ */
+export async function findNearestChunksForDocument(
+  vector: readonly number[],
+  model: EmbeddingModelInfo,
+  documentId: string,
+  userId: string,
+  topK: number,
+): Promise<NearestChunkRow[]> {
+  const vectorLiteral = formatVectorForSql(vector, model.dimensions);
+
+  return prisma.$queryRaw<NearestChunkRow[]>(Prisma.sql`
+    SELECT
+      c."id" AS "chunkId",
+      c."content" AS "content",
+      c."chunkIndex" AS "chunkIndex",
+      p."pageNumber" AS "pageNumber",
+      d."id" AS "documentId",
+      d."originalFilename" AS "documentName",
+      (e."embedding" <=> ${vectorLiteral}::vector) AS "distance"
+    FROM "ChunkEmbedding" e
+    JOIN "DocumentChunk" c ON c."id" = e."chunkId"
+    JOIN "DocumentPage" p ON p."id" = c."documentPageId"
+    JOIN "Document" d ON d."id" = p."documentId"
+    WHERE e."modelId" = ${model.modelId}
+      AND e."modelRevision" = ${model.modelRevision}
+      AND e."dimensions" = ${model.dimensions}
+      AND p."documentId" = ${documentId}
+      AND d."userId" = ${userId}
     ORDER BY e."embedding" <=> ${vectorLiteral}::vector ASC
     LIMIT ${topK}
   `);

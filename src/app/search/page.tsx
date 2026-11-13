@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SearchPanel } from "@/components/search/SearchPanel";
+import { requireUser } from "@/lib/dal";
 import {
   getEmbeddingModelInfo,
   getSearchConfig,
@@ -15,7 +16,8 @@ export const metadata: Metadata = {
   title: "Búsqueda semántica",
 };
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  await requireUser();
   const searchConfig = getSearchConfig();
   const model = getEmbeddingModelInfo();
 
@@ -45,7 +47,9 @@ export default function SearchPage() {
         <p className={styles.note}>
           No se aplica un umbral de distancia. Los resultados se ordenan del
           más cercano al más lejano, hasta el topK elegido. El texto se procesa
-          localmente y no se envía a un proveedor externo.
+          localmente y no se envía a un proveedor externo. Para obtener una
+          respuesta redactada con citas, usá{" "}
+          <Link href="/ask">Preguntar al documento</Link>.
         </p>
       </header>
 

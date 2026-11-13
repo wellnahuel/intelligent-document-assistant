@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { logoutAction } from "@/app/(auth)/actions";
+import { getSessionUser } from "@/lib/dal";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,12 +13,14 @@ export const metadata: Metadata = {
     template: "%s · Intelligent Document Assistant",
   },
   description:
-    "Biblioteca de documentos con extracción por página, chunking y búsqueda semántica local con embeddings.",
+    "Biblioteca multiusuario de documentos con extracción por página, chunking, búsqueda semántica local y respuestas con citas verificadas.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const user = await getSessionUser();
+
   return (
     <html lang="es">
       <body>
@@ -49,18 +54,42 @@ export default function RootLayout({
                 </span>
                 <span className="brandText">
                   <strong>Intelligent Document Assistant</strong>
-                  <span>Biblioteca, texto y búsqueda · Sprint 3</span>
+                  <span>Biblioteca, búsqueda y respuestas · Sprint 6</span>
                 </span>
               </Link>
 
               <nav className="siteNav" aria-label="Navegación principal">
-                <Link href="/" className="navLink">
-                  Biblioteca
-                </Link>
-                <Link href="/search" className="navLink">
-                  Buscar
-                </Link>
-                <span className="sprintBadge">Sprint 3</span>
+                {user ? (
+                  <>
+                    <Link href="/" className="navLink">
+                      Biblioteca
+                    </Link>
+                    <Link href="/search" className="navLink">
+                      Buscar
+                    </Link>
+                    <Link href="/ask" className="navLink">
+                      Preguntar
+                    </Link>
+                    <span className="sessionUser" title={user.email}>
+                      {user.email}
+                    </span>
+                    <form action={logoutAction} className="logoutForm">
+                      <button type="submit" className="logoutButton">
+                        Salir
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="authLink">
+                      Ingresar
+                    </Link>
+                    <Link href="/register" className="authLink authLinkPrimary">
+                      Crear cuenta
+                    </Link>
+                  </>
+                )}
+                <span className="sprintBadge">Sprint 6</span>
               </nav>
             </div>
           </header>
@@ -73,7 +102,8 @@ export default function RootLayout({
             <div className="siteFooterInner">
               <p>Proyecto educativo de AI Engineering · RAG paso a paso.</p>
               <p className="footerWarning">
-                Entorno local sin autenticación. No exponer públicamente.
+                Entorno local con autenticación básica. No exponer públicamente
+                sin revisar las amenazas pendientes del README.
               </p>
             </div>
           </footer>

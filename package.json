@@ -10,10 +10,13 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:chunking && npm run test:unit",
+    "test:integration": "tsx scripts/test-integration.ts",
     "test:chunking": "node --experimental-strip-types --test tests/chunking.test.mjs",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "sample:pdf": "node scripts/generate-sample-pdf.mjs",
+    "eval:seed": "tsx scripts/eval-seed.ts",
+    "eval:retrieval": "tsx scripts/eval-retrieval.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -21,14 +24,18 @@
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.2",
+    "@node-rs/argon2": "2.2.2",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "18.0.10",
     "next": "16.4.6",
+    "next-auth": "5.0.0-beta.32",
     "pdfjs-dist": "6.5.438",
     "pg": "8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
@@ -38,6 +45,7 @@
     "eslint": "10.14.0",
     "eslint-config-next": "16.4.6",
     "prisma": "7.10.1",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   }

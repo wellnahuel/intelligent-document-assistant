@@ -1,0 +1,1946 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Intelligent Document Assistant — Cómo se mide la recuperación (Sprint 5)</title>
+<!--
+  Generar el PDF:
+  google-chrome --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage \
+    --no-pdf-header-footer --run-all-compositor-stages-before-draw \
+    --virtual-time-budget=3000 \
+    --print-to-pdf="docs/sprint-5-como-funciona.pdf" \
+    "file:///ruta/al/proyecto/docs/sprint-5-como-funciona.html"
+-->
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 15mm 26mm;
+  }
+
+  :root {
+    --ink: #1d1b18;
+    --muted: #5f5a53;
+    --faint: #8a857d;
+    --line: #e4dfd5;
+    --paper: #f8f6f2;
+    --white: #ffffff;
+    --accent: #5146c8;
+    --accent-deep: #3f36a8;
+    --accent-soft: #edeafd;
+    --violet: #6d28d9;
+    --violet-soft: #f5f3ff;
+    --amber: #8a5a00;
+    --amber-soft: #fdf0d5;
+    --green: #17724a;
+    --green-soft: #e3f3ea;
+    --red: #b3261e;
+    --red-soft: #fce9e7;
+    --mono: "DejaVu Sans Mono", monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    color: var(--ink);
+    background: #ffffff;
+    font-family: "Liberation Sans", "DejaVu Sans", sans-serif;
+    font-size: 10.2pt;
+    line-height: 1.62;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  p {
+    margin: 0 0 3mm;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  h1,
+  h2 {
+    font-family: Georgia, "Liberation Serif", serif;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin-bottom: 4mm;
+    font-size: 20pt;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    margin: 5mm 0 1.5mm;
+    font-size: 11.8pt;
+    letter-spacing: -0.01em;
+  }
+
+  .kicker {
+    margin: 0 0 2mm;
+    color: var(--accent-deep);
+    font-size: 8.2pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    break-after: avoid;
+  }
+
+  .lead {
+    color: var(--muted);
+    font-size: 11.2pt;
+    line-height: 1.62;
+  }
+
+  .small {
+    color: var(--faint);
+    font-size: 9pt;
+  }
+
+  code {
+    padding: 0.4mm 1.2mm;
+    border-radius: 4px;
+    background: #f1eee8;
+    color: #2a2723;
+    font-family: var(--mono);
+    font-size: 8.5pt;
+  }
+
+  pre {
+    margin: 3mm 0 5mm;
+    padding: 4mm 4.5mm;
+    overflow: hidden;
+    break-inside: avoid;
+    border-radius: 10px;
+    background: #171522;
+    color: #f1efe8;
+    font-family: var(--mono);
+    font-size: 8.1pt;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .break {
+    break-before: page;
+  }
+
+  .avoid {
+    break-inside: avoid;
+  }
+
+  /* Portada */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 252mm;
+    padding: 18mm 18mm 16mm;
+    border-radius: 24px;
+    background:
+      radial-gradient(520px 340px at 88% 8%, rgba(109, 40, 217, 0.42), transparent 65%),
+      radial-gradient(480px 300px at 8% 92%, rgba(81, 70, 200, 0.4), transparent 65%),
+      #15131f;
+    color: #ffffff;
+    break-after: page;
+  }
+
+  .cover-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6mm;
+  }
+
+  .cover-badge {
+    padding: 2mm 3.5mm;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ddd6fe;
+    font-size: 8.2pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .cover-brand {
+    color: #c4b5fd;
+    font-size: 8.8pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .cover-main {
+    display: grid;
+    grid-template-columns: 1.35fr 0.85fr;
+    align-items: center;
+    gap: 12mm;
+    margin: 8mm 0;
+  }
+
+  .cover-kicker {
+    margin-bottom: 5mm;
+    color: #c4b5fd;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .cover h1 {
+    margin-bottom: 5mm;
+    font-size: 34pt;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+
+  .cover-sub {
+    max-width: 88mm;
+    margin: 0;
+    color: #d6d0e6;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .ticket {
+    position: relative;
+    padding: 7mm 6mm 6mm;
+    border-radius: 4px;
+    background: #fffdf7;
+    color: #1b1916;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+    transform: rotate(1.3deg);
+  }
+
+  .ticket::before,
+  .ticket::after {
+    position: absolute;
+    top: 50%;
+    width: 6mm;
+    height: 6mm;
+    border-radius: 50%;
+    background: #15131f;
+    content: "";
+  }
+
+  .ticket::before {
+    left: -3mm;
+  }
+
+  .ticket::after {
+    right: -3mm;
+  }
+
+  .ticket-title {
+    margin: 0 0 4mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 1px dashed #cbc4b8;
+    font-family: var(--mono);
+    font-size: 7.7pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4mm;
+    padding: 1.4mm 0;
+    border-bottom: 1px dotted #e4dfd5;
+    font-size: 7.9pt;
+  }
+
+  .ticket-row span {
+    color: #6f6960;
+  }
+
+  .ticket-note {
+    margin-top: 4mm;
+    color: #8a5a00;
+    font-size: 7.8pt;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .cover-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-top: 5mm;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    color: #a8a2b8;
+    font-size: 8.6pt;
+  }
+
+  .cover-foot p {
+    margin: 0;
+  }
+
+  /* Secciones */
+  .section {
+    break-inside: auto;
+  }
+
+  .callout {
+    margin: 5mm 0;
+    padding: 4.5mm 5mm;
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    background: var(--accent-soft);
+    break-inside: avoid;
+  }
+
+  .callout.amber {
+    border-left-color: #f59e0b;
+    background: var(--amber-soft);
+  }
+
+  .callout.violet {
+    border-left-color: var(--violet);
+    background: var(--violet-soft);
+  }
+
+  .callout.green {
+    border-left-color: var(--green);
+    background: var(--green-soft);
+  }
+
+  .callout.red {
+    border-left-color: var(--red);
+    background: var(--red-soft);
+  }
+
+  .callout p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Tablas */
+  table {
+    width: 100%;
+    margin: 3mm 0 4mm;
+    border-collapse: collapse;
+    font-size: 8.8pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  th {
+    padding: 2.4mm 2.6mm;
+    border-bottom: 1px solid #cfc7b9;
+    background: #f1eee8;
+    color: #3b3731;
+    font-size: 8.3pt;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 1.9mm 2.4mm;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+
+  tbody tr:nth-child(even) {
+    background: #fcfbf8;
+  }
+
+  td strong {
+    color: var(--ink);
+  }
+
+  /* Pasos */
+  .step {
+    display: grid;
+    grid-template-columns: 10mm 1fr;
+    gap: 4mm;
+    margin-bottom: 4.5mm;
+    break-inside: avoid;
+  }
+
+  .step-num {
+    display: grid;
+    place-items: center;
+    width: 9mm;
+    height: 9mm;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+
+  .step-body {
+    min-width: 0;
+  }
+
+  .step h3 {
+    margin: 0 0 1mm;
+    font-size: 11.4pt;
+  }
+
+  .analogy {
+    margin: 0 0 1.5mm;
+    color: var(--violet);
+    font-size: 9.5pt;
+    font-style: italic;
+  }
+
+  .tech {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .step-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Diagrama */
+  .flow {
+    margin: 4mm 0 5mm;
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfbf8;
+  }
+
+  .flow-box {
+    position: relative;
+    padding: 2.7mm 3.8mm;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 9px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .flow-box.server {
+    border-left-color: var(--violet);
+  }
+
+  .flow-box.back {
+    border-left-color: var(--green);
+  }
+
+  .flow-box.client {
+    border-left-color: #f59e0b;
+  }
+
+  .flow-box .flow-label {
+    display: block;
+    margin-bottom: 0.8mm;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .flow-box strong {
+    display: block;
+    font-size: 9.7pt;
+  }
+
+  .flow-box span.desc {
+    display: block;
+    margin-top: 0.8mm;
+    color: var(--muted);
+    font-size: 8.7pt;
+    line-height: 1.45;
+  }
+
+  .flow-arrow {
+    margin: 0.8mm 0;
+    color: var(--accent);
+    font-size: 11pt;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .boundary {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin: 2.5mm 0;
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .boundary::before,
+  .boundary::after {
+    flex: 1;
+    border-top: 1.5px dashed #cfc7b9;
+    content: "";
+  }
+
+  /* Límites */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3mm;
+    margin: 4mm 0 5mm;
+  }
+
+  .stat {
+    padding: 3.5mm;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    break-inside: avoid;
+  }
+
+  .stat strong {
+    display: block;
+    color: var(--accent-deep);
+    font-size: 15pt;
+    line-height: 1.2;
+  }
+
+  .stat span {
+    display: block;
+    margin-top: 1mm;
+    color: var(--muted);
+    font-size: 8.2pt;
+    line-height: 1.35;
+  }
+
+  .stat.mono strong {
+    font-family: var(--mono);
+    font-size: 12pt;
+  }
+
+  /* Tarjetas */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5mm;
+    margin: 4mm 0 4mm;
+    break-inside: avoid;
+  }
+
+  .card {
+    padding: 3.4mm 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .card .tag {
+    display: inline-block;
+    margin-bottom: 2mm;
+    padding: 1mm 2.2mm;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--faint);
+    font-size: 7.4pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card h3 {
+    margin: 0 0 1.5mm;
+    font-size: 10.6pt;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 8.8pt;
+    line-height: 1.48;
+  }
+
+  /* Modelo de datos */
+  .model {
+    display: grid;
+    grid-template-columns: 1fr 16mm 1fr;
+    gap: 3mm;
+    align-items: center;
+    margin: 4mm 0 5mm;
+  }
+
+  .model-card {
+    padding: 4mm;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .model-label {
+    display: block;
+    margin-bottom: 1.5mm;
+    color: var(--accent-deep);
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .model-card strong {
+    display: block;
+    margin-bottom: 2mm;
+    font-family: var(--mono);
+    font-size: 10pt;
+  }
+
+  .model-card ul {
+    margin: 0;
+    padding-left: 4mm;
+    color: var(--muted);
+    font-size: 8.4pt;
+    line-height: 1.55;
+  }
+
+  .model-card li {
+    margin-bottom: 0.6mm;
+  }
+
+  .model-link {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Cita de fuente */
+  .source-demo {
+    margin: 4mm 0 5mm;
+    padding: 4mm 4.5mm;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    background: #ffffff;
+    break-inside: avoid;
+  }
+
+  .source-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2mm 4mm;
+    margin-bottom: 2mm;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 7.8pt;
+  }
+
+  .source-id {
+    padding: 1mm 2mm;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-weight: 700;
+  }
+
+  .source-cited {
+    padding: 1mm 2mm;
+    border-radius: 999px;
+    background: var(--green-soft);
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  .source-demo p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.2pt;
+    line-height: 1.55;
+  }
+
+  /* Glosario */
+  .glossary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 6mm;
+    margin-top: 3mm;
+  }
+
+  .glossary div {
+    break-inside: avoid;
+  }
+
+  .glossary dt {
+    margin-top: 2.5mm;
+    font-size: 9.2pt;
+    font-weight: 700;
+  }
+
+  .glossary dd {
+    margin: 0.5mm 0 0;
+    color: var(--muted);
+    font-size: 9pt;
+    line-height: 1.48;
+  }
+
+  /* Preguntas */
+  .qa {
+    margin-bottom: 3.5mm;
+    break-inside: avoid;
+  }
+
+  .qa .q {
+    margin: 0 0 1mm;
+    font-size: 10.2pt;
+    font-weight: 700;
+  }
+
+  .qa .a {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9.5pt;
+  }
+
+  .checklist {
+    margin: 3mm 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .checklist li {
+    position: relative;
+    margin-bottom: 1.5mm;
+    padding-left: 7mm;
+    color: var(--muted);
+    font-size: 9.4pt;
+  }
+
+  .checklist li::before {
+    position: absolute;
+    top: 0.2mm;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: 4.2mm;
+    height: 4.2mm;
+    border: 1.2px solid #b8b1a5;
+    border-radius: 4px;
+    color: transparent;
+    content: "✓";
+    font-size: 7pt;
+    font-weight: 700;
+  }
+
+  pre.tree {
+    padding: 3.5mm 4mm;
+    font-size: 7.2pt;
+    line-height: 1.32;
+  }
+
+  .review {
+    margin: 2mm 0 0;
+    padding-left: 5mm;
+    color: var(--muted);
+    font-size: 9.2pt;
+  }
+
+  .review li {
+    margin-bottom: 1.2mm;
+  }
+
+  .review li::marker {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+</style>
+</head>
+<body>
+<!-- ============================================================ -->
+<!-- Portada                                                      -->
+<!-- ============================================================ -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="cover-badge">Proyecto 5 · Sprint 5</span>
+    <span class="cover-brand">Intelligent Document Assistant</span>
+  </div>
+
+  <div class="cover-main">
+    <div>
+      <p class="cover-kicker">Documento de estudio</p>
+      <h1>Cómo se<br>mide la<br>recuperación</h1>
+      <p class="cover-sub">El sistema ya busca y responde. Ahora aprende a medir cada parte por separado: si los fragmentos correctos aparecen, qué tan arriba quedan y si la respuesta usa esos fragmentos sin inventar.</p>
+    </div>
+
+    <div class="ticket">
+      <p class="ticket-title">FICHA DE EVALUACIÓN #005</p>
+      <div class="ticket-row"><span>Documentos</span><strong>2 ficticios</strong></div>
+      <div class="ticket-row"><span>Chunks</span><strong>21</strong></div>
+      <div class="ticket-row"><span>Casos</span><strong>25 · 20 + 5</strong></div>
+      <div class="ticket-row"><span>Métricas</span><strong>Recall · P@k · MRR</strong></div>
+      <div class="ticket-row"><span>Estrategias</span><strong>3 base + rerank</strong></div>
+      <div class="ticket-row"><span>Fusión</span><strong>RRF · k = 60</strong></div>
+      <div class="ticket-row"><span>Rerank</span><strong>Opcional</strong></div>
+      <div class="ticket-row"><span>Total</span><strong>Sprint 5</strong></div>
+      <div class="ticket-note">Medir antes de optimizar.<br>Un número sin configuración no se puede reproducir.</div>
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <p>TypeScript · PostgreSQL + pgvector · Vitest · OpenRouter</p>
+    <p>El reporte guarda modelo, parámetros, hashes y latencias.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Resumen en 30 segundos                                       -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Resumen en 30 segundos</p>
+  <h2>Recuperar no es responder</h2>
+
+  <p class="lead">El Sprint 4 conectó búsqueda y generación. El Sprint 5 separa las dos cosas para poder diagnosticarlas. Primero mide si la búsqueda recupera los fragmentos que contienen la respuesta. Después revisa, a mano, si el modelo usa esos fragmentos, los cita bien y se abstiene cuando no hay evidencia.</p>
+
+  <div class="stats">
+    <div class="stat mono"><strong>25</strong><span>casos revisados a mano</span></div>
+    <div class="stat mono"><strong>20 / 5</strong><span>respondibles / no respondibles</span></div>
+    <div class="stat mono"><strong>21</strong><span>chunks ficticios con embeddings</span></div>
+    <div class="stat mono"><strong>4</strong><span>estrategias comparables</span></div>
+  </div>
+
+  <div class="callout">
+    <p><strong>La tesis del Sprint 5:</strong> si no medís, no sabés si el problema está en la búsqueda, en el ranking, en el contexto o en el modelo. Las métricas de recuperación y la revisión de respuestas responden preguntas distintas y no se reemplazan entre sí.</p>
+  </div>
+
+  <h3>El recorrido completo</h3>
+
+  <div class="flow">
+    <div class="flow-box client">
+      <span class="flow-label">Gold set</span>
+      <strong>Preguntas con chunks relevantes conocidos</strong>
+      <span class="desc">Cada caso declara el documento, los chunks que contienen la respuesta y si es respondible.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box server">
+      <span class="flow-label">Retrieval</span>
+      <strong>Cada estrategia devuelve un ranking</strong>
+      <span class="desc">Vectorial, léxica, híbrida con RRF y, si está configurada, híbrida + rerank.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box">
+      <span class="flow-label">Métricas</span>
+      <strong>Recall@k, Precision@k y MRR</strong>
+      <span class="desc">Se calculan por caso y se agregan solo sobre los casos respondibles.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box back">
+      <span class="flow-label">Reporte</span>
+      <strong>Un JSON reproducible</strong>
+      <span class="desc">Modelo, revisión, topK, candidatos, RRF k, hashes, rangos y latencias.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box client">
+      <span class="flow-label">Revisión manual</span>
+      <strong>Respuesta, fidelidad, citas y abstención</strong>
+      <span class="desc">La búsqueda puede ser buena y la respuesta mala. Se revisan por separado.</span>
+    </div>
+  </div>
+
+  <p class="small">La evaluación de recuperación no llama a un LLM. Solo usa el modelo local de embeddings y SQL. La revisión de respuestas sí usa el flujo de <code>/ask</code> del Sprint 4.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- Dos preguntas                                                -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">El problema</p>
+  <h2>Dos preguntas, dos evaluaciones</h2>
+
+  <p class="lead">Una búsqueda perfecta no garantiza una buena respuesta. Y una respuesta convincente puede estar construida sobre fragmentos irrelevantes. Por eso el sprint mide en dos capas.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capa</th>
+        <th>Qué pregunta responde</th>
+        <th>Cómo se mide</th>
+        <th>Herramienta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Recuperación</strong></td>
+        <td>¿Aparecen los chunks que contienen la respuesta? ¿En qué posición?</td>
+        <td>Recall@k, Precision@k, MRR.</td>
+        <td><code>npm run eval:retrieval</code></td>
+      </tr>
+      <tr>
+        <td><strong>Respuesta</strong></td>
+        <td>¿Usa esos chunks? ¿Los cita bien? ¿Se abstiene cuando no hay evidencia?</td>
+        <td>Revisión manual con hechos esperados y fuentes.</td>
+        <td><code>eval/answer-quality-review.md</code></td>
+      </tr>
+      <tr>
+        <td><strong>Operación</strong></td>
+        <td>¿Cuánto tarda y cuánto consume?</td>
+        <td>Latencia por caso, <code>usage</code> del proveedor.</td>
+        <td>Reporte + logs del servidor.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <p><strong>Un diagnóstico rápido:</strong> si Recall@5 es bajo, el fragmento correcto ni siquiera llega a los candidatos. Si Recall es alto pero MRR es bajo, el fragmento aparece, pero demasiado abajo. Si la recuperación es buena y la respuesta falla, el problema está en el prompt, el modelo o el contexto.</p>
+  </div>
+
+  <h3>Por qué no alcanza con “me parece que responde bien”</h3>
+
+  <p>Una respuesta puede sonar segura y ser incorrecta. También puede ser correcta y citar una fuente que no sostiene la afirmación. La evaluación manual obliga a separar <strong>exactitud</strong>, <strong>fidelidad</strong>, <strong>citas</strong> y <strong>abstención</strong>, en lugar de dar una impresión general.</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">Exactitud</span>
+      <h3>¿Está el hecho esperado?</h3>
+      <p>Se compara contra los <code>expectedFacts</code> del gold set. No alcanza con que la respuesta sea plausible.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Fidelidad</span>
+      <h3>¿Cada afirmación tiene respaldo?</h3>
+      <p>Una afirmación importante sin fuente, o que contradice la fuente, es un fallo aunque el texto suene bien.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Citas</span>
+      <h3>¿El <code>[S#]</code> apunta al chunk correcto?</h3>
+      <p>El servidor valida que el ID exista. La persona verifica que el excerpt sostenga la afirmación.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Abstención</span>
+      <h3>¿Reconoce cuando no hay evidencia?</h3>
+      <p>En un caso no respondible, inventar un dato es peor que decir “no encontré esa información”.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Gold set                                                     -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">El gold set</p>
+  <h2>Preguntas con respuesta conocida</h2>
+
+  <p class="lead">El gold set es un conjunto pequeño de preguntas cuya respuesta y cuyos fragmentos relevantes conocemos de antemano. Sin etiquetas humanas, no hay forma de saber si una estrategia “mejoró” o simplemente devolvió otra cosa.</p>
+
+  <pre><code>{
+  "id": "q-02",
+  "question": "¿Cuántos días de aviso exige el contrato para cancelar el servicio?",
+  "documentId": "eval-doc-contrato",
+  "relevantChunkIds": ["eval-chunk-contrato-04"],
+  "answerable": true,
+  "expectedFacts": ["Se requieren treinta (30) días corridos de aviso por escrito."]
+}</code></pre>
+
+  <p>Los casos no respondibles tienen la lista de chunks relevantes vacía. No se evalúan con Recall ni MRR: se usan para revisar la abstención.</p>
+
+  <pre><code>{
+  "id": "q-11",
+  "question": "¿Cuál es el número de teléfono del propietario del edificio?",
+  "documentId": "eval-doc-contrato",
+  "relevantChunkIds": [],
+  "answerable": false,
+  "expectedFacts": []
+}</code></pre>
+
+  <h3>Qué valida el cargador</h3>
+
+  <ul class="checklist">
+    <li>IDs de caso únicos.</li>
+    <li>El documento referenciado existe en el fixture.</li>
+    <li>Cada chunk relevante existe y pertenece a ese documento.</li>
+    <li><code>answerable: true</code> exige al menos un chunk relevante.</li>
+    <li><code>answerable: false</code> no puede declarar chunks relevantes ni hechos esperados.</li>
+    <li>El fixture y el gold set no contienen documentos reales ni datos sensibles.</li>
+  </ul>
+
+  <h3>El fixture ficticio</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Documento</th>
+        <th>Páginas</th>
+        <th>Chunks</th>
+        <th>Qué permite probar</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>eval-doc-contrato</code></td>
+        <td>2</td>
+        <td>12</td>
+        <td>Fechas, montos, plazos, códigos, preguntas no respondibles.</td>
+      </tr>
+      <tr>
+        <td><code>eval-doc-manual</code></td>
+        <td>2</td>
+        <td>9</td>
+        <td>Códigos de error, repuestos, especificaciones y garantía.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <p><strong>IDs deterministas:</strong> el seed usa IDs como <code>eval-chunk-contrato-04</code> en lugar de cuids generados. Así el gold set puede referenciarlos de forma estable y el reporte se puede reproducir en otra máquina.</p>
+  </div>
+
+  <h3>Cómo se siembra</h3>
+
+  <pre><code>npm run eval:seed</code></pre>
+
+  <p>El comando reemplaza solo los documentos con IDs <code>eval-</code>, inserta páginas y chunks, y genera los embeddings con el mismo modelo local del resto de la app. Es idempotente: volver a ejecutarlo no duplica filas. Si editás el fixture o el gold set, hay que volver a sembrar antes de evaluar.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- Métricas                                                     -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Las métricas</p>
+  <h2>Recall, Precision y MRR</h2>
+
+  <p class="lead">Las tres métricas miran el mismo ranking desde ángulos distintos. Juntas permiten distinguir “no aparece” de “aparece demasiado abajo” y de “aparece, pero hay mucho ruido”.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Métrica</th>
+        <th>Qué mide</th>
+        <th>Fórmula</th>
+        <th>Qué diagnóstico habilita</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Recall@k</strong></td>
+        <td>Proporción de chunks relevantes que aparecen en los primeros <code>k</code>.</td>
+        <td><code>aciertos en top-k / total de relevantes</code></td>
+        <td>Si es bajo, el fragmento correcto ni siquiera llega a los candidatos.</td>
+      </tr>
+      <tr>
+        <td><strong>Precision@k</strong></td>
+        <td>Proporción de los primeros <code>k</code> resultados que es relevante.</td>
+        <td><code>aciertos en top-k / k</code></td>
+        <td>Si es baja, el ranking trae ruido alrededor del acierto.</td>
+      </tr>
+      <tr>
+        <td><strong>MRR</strong></td>
+        <td>Qué tan arriba aparece el primer chunk relevante.</td>
+        <td><code>1 / posición del primer relevante</code></td>
+        <td>Si es bajo, el fragmento aparece, pero demasiado abajo.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Un ejemplo con números</h3>
+
+  <p>Supongamos que los chunks relevantes son <code>chunk-12</code> y <code>chunk-13</code>, y el ranking devuelto es:</p>
+
+  <pre><code>1. chunk-7
+2. chunk-12
+3. chunk-18
+4. chunk-13
+5. chunk-2</code></pre>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Métrica</th>
+        <th>Cálculo</th>
+        <th>Resultado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Recall@5</strong></td>
+        <td>2 relevantes encontrados / 2 relevantes totales</td>
+        <td><code>1.0000</code></td>
+      </tr>
+      <tr>
+        <td><strong>Precision@5</strong></td>
+        <td>2 relevantes en el top-5 / 5 posiciones</td>
+        <td><code>0.4000</code></td>
+      </tr>
+      <tr>
+        <td><strong>MRR</strong></td>
+        <td>El primer relevante está en la posición 2</td>
+        <td><code>1 / 2 = 0.5000</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout violet">
+    <p><strong>Precision@k divide por <code>k</code>, no por la cantidad devuelta.</strong> Si una estrategia devuelve menos resultados, las posiciones ausentes cuentan como no relevantes. La regla se aplica a todas las estrategias y queda registrada en el reporte como <code>precisionAtKDenominator: "k"</code>. Sin esa regla, una lista corta podría inflar la precisión artificialmente.</p>
+  </div>
+
+  <h3>Qué hacer con cada número</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Síntoma</th>
+        <th>Causa probable</th>
+        <th>Qué investigar primero</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Recall@k bajo</td>
+        <td>El chunk correcto no está entre los candidatos.</td>
+        <td>Chunking, embeddings, filtro de documento, idioma, tamaño de la lista de candidatos.</td>
+      </tr>
+      <tr>
+        <td>Recall alto, MRR bajo</td>
+        <td>El chunk correcto aparece, pero abajo.</td>
+        <td>Ranking, RRF, reranker, tamaño de <code>k</code>.</td>
+      </tr>
+      <tr>
+        <td>Precision baja con Recall alto</td>
+        <td>Hay muchos resultados irrelevantes en el top-k.</td>
+        <td>Ranking y calibración; para respuestas, el presupuesto de contexto.</td>
+      </tr>
+      <tr>
+        <td>Recall y MRR altos, respuesta mala</td>
+        <td>La recuperación no es el cuello de botella.</td>
+        <td>Prompt, modelo, contexto, citas y abstención.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<!-- Vectorial                                                    -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Estrategia A</p>
+  <h2>Búsqueda vectorial</h2>
+
+  <p class="lead">La búsqueda vectorial encuentra textos de significado parecido. El Sprint 5 no la reimplementa: reutiliza el embedding <code>query: </code> y la búsqueda exacta con el operador <code>&lt;=&gt;</code> de pgvector.</p>
+
+  <div class="flow">
+    <div class="flow-box client">
+      <span class="flow-label">Pregunta</span>
+      <strong>Se genera un vector con el modelo local</strong>
+      <span class="desc">Mismo modelo, misma revisión y mismas 384 dimensiones que los chunks.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box server">
+      <span class="flow-label">Filtro</span>
+      <strong>Documento + modelo + revisión + dimensiones</strong>
+      <span class="desc">No se mezclan embeddings de modelos o revisiones incompatibles.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box">
+      <span class="flow-label">Orden</span>
+      <strong>Distancia coseno ascendente</strong>
+      <span class="desc">Menor distancia significa mayor similitud. Se devuelven hasta <code>topK</code>.</span>
+    </div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-box back">
+      <span class="flow-label">Resultado</span>
+      <strong>Chunks con documento, página y contenido</strong>
+      <span class="desc">La metadata queda disponible para las citas y para el reporte.</span>
+    </div>
+  </div>
+
+  <p>La app no tiene un modelo de usuarios: el único filtro existente es <code>documentId</code>. El Sprint 5 no inventó un filtro de usuario. El <code>topK</code> es configurable y la evaluación lo fija en 5 por defecto.</p>
+
+  <div class="callout">
+    <p><strong>La búsqueda exacta es O(n)</strong> sobre las filas compatibles. El corpus de evaluación es minúsculo, así que la latencia no representa un sistema en producción. Un índice ANN es trabajo futuro, no una mejora que este sprint pueda justificar con estos datos.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Léxica                                                       -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Estrategia B</p>
+  <h2>Búsqueda léxica</h2>
+
+  <p class="lead">La búsqueda de texto completo encuentra coincidencias de términos. Es especialmente útil para nombres, números, fechas y códigos exactos como <code>ESC-104</code>, <code>FLT-450-A</code> o <code>NA-2026-014</code>, donde la similitud semántica puede quedar corta.</p>
+
+  <h3>tsvector y tsquery</h3>
+
+  <p>PostgreSQL convierte el texto en un <code>tsvector</code> y la consulta en un <code>tsquery</code>. La configuración <code>simple</code> solo tokeniza y normaliza a minúsculas: no aplica stemming ni stopwords de un idioma particular.</p>
+
+  <pre><code>SELECT
+  c."id" AS "chunkId",
+  ts_rank_cd(
+    to_tsvector('simple', c."content"),
+    websearch_to_tsquery('simple', $1)
+  ) AS "lexicalScore"
+FROM "DocumentChunk" c
+JOIN "DocumentPage" p ON p."id" = c."documentPageId"
+WHERE p."documentId" = $2
+  AND to_tsvector('simple', c."content")
+      @@ websearch_to_tsquery('simple', $1)
+ORDER BY "lexicalScore" DESC, c."id" ASC
+LIMIT $3;</code></pre>
+
+  <h3>El bug que encontró la evaluación</h3>
+
+  <p>La primera versión pasaba la pregunta completa a <code>websearch_to_tsquery</code>. Ese operador une todos los términos con <strong>AND</strong>: para que un chunk coincidiera, tenía que contener todas las palabras de la pregunta. En la práctica, ningún chunk cumple eso. La evaluación real devolvió <strong>cero resultados léxicos en los 25 casos</strong>.</p>
+
+  <div class="callout red">
+    <p><strong>Moraleja:</strong> una consulta que no falla no es lo mismo que una consulta que encuentra. El comando de evaluación detectó el problema porque comparó contra un gold set, no porque el SQL lanzara una excepción.</p>
+  </div>
+
+  <p>La corrección extrae los términos Unicode de la pregunta, conserva códigos con guiones, elimina duplicados, los pone entre comillas y los une con <code>or</code>. El texto sigue viajando como parámetro: nunca se concatena en el SQL.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Entrada</th>
+        <th>tsquery construido</th>
+        <th>Efecto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>¿Cuántos días de aviso?</code></td>
+        <td><code>"cuántos" or "días" or "de" or "aviso"</code></td>
+        <td>Coincide con chunks que tengan cualquiera de los términos; el ranking premia los que tienen más.</td>
+      </tr>
+      <tr>
+        <td><code>ESC-104</code></td>
+        <td><code>"esc-104"</code></td>
+        <td>Conserva el código exacto y lo diferencia de una palabra genérica.</td>
+      </tr>
+      <tr>
+        <td><code>...!!!</code></td>
+        <td><code>null</code></td>
+        <td>No se ejecuta ninguna consulta a la base.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Después de la corrección, el Recall@5 léxico pasó de <code>0.0000</code> a <code>0.9500</code>. El MRR quedó más bajo que el vectorial (<code>0.6350</code>), lo que muestra que recuperar no es lo mismo que ordenar.</p>
+
+  <h3>Índice GIN</h3>
+
+  <pre><code>CREATE INDEX "DocumentChunk_content_simple_fts_idx"
+ON "DocumentChunk"
+USING GIN (to_tsvector('simple', "content"));</code></pre>
+
+  <p>La expresión del índice debe coincidir exactamente con la de la consulta para que PostgreSQL pueda usarlo. GIN acelera las búsquedas de texto completo a costa de almacenamiento y de escrituras más caras. En el corpus de 21 chunks el planner puede preferir un scan secuencial; con <code>enable_seqscan = off</code> se ve el <code>Bitmap Index Scan</code> sobre el índice. La migración es SQL manual porque Prisma no puede declarar índices de expresión en <code>schema.prisma</code>.</p>
+
+  <div class="callout amber">
+    <p><strong>Prisma y los índices de expresión:</strong> al crear una migración futura con <code>prisma migrate dev --create-only</code>, revisá el SQL generado. Prisma no conoce este índice y una migración automática podría intentar eliminarlo.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- RRF                                                          -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Estrategia C</p>
+  <h2>Reciprocal Rank Fusion</h2>
+
+  <p class="lead">La búsqueda híbrida combina la lista vectorial y la léxica. El problema es que sus scores no comparten escala: la distancia coseno es menor cuando el texto es más parecido, mientras que <code>ts_rank_cd</code> es mayor cuando hay más coincidencias. Sumarlos exigiría una normalización arbitraria.</p>
+
+  <p>RRF evita esa comparación y usa solo las <strong>posiciones</strong>:</p>
+
+  <pre><code>RRF(d) = Σ 1 / (k + rank_s(d))</code></pre>
+
+  <p><code>k</code> es una constante que suaviza la importancia de las primeras posiciones. El valor por defecto es <code>60</code> y se configura con <code>RETRIEVAL_RRF_K</code>. Un chunk que aparece bien ubicado en ambas listas suma dos contribuciones; uno que aparece en una sola suma una.</p>
+
+  <h3>Por qué no sumamos scores</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Fuente</th>
+        <th>Score</th>
+        <th>Dirección</th>
+        <th>Problema de sumarlo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Vectorial</td>
+        <td>Distancia coseno <code>&lt;=&gt;</code></td>
+        <td>Menor es mejor.</td>
+        <td>Un valor de 0.2 no significa lo mismo que 0.2 en la otra escala.</td>
+      </tr>
+      <tr>
+        <td>Léxica</td>
+        <td><code>ts_rank_cd</code></td>
+        <td>Mayor es mejor.</td>
+        <td>Depende de la cantidad de términos y de la densidad; no es una probabilidad.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Un ejemplo de fusión</h3>
+
+  <p>Con <code>k = 60</code>, un chunk en la posición 2 de la lista vectorial y en la posición 1 de la léxica suma:</p>
+
+  <pre><code>1 / (60 + 2) + 1 / (60 + 1)
+= 1/62 + 1/61
+≈ 0.016129 + 0.016393
+≈ 0.032522</code></pre>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Chunk</th>
+        <th>Rank vectorial</th>
+        <th>Rank léxico</th>
+        <th>Score RRF</th>
+        <th>Resultado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>chunk-b</code></td>
+        <td>2</td>
+        <td>1</td>
+        <td><code>0.032522</code></td>
+        <td>Sube por aparecer bien en ambas listas.</td>
+      </tr>
+      <tr>
+        <td><code>chunk-a</code></td>
+        <td>1</td>
+        <td>—</td>
+        <td><code>0.016393</code></td>
+        <td>Solo compite con una fuente.</td>
+      </tr>
+      <tr>
+        <td><code>chunk-c</code></td>
+        <td>—</td>
+        <td>2</td>
+        <td><code>0.016129</code></td>
+        <td>Solo compite con la otra.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <p><strong>Duplicados:</strong> dentro de una misma lista, un chunk repetido se cuenta una sola vez. Si aparece en ambas listas, se acumulan exactamente dos contribuciones, una por fuente. El resultado conserva <code>sourceRanks</code> para poder rastrear de dónde salió cada posición. Los empates se resuelven por mejor rank y después por <code>chunkId</code>, para que el reporte sea determinista.</p>
+  </div>
+
+  <p>La evaluación pide 20 candidatos a cada fuente, fusiona y devuelve el top-5. Así el mismo caso se puede comparar contra el baseline vectorial sin cambiar el gold set.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- Reranking                                                    -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Estrategia D</p>
+  <h2>Reranking opcional</h2>
+
+  <p class="lead">El reranker recibe la pregunta y una lista chica de candidatos, y vuelve a ordenarlos comparando la pregunta con cada texto. No reemplaza a la búsqueda: la mejora después de recuperar.</p>
+
+  <pre><code>Búsqueda vectorial: primeros 20
+Búsqueda léxica:    primeros 20
+RRF:                mejores 20 combinados
+Reranker opcional:  mejores 5
+LLM:                responde con esos 5</code></pre>
+
+  <h3>El contrato</h3>
+
+  <pre><code>interface Reranker {
+  readonly model: string;
+  rerank(input: {
+    query: string;
+    candidates: readonly RerankCandidate[];
+    topN: number;
+  }): Promise&lt;RerankOutcome&gt;;
+}</code></pre>
+
+  <p>El cliente de OpenRouter usa <code>POST /api/v1/rerank</code>. El body lleva <code>model</code>, <code>query</code>, <code>documents</code> y <code>top_n</code>. La respuesta trae <code>results</code> con <code>index</code> y <code>relevance_score</code>, más un <code>usage</code> con <code>search_units</code>, <code>total_tokens</code> y, a veces, <code>cost</code>.</p>
+
+  <h3>Qué se valida</h3>
+
+  <ul class="checklist">
+    <li>El índice devuelto es un entero dentro del rango de candidatos enviados.</li>
+    <li>Ningún índice aparece dos veces.</li>
+    <li>El score de relevancia es finito.</li>
+    <li>La respuesta vacía se rechaza si había candidatos.</li>
+    <li>Timeout, 429, 5xx, error de red y JSON malformado se convierten en errores seguros.</li>
+    <li>La latencia y el usage se registran sin guardar la pregunta ni el texto de los candidatos.</li>
+  </ul>
+
+  <div class="callout red">
+    <p><strong>Datos externos:</strong> al activar el reranking, la pregunta y los chunks candidatos se envían a OpenRouter. Usá solo el fixture ficticio o documentos que puedas compartir. El reranking está desactivado si <code>RERANK_MODEL</code> está vacío o no hay clave; el comando normal no falla por no tenerlo.</p>
+  </div>
+
+  <p>No se asume que exista un modelo gratuito. El modelo y su precio pueden cambiar. Si no hay un modelo configurado, la estrategia se reporta como <code>skipped</code> con el motivo <code>missing_model</code> o <code>disabled_by_flag</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- CLI y reporte                                                -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La herramienta</p>
+  <h2>Un comando, un reporte</h2>
+
+  <p class="lead">La evaluación se ejecuta desde la raíz del proyecto, sin llamar a un LLM. El comando imprime un resumen y escribe un JSON con todo lo necesario para reproducir la comparación.</p>
+
+  <pre><code>npm run eval:seed          # una vez, o después de editar el fixture
+npm run eval:retrieval     # ejecuta los 25 casos
+npm run eval:retrieval -- --top-k 5 --candidates 20 --rrf-k 60
+npm run eval:retrieval -- --no-rerank</code></pre>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Flag</th>
+        <th>Default</th>
+        <th>Qué hace</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>--top-k</code></td>
+        <td><code>EVAL_TOP_K</code> o 5</td>
+        <td>Corte de Recall@k, Precision@k y MRR.</td>
+      </tr>
+      <tr>
+        <td><code>--candidates</code></td>
+        <td><code>RETRIEVAL_CANDIDATES</code> o 20</td>
+        <td>Candidatos que devuelve cada fuente antes de RRF.</td>
+      </tr>
+      <tr>
+        <td><code>--rrf-k</code></td>
+        <td><code>RETRIEVAL_RRF_K</code> o 60</td>
+        <td>Constante de Reciprocal Rank Fusion.</td>
+      </tr>
+      <tr>
+        <td><code>--no-rerank</code></td>
+        <td>—</td>
+        <td>Omite el reranking aunque haya un modelo configurado.</td>
+      </tr>
+      <tr>
+        <td><code>--out</code></td>
+        <td><code>eval/reports/retrieval-&lt;fecha&gt;.json</code></td>
+        <td>Ruta del reporte.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Qué guarda el reporte</h3>
+
+  <ul class="checklist">
+    <li>Fecha y versión de Node.</li>
+    <li>Rutas y hashes SHA-256 del fixture y del gold set.</li>
+    <li>Modelo, revisión y dimensiones del embedding.</li>
+    <li><code>topK</code>, candidatos y constante RRF.</li>
+    <li>Estado del reranking: modelo, <code>topN</code>, motivo de omisión, latencia y usage.</li>
+    <li>Agregados por estrategia: Recall, Precision, MRR, latencia media y casos fallidos.</li>
+    <li>Por caso: IDs recuperados, rank de cada chunk relevante, métricas y latencia.</li>
+    <li>Notas sobre el denominador de Precision, la latencia del embedding y el envío externo del rerank.</li>
+  </ul>
+
+  <div class="callout">
+    <p><strong>La latencia no se mezcla:</strong> el embedding de la pregunta se mide una vez por caso y se informa como <code>meanEmbeddingMs</code>. La latencia de cada estrategia mide la búsqueda y la fusión, no vuelve a contar el embedding.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Resultados reales                                            -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La ejecución real</p>
+  <h2>Qué dijeron los números</h2>
+
+  <p class="lead">Esta es la ejecución de referencia del 12 de noviembre de 2026, con 25 casos, <code>topK = 5</code>, 20 candidatos, RRF <code>k = 60</code> y el modelo local E5-small. No es un resultado universal: es una foto reproducible de este corpus.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Estrategia</th>
+        <th>Recall@5</th>
+        <th>Precision@5</th>
+        <th>MRR</th>
+        <th>Latencia media</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>vector</code></td>
+        <td>1.0000</td>
+        <td>0.2100</td>
+        <td>0.9667</td>
+        <td>2–3 ms</td>
+      </tr>
+      <tr>
+        <td><code>lexical</code></td>
+        <td>0.9500</td>
+        <td>0.2000</td>
+        <td>0.6350</td>
+        <td>2–3 ms</td>
+      </tr>
+      <tr>
+        <td><code>hybrid</code></td>
+        <td>1.0000</td>
+        <td>0.2100</td>
+        <td>0.9000</td>
+        <td>2–3 ms</td>
+      </tr>
+      <tr>
+        <td><code>hybrid-rerank</code></td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+        <td>skipped (<code>missing_model</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Lectura honesta</h3>
+
+  <ul class="checklist">
+    <li>El corpus es chico y los documentos fueron escritos para ser recuperables. No generalices el 1.0000 de Recall.</li>
+    <li>Precision@5 cercano a <code>0.21</code> no significa “mal retrieval”: con un chunk relevante y <code>k = 5</code>, el máximo por caso es <code>0.2</code>. El caso <code>q-06</code> tiene dos chunks relevantes y eleva el promedio.</li>
+    <li>La léxica recupera el 95 % de los relevantes, pero los ordena peor. Es útil para códigos exactos, no para reemplazar al vector.</li>
+    <li>La híbrida mantiene Recall 1.0 pero baja el MRR porque RRF también incorpora las posiciones léxicas. En este dataset el baseline vectorial ya era muy fuerte.</li>
+    <li>El reranking no se ejecutó: no hay <code>RERANK_MODEL</code> configurado. El cliente se validó con <code>fetch</code> mockeado.</li>
+  </ul>
+
+  <h3>La prueba de sensibilidad</h3>
+
+  <p>Si las métricas no cambian al mover el corte, algo está mal en el cálculo. Con <code>--top-k 1</code>:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Estrategia</th>
+        <th>Recall@1</th>
+        <th>Precision@1</th>
+        <th>MRR</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>vector</code></td>
+        <td>0.9250</td>
+        <td>0.9500</td>
+        <td>0.9500</td>
+      </tr>
+      <tr>
+        <td><code>lexical</code></td>
+        <td>0.4250</td>
+        <td>0.4500</td>
+        <td>0.4500</td>
+      </tr>
+      <tr>
+        <td><code>hybrid</code></td>
+        <td>0.8250</td>
+        <td>0.8500</td>
+        <td>0.8500</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <p><strong>No declares un ganador universal con 20 casos.</strong> Una diferencia de MRR puede ser ruido. La comparación sirve para ver el efecto de cada estrategia y para detectar regresiones, no para afirmar qué técnica es mejor en todos los corpus.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Calidad de respuesta                                         -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">La respuesta</p>
+  <h2>Evaluar sin LLM juez</h2>
+
+  <p class="lead">En este sprint la calidad de respuesta se revisa a mano. Un juez automático puede servir más adelante, pero primero hace falta una muestra revisada que sirva de referencia y un acuerdo explícito sobre los criterios.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Aspecto</th>
+        <th>Qué se comprueba</th>
+        <th>Resultado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Exactitud</strong></td>
+        <td>¿La respuesta contiene los <code>expectedFacts</code> sin contradecirlos?</td>
+        <td><code>sí</code> / <code>parcial</code> / <code>no</code></td>
+      </tr>
+      <tr>
+        <td><strong>Fidelidad</strong></td>
+        <td>¿Cada afirmación importante está respaldada por una fuente recuperada?</td>
+        <td><code>respaldada</code> / <code>parcial</code> / <code>sin respaldo</code></td>
+      </tr>
+      <tr>
+        <td><strong>Citas</strong></td>
+        <td>¿Cada <code>[S#]</code> apunta a una fuente recuperada y su excerpt sostiene la afirmación?</td>
+        <td><code>válida</code> / <code>inválida</code></td>
+      </tr>
+      <tr>
+        <td><strong>Abstención</strong></td>
+        <td>En un caso no respondible, ¿reconoce que no hay evidencia?</td>
+        <td><code>correcta</code> / <code>incorrecta</code> / <code>n/a</code></td>
+      </tr>
+      <tr>
+        <td><strong>Latencia y uso</strong></td>
+        <td>¿Cuánto tardó y cuántos tokens consumió?</td>
+        <td>Segundos y <code>usage</code> del proveedor</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>El caso que hay que mirar con cuidado</h3>
+
+  <p><code>q-11</code> pregunta por el teléfono del propietario de un edificio. El contrato tiene un teléfono de soporte, pero no es ese dato. La respuesta correcta es abstenerse. Si el modelo devuelve el teléfono de soporte como si fuera el del propietario, la cita puede ser válida —el chunk existe— pero la afirmación no responde la pregunta.</p>
+
+  <div class="callout red">
+    <p><strong>No confundas <code>noEvidence</code> con abstención.</strong> La app no tiene umbral de similitud: la búsqueda vectorial siempre devuelve top-5. En una pregunta no respondible, el modelo recibe chunks aunque no sean relevantes. La abstención se evalúa en el texto de la respuesta, no en el flag <code>noEvidence</code>, que solo cubre “no hay embeddings” o “el contexto quedó vacío”.</p>
+  </div>
+
+  <h3>Cómo se llena</h3>
+
+  <ul class="checklist">
+    <li>Ejecutá <code>npm run eval:seed</code> y levantá <code>npm run dev</code>.</li>
+    <li>Abrí <code>/ask</code> y elegí el documento del caso.</li>
+    <li>Pegá la pregunta del gold set y guardá la respuesta completa.</li>
+    <li>Marcá exactitud, fidelidad, citas y abstención en la plantilla.</li>
+    <li>Anotá latencia de retrieval/generación y tokens de <code>usage</code>.</li>
+    <li>No cambies el prompt durante la revisión.</li>
+  </ul>
+
+  <p>La plantilla está en <code>eval/answer-quality-review.md</code>. La revisión de las 25 respuestas es un paso manual pendiente: requiere llamadas reales al proveedor y no se ejecutó dentro de este sprint para no generar un costo que nadie pidió.</p>
+</section>
+
+<!-- ============================================================ -->
+<!-- Límites                                                      -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Los límites</p>
+  <h2>Lo que este sprint no resuelve</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Límite</th>
+        <th>Por qué importa</th>
+        <th>Qué haría falta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>25 casos, 2 documentos ficticios, un modelo de embeddings</td>
+        <td>Es una muestra para aprender y detectar regresiones, no un benchmark representativo.</td>
+        <td>Ampliar el gold set y sumar documentos reales anonimizados.</td>
+      </tr>
+      <tr>
+        <td>Sin stemming español/italiano</td>
+        <td><code>simple</code> no reduce palabras a su raíz; “atención” no coincide con “atiende”.</td>
+        <td>Probar configuraciones lingüísticas y medir el efecto.</td>
+      </tr>
+      <tr>
+        <td>Sin índice ANN</td>
+        <td>La búsqueda vectorial exacta es O(n); la latencia no representa producción.</td>
+        <td>Medir HNSW/IVFFlat con un corpus grande.</td>
+      </tr>
+      <tr>
+        <td>Sin juez automático</td>
+        <td>La revisión manual no escala y puede ser subjetiva.</td>
+        <td>Comparar un juez LLM contra la revisión humana, sin reemplazarla.</td>
+      </tr>
+      <tr>
+        <td>Sin umbral de similitud</td>
+        <td>La búsqueda siempre devuelve top-k, incluso si nada es relevante.</td>
+        <td>Calibrar un umbral con datos, no a ojo.</td>
+      </tr>
+      <tr>
+        <td>Rerank real no ejecutado</td>
+        <td>No hay un modelo configurado ni se asumió un modelo gratuito.</td>
+        <td>Configurar un modelo, medir costo y comparar antes/después.</td>
+      </tr>
+      <tr>
+        <td>Revisión de respuestas pendiente</td>
+        <td>La plantilla existe, pero no se revisaron las 25 respuestas.</td>
+        <td>Ejecutar <code>/ask</code> con los casos y completar la tabla.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Próximos pasos</h3>
+
+  <ul class="checklist">
+    <li>Ampliar el gold set y agregar documentos reales anonimizados.</li>
+    <li>Conectar la estrategia ganadora a <code>/ask</code> con una comparación A/B.</li>
+    <li>Hacer la revisión manual de respuestas y citas.</li>
+    <li>Evaluar configuraciones de texto en español e italiano.</li>
+    <li>Medir costo y latencia con más volumen.</li>
+    <li>Convertir <code>eval:retrieval</code> en una comprobación de regresión repetible.</li>
+    <li>Recién después decidir umbral, reranking pago o índice ANN.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<!-- Cómo probar                                                  -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Manos a la obra</p>
+  <h2>Cómo probarlo</h2>
+
+  <h3>Variables de entorno</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Default</th>
+        <th>Para qué</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>EVAL_TOP_K</code></td>
+        <td>5</td>
+        <td>Corte de las métricas.</td>
+      </tr>
+      <tr>
+        <td><code>RETRIEVAL_CANDIDATES</code></td>
+        <td>20</td>
+        <td>Candidatos por fuente antes de RRF.</td>
+      </tr>
+      <tr>
+        <td><code>RETRIEVAL_RRF_K</code></td>
+        <td>60</td>
+        <td>Constante de RRF.</td>
+      </tr>
+      <tr>
+        <td><code>RERANK_MODEL</code></td>
+        <td>vacío</td>
+        <td>Modelo de reranking; vacío lo desactiva.</td>
+      </tr>
+      <tr>
+        <td><code>RERANK_API_KEY</code></td>
+        <td>vacío</td>
+        <td>Clave opcional; si falta, usa <code>OPENROUTER_API_KEY</code>.</td>
+      </tr>
+      <tr>
+        <td><code>RERANK_TOP_N</code></td>
+        <td>5</td>
+        <td>Candidatos que devuelve el reranker.</td>
+      </tr>
+      <tr>
+        <td><code>RERANK_TIMEOUT_MS</code></td>
+        <td>20000</td>
+        <td>Timeout del reranker.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Comandos</h3>
+
+  <pre><code>npm run eval:seed
+npm run eval:retrieval
+npm run eval:retrieval -- --top-k 1
+npm run eval:retrieval -- --rrf-k 1
+npm run eval:retrieval -- --no-rerank
+npm test</code></pre>
+
+  <h3>Pruebas manuales</h3>
+
+  <ul class="checklist">
+    <li>Verificar que <code>eval:seed</code> deja 2 documentos y 21 chunks.</li>
+    <li>Confirmar que el reporte incluye modelo, revisión, topK, candidatos y RRF k.</li>
+    <li>Cambiar <code>--top-k 1</code> y comprobar que Recall y MRR bajan.</li>
+    <li>Comparar vector y léxico en un caso con código exacto como <code>ESC-104</code>.</li>
+    <li>Revisar que una consulta léxica vacía no toque la base.</li>
+    <li>Configurar el rerank y comparar el orden antes y después.</li>
+    <li>Revisar una respuesta y comprobar cada cita contra su excerpt.</li>
+    <li>Probar un caso no respondible y confirmar la abstención.</li>
+  </ul>
+
+  <h3>Para revisar el código</h3>
+
+  <ol class="review">
+    <li><code>eval/gold-set.json</code> y <code>eval/fixtures/fictional-documents.json</code>: qué se considera relevante.</li>
+    <li><code>src/lib/evaluation/dataset.ts</code>: validación Zod e integridad referencial.</li>
+    <li><code>src/lib/evaluation/metrics.ts</code>: Recall, Precision con denominador <code>k</code> y MRR.</li>
+    <li><code>src/lib/retrieval/lexical.ts</code>: tsvector, tsquery OR y SQL parametrizado.</li>
+    <li><code>src/lib/retrieval/rrf.ts</code>: fusión por posiciones, duplicados y desempate.</li>
+    <li><code>src/lib/retrieval/hybrid.ts</code>: ventana de candidatos.</li>
+    <li><code>src/lib/retrieval/reranker.ts</code> y <code>openrouter-reranker.ts</code>: validación y cliente opcional.</li>
+    <li><code>src/lib/evaluation/run.ts</code>: orquestación, errores y agregados.</li>
+    <li><code>scripts/eval-retrieval.ts</code> y <code>scripts/eval-seed.ts</code>: CLI, reporte y fixture.</li>
+    <li><code>prisma/migrations/20261112220247_add_document_chunk_fts_index/migration.sql</code>: índice GIN.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<!-- Preguntas de repaso                                          -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Repaso</p>
+  <h2>Ocho preguntas</h2>
+
+  <div class="qa">
+    <p class="q">1. ¿Qué diferencia hay entre evaluar la recuperación y evaluar la respuesta generada?</p>
+    <p class="a">La recuperación se evalúa con rankings y chunks relevantes: Recall, Precision y MRR. La respuesta se evalúa con exactitud, fidelidad, citas y abstención. Una buena recuperación no garantiza una buena respuesta, y una respuesta correcta puede estar basada en evidencia incompleta.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">2. Si Recall@5 es bajo, ¿qué parte del pipeline conviene investigar primero?</p>
+    <p class="a">Primero la recuperación: chunking, embeddings, filtro de documento, idioma y tamaño de la lista de candidatos. Si el chunk correcto no aparece, el ranking y el reranker no tienen nada que reordenar.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">3. ¿Por qué la búsqueda léxica puede encontrar un código exacto que la vectorial no prioriza?</p>
+    <p class="a">Porque el código es un término literal. La búsqueda vectorial representa significado y puede diluir un código poco frecuente entre textos semánticamente parecidos; la léxica lo busca como token y lo rankea por coincidencia.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">4. ¿Qué combina RRF: los scores originales o las posiciones de los resultados?</p>
+    <p class="a">Las posiciones. RRF usa <code>1 / (k + rank)</code> para cada lista y suma las contribuciones. No compara distancia coseno con <code>ts_rank_cd</code> porque no comparten escala ni significado.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">5. ¿Qué agrega el reranker y qué costo puede introducir?</p>
+    <p class="a">Vuelve a ordenar un conjunto chico de candidatos comparando la pregunta con cada texto. Agrega una llamada externa, latencia, posible costo por uso y el riesgo de enviar la pregunta y los fragmentos a un proveedor. Por eso es opcional y está desactivado sin configuración.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">6. ¿Por qué necesitamos etiquetar manualmente qué chunks son relevantes?</p>
+    <p class="a">Porque sin ground truth no hay forma de saber si una estrategia mejoró o solo devolvió otra cosa. Las etiquetas humanas permiten calcular Recall y MRR y revisar la abstención con un criterio independiente del modelo que se evalúa.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">7. ¿Por qué Precision@k divide por <code>k</code> y no por la cantidad devuelta?</p>
+    <p class="a">Para que todas las estrategias se comparen con el mismo denominador. Si una devuelve menos resultados, las posiciones ausentes cuentan como no relevantes. Si se dividiera por lo devuelto, una lista corta podría parecer artificialmente precisa.</p>
+  </div>
+
+  <div class="qa">
+    <p class="q">8. ¿Qué significa que el reporte guarde hashes, modelo y parámetros?</p>
+    <p class="a">Que la comparación se puede reproducir. Si cambia el fixture, el gold set, el modelo o <code>topK</code>, el reporte lo delata. Un número sin esa metadata no sirve para comparar dos ejecuciones.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Glosario                                                     -->
+<!-- ============================================================ -->
+<section class="section">
+  <p class="kicker">Glosario</p>
+  <h2>Términos para tener a mano</h2>
+
+  <dl class="glossary">
+    <div>
+      <dt>Gold set</dt>
+      <dd>Conjunto de preguntas con chunks relevantes y hechos esperados, revisado a mano. Es la referencia de la evaluación.</dd>
+    </div>
+    <div>
+      <dt>Fixture</dt>
+      <dd>Documentos y chunks ficticios que se cargan en la base para que el gold set tenga IDs estables.</dd>
+    </div>
+    <div>
+      <dt>Chunk</dt>
+      <dd>Fragmento de una página. Es la unidad que se vectoriza, se recupera y se cita.</dd>
+    </div>
+    <div>
+      <dt>Recall@k</dt>
+      <dd>Proporción de chunks relevantes que aparecen entre los primeros <code>k</code> resultados.</dd>
+    </div>
+    <div>
+      <dt>Precision@k</dt>
+      <dd>Proporción de los primeros <code>k</code> resultados que es relevante. En este proyecto divide por <code>k</code>.</dd>
+    </div>
+    <div>
+      <dt>MRR</dt>
+      <dd>Reciprocal rank del primer resultado relevante. Si aparece en la posición 2, aporta <code>1/2</code>.</dd>
+    </div>
+    <div>
+      <dt>RRF</dt>
+      <dd>Reciprocal Rank Fusion. Combina rankings por posición, no por score.</dd>
+    </div>
+    <div>
+      <dt>Búsqueda léxica</dt>
+      <dd>Búsqueda por coincidencia de términos con <code>tsvector</code> y <code>tsquery</code>.</dd>
+    </div>
+    <div>
+      <dt>Búsqueda híbrida</dt>
+      <dd>Combinación de la lista vectorial y la léxica. En este sprint se fusiona con RRF.</dd>
+    </div>
+    <div>
+      <dt>Reranker</dt>
+      <dd>Modelo que recibe la pregunta y candidatos y los vuelve a ordenar. Es opcional en este sprint.</dd>
+    </div>
+    <div>
+      <dt>Abstención</dt>
+      <dd>Respuesta que reconoce que las fuentes no contienen información suficiente. Es distinta de “no se recuperaron chunks”.</dd>
+    </div>
+    <div>
+      <dt>Fidelidad</dt>
+      <dd>Grado en que las afirmaciones de la respuesta están respaldadas por las fuentes recuperadas.</dd>
+    </div>
+    <div>
+      <dt>Cita válida</dt>
+      <dd>Un <code>[S#]</code> que apunta a una fuente recuperada y cuyo excerpt sostiene la afirmación citada.</dd>
+    </div>
+    <div>
+      <dt>Índice GIN</dt>
+      <dd>Índice invertido de PostgreSQL que acelera búsquedas de texto completo. Agrega costo de almacenamiento y escritura.</dd>
+    </div>
+    <div>
+      <dt>Configuración simple</dt>
+      <dd>Configuración de texto de PostgreSQL que tokeniza y baja a minúsculas sin stemming ni stopwords de un idioma.</dd>
+    </div>
+    <div>
+      <dt>Reporte reproducible</dt>
+      <dd>JSON con fecha, modelo, parámetros, hashes y resultados por caso. Permite comparar dos ejecuciones.</dd>
+    </div>
+  </dl>
+
+  <h3>Checklist para el Sprint 6</h3>
+
+  <ul class="checklist">
+    <li>Ampliar el gold set y sumar documentos reales anonimizados.</li>
+    <li>Hacer la revisión manual de respuestas y citas.</li>
+    <li>Conectar la estrategia ganadora a <code>/ask</code> con una comparación A/B.</li>
+    <li>Probar configuraciones de texto en español e italiano.</li>
+    <li>Medir costo y latencia con más volumen.</li>
+    <li>Evaluar un juez LLM contra la revisión manual.</li>
+    <li>Convertir la evaluación en una regresión repetible.</li>
+    <li>Recién después decidir umbral, reranking pago o índice ANN.</li>
+  </ul>
+
+  <div class="callout green">
+    <p><strong>La frase para llevarte:</strong> el Sprint 1 construyó el archivo. El Sprint 2 lo cortó en fichas. El Sprint 3 le dio a cada ficha una coordenada. El Sprint 4 le pidió al modelo que redacte usando solo esas fichas. El Sprint 5 aprendió a medir si las fichas correctas aparecen, si el orden sirve y si la respuesta se queda dentro de la evidencia. Sin medición, “mejorar” es solo cambiar cosas.</p>
+  </div>
+
+  <p class="small" style="text-align:center; margin-top:6mm;">Intelligent Document Assistant · Proyecto 5 · Sprint 5 · Documento de estudio</p>
+</section>
+
+</body>
+</html>

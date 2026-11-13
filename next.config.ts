@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     "onnxruntime-node",
     "onnxruntime-web",
     "sharp",
+    // Native Argon2 binding used by Auth.js credential verification.
+    "@node-rs/argon2",
   ],
 
   // Avoid Turbopack walking up to the home directory because of unrelated

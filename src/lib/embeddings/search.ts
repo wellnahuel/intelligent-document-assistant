@@ -10,8 +10,8 @@ import {
 } from "@/lib/embeddings/input";
 import { loadEmbeddingProviderOrThrow } from "@/lib/embeddings/load-provider";
 import {
-  countIndexedEmbeddings,
-  findNearestChunks,
+  countIndexedEmbeddingsForUser,
+  findNearestChunksForUser,
 } from "@/lib/embeddings/store";
 import type {
   ChunkSearchResponseDto,
@@ -21,13 +21,14 @@ import { cosineSimilarityFromDistance } from "@/lib/embeddings/vector";
 import { AppError } from "@/lib/errors";
 
 export async function searchChunks(
+  userId: string,
   input: SearchRequestInput,
 ): Promise<ChunkSearchResponseDto> {
   const searchConfig = getSearchConfig();
   const query = parseSearchQuery(input.query, searchConfig.queryMaxChars);
   const topK = parseTopK(input.topK, searchConfig);
   const model = getEmbeddingModelInfo(getEmbeddingConfig());
-  const indexedChunkCount = await countIndexedEmbeddings(model);
+  const indexedChunkCount = await countIndexedEmbeddingsForUser(userId, model);
 
   // Avoid downloading/loading the model just to search an empty index.
   if (indexedChunkCount === 0) {
@@ -53,7 +54,7 @@ export async function searchChunks(
     );
   }
 
-  const rows = await findNearestChunks(vector, model, topK);
+  const rows = await findNearestChunksForUser(vector, model, userId, topK);
   const results: ChunkSearchResultDto[] = rows.map((row) => {
     const distance =
       typeof row.distance === "number" ? row.distance : Number(row.distance);

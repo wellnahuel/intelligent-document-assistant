@@ -27,6 +27,10 @@ coverage
 # Local Transformers.js model cache (can be hundreds of MB)
 /.cache/
 
+# Evaluation reports. Keep the committed reference run, ignore new local runs.
+/eval/reports/*.json
+!/eval/reports/reference-report.json
+
 # Operating system
 .DS_Store
 Thumbs.db

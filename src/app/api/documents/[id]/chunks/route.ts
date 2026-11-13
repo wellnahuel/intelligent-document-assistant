@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireApiUser } from "@/lib/dal";
 import { regenerateDocumentChunks } from "@/lib/documents/chunks";
 import { assertDocumentId } from "@/lib/documents/id";
 import { jsonError } from "@/lib/http";
@@ -13,11 +14,12 @@ type RouteContext = {
 
 export async function POST(_request: Request, { params }: RouteContext) {
   try {
+    const user = await requireApiUser();
     const { id } = await params;
 
     assertDocumentId(id);
 
-    const result = await regenerateDocumentChunks(id);
+    const result = await regenerateDocumentChunks(user.id, id);
 
     return NextResponse.json(result);
   } catch (error) {

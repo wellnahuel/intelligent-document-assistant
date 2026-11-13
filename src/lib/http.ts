@@ -12,6 +12,12 @@ export function jsonError(
   fallbackMessage: string,
 ): NextResponse {
   if (error instanceof AppError) {
+    const headers = new Headers();
+
+    if (error.retryAfterSeconds !== null) {
+      headers.set("Retry-After", String(error.retryAfterSeconds));
+    }
+
     return NextResponse.json(
       {
         error: {
@@ -19,7 +25,7 @@ export function jsonError(
           message: error.message,
         },
       },
-      { status: error.status },
+      { status: error.status, headers },
     );
   }
 

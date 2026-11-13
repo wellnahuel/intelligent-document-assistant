@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 
 import { DocumentDetail } from "@/components/documents/DocumentDetail";
 import { getChunkingConfig } from "@/lib/chunking/config";
+import { requireUser } from "@/lib/dal";
 import { toDocumentDetailDto } from "@/lib/documents/dto";
-import { getDocumentWithPages } from "@/lib/documents/queries";
+import { getDocumentDetailForUser } from "@/lib/documents/queries";
 import { getDocumentEmbeddingSummary } from "@/lib/embeddings/summary";
 
 export const dynamic = "force-dynamic";
@@ -18,14 +19,15 @@ type DocumentPageProps = {
 };
 
 export default async function DocumentPage({ params }: DocumentPageProps) {
+  const user = await requireUser();
   const { id } = await params;
-  const document = await getDocumentWithPages(id);
+  const document = await getDocumentDetailForUser(user.id, id);
 
   if (!document) {
     notFound();
   }
 
-  const embeddingSummary = await getDocumentEmbeddingSummary(id);
+  const embeddingSummary = await getDocumentEmbeddingSummary(user.id, id);
 
   return (
     <DocumentDetail

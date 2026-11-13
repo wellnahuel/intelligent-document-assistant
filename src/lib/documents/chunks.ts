@@ -17,13 +17,14 @@ import { AppError } from "@/lib/errors";
  * Documents and pages are never modified here.
  */
 export async function regenerateDocumentChunks(
+  userId: string,
   documentId: string,
 ): Promise<ChunkGenerationResultDto> {
   const chunking = getChunkingConfig();
 
   return prisma.$transaction(async (tx) => {
-    const document = await tx.document.findUnique({
-      where: { id: documentId },
+    const document = await tx.document.findFirst({
+      where: { id: documentId, userId },
       select: {
         id: true,
         pages: {

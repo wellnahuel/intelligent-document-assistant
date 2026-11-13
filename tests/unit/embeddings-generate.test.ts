@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listDocumentChunks: vi.fn(),
-  documentExists: vi.fn(),
+  documentExistsForUser: vi.fn(),
   findExistingChunkIds: vi.fn(),
   upsertEmbeddingBatch: vi.fn(),
   countDocumentEmbeddings: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/embeddings/store", () => ({
   listDocumentChunks: mocks.listDocumentChunks,
-  documentExists: mocks.documentExists,
+  documentExistsForUser: mocks.documentExistsForUser,
   findExistingChunkIds: mocks.findExistingChunkIds,
   upsertEmbeddingBatch: mocks.upsertEmbeddingBatch,
   countDocumentEmbeddings: mocks.countDocumentEmbeddings,
@@ -47,7 +47,7 @@ beforeEach(() => {
   process.env.EMBEDDING_BATCH_SIZE = "2";
   delete process.env.EMBEDDING_MODEL_ID;
   delete process.env.EMBEDDING_MODEL_REVISION;
-  mocks.documentExists.mockResolvedValue(true);
+  mocks.documentExistsForUser.mockResolvedValue(true);
   mocks.findExistingChunkIds.mockResolvedValue(new Set());
   mocks.upsertEmbeddingBatch.mockResolvedValue(undefined);
   mocks.countDocumentEmbeddings.mockResolvedValue(0);
@@ -59,9 +59,7 @@ describe("idempotent generation orchestration", () => {
     mocks.findExistingChunkIds.mockResolvedValue(new Set(["c0", "c1"]));
     mocks.countDocumentEmbeddings.mockResolvedValue(2);
 
-    const result = await generateDocumentEmbeddings("doc1", {
-      regenerate: false,
-    });
+    const result = await generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } });
 
     expect(result).toMatchObject({
       documentId: "doc1",
@@ -74,6 +72,7 @@ describe("idempotent generation orchestration", () => {
       errors: [],
     });
     expect(mocks.findExistingChunkIds).toHaveBeenCalledWith(
+      "user-1",
       ["c0", "c1"],
       expect.objectContaining({ dimensions: 384 }),
     );
@@ -89,9 +88,7 @@ describe("idempotent generation orchestration", () => {
     );
     mocks.countDocumentEmbeddings.mockResolvedValue(2);
 
-    const result = await generateDocumentEmbeddings("doc1", {
-      regenerate: true,
-    });
+    const result = await generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: true } });
 
     expect(mocks.findExistingChunkIds).not.toHaveBeenCalled();
     expect(embedPassages).toHaveBeenCalledTimes(1);
@@ -115,9 +112,7 @@ describe("idempotent generation orchestration", () => {
     );
     mocks.countDocumentEmbeddings.mockResolvedValue(2);
 
-    const result = await generateDocumentEmbeddings("doc1", {
-      regenerate: false,
-    });
+    const result = await generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } });
 
     expect(result.status).toBe("partial");
     expect(result.status).not.toBe("complete");
@@ -145,9 +140,7 @@ describe("idempotent generation orchestration", () => {
       .mockRejectedValueOnce(new Error("db boom"));
     mocks.countDocumentEmbeddings.mockResolvedValue(2);
 
-    const result = await generateDocumentEmbeddings("doc1", {
-      regenerate: false,
-    });
+    const result = await generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } });
 
     expect(result.status).toBe("partial");
     expect(result).toMatchObject({ generatedCount: 2, failedCount: 2 });
@@ -164,9 +157,7 @@ describe("idempotent generation orchestration", () => {
     );
     mocks.countDocumentEmbeddings.mockResolvedValue(0);
 
-    const result = await generateDocumentEmbeddings("doc1", {
-      regenerate: false,
-    });
+    const result = await generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } });
 
     expect(result.status).toBe("failed");
     expect(result.status).not.toBe("complete");
@@ -175,26 +166,26 @@ describe("idempotent generation orchestration", () => {
 
   it("fails clearly when the document has no chunks", async () => {
     mocks.listDocumentChunks.mockResolvedValue([]);
-    mocks.documentExists.mockResolvedValue(true);
+    mocks.documentExistsForUser.mockResolvedValue(true);
 
     await expect(
-      generateDocumentEmbeddings("doc1", { regenerate: false }),
+      generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } }),
     ).rejects.toMatchObject({
       code: "DOCUMENT_WITHOUT_CHUNKS",
       status: 409,
     });
 
     await expect(
-      generateDocumentEmbeddings("doc1", { regenerate: false }),
+      generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } }),
     ).rejects.toBeInstanceOf(AppError);
   });
 
   it("distinguishes a missing document from a document without chunks", async () => {
     mocks.listDocumentChunks.mockResolvedValue([]);
-    mocks.documentExists.mockResolvedValue(false);
+    mocks.documentExistsForUser.mockResolvedValue(false);
 
     await expect(
-      generateDocumentEmbeddings("doc1", { regenerate: false }),
+      generateDocumentEmbeddings({ userId: "user-1", documentId: "doc1", options: { regenerate: false } }),
     ).rejects.toMatchObject({
       code: "DOCUMENT_NOT_FOUND",
       status: 404,

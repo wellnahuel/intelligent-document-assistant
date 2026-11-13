@@ -206,6 +206,55 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.sessionUser {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoutForm {
+  margin: 0;
+}
+
+.logoutButton {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.logoutButton:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.authLink {
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.authLink:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.authLinkPrimary {
+  border: 1px solid rgba(81, 70, 200, 0.22);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
 .siteMain {
   flex: 1;
   width: 100%;

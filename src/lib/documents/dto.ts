@@ -31,21 +31,33 @@ type DocumentDetailSource = DocumentSummarySource & {
   }>;
 };
 
-export function toDocumentSummaryDto(
-  document: DocumentSummarySource,
-): DocumentSummaryDto {
+function summaryFields(document: DocumentSummarySource): DocumentSummaryDto {
+  // Explicit fields: adding userId or another internal column to the model
+  // must not silently add it to an API response.
   return {
-    ...document,
+    id: document.id,
+    originalFilename: document.originalFilename,
+    mimeType: document.mimeType,
+    sizeBytes: document.sizeBytes,
+    pageCount: document.pageCount,
+    status: document.status,
+    errorMessage: document.errorMessage,
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
   };
+}
+
+export function toDocumentSummaryDto(
+  document: DocumentSummarySource,
+): DocumentSummaryDto {
+  return summaryFields(document);
 }
 
 export function toDocumentDetailDto(
   document: DocumentDetailSource,
 ): DocumentDetailDto {
   return {
-    ...toDocumentSummaryDto(document),
+    ...summaryFields(document),
     pages: document.pages.map((page) => ({
       id: page.id,
       pageNumber: page.pageNumber,

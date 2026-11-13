@@ -1,0 +1,38 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.button {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.button:hover:not(:disabled) {
+  border-color: rgba(179, 38, 30, 0.35);
+  color: var(--danger);
+}
+
+.confirm {
+  border-color: rgba(179, 38, 30, 0.35);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.button:disabled {
+  opacity: 0.55;
+}
+
+.error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.76rem;
+}

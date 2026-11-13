@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 
+import { requireApiUser } from "@/lib/dal";
 import { generateDocumentEmbeddings } from "@/lib/embeddings/generate";
 import { parseGenerationOptions } from "@/lib/embeddings/input";
 import { assertDocumentId } from "@/lib/documents/id";
 import { AppError } from "@/lib/errors";
 import { jsonError } from "@/lib/http";
+import { ACTION_WINDOW_SECONDS, getUsageLimits } from "@/lib/rate-limit/config";
+import { userActionKey } from "@/lib/rate-limit/keys";
+import { assertRateLimit } from "@/lib/rate-limit/limiter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,9 +21,18 @@ const MAX_BODY_BYTES = 1024;
 
 export async function POST(request: Request, { params }: RouteContext) {
   try {
+    const user = await requireApiUser();
     const { id } = await params;
 
     assertDocumentId(id);
+
+    const usageLimits = getUsageLimits();
+
+    await assertRateLimit({
+      key: userActionKey(user.id, "embeddings"),
+      limit: usageLimits.embeddingsPerHour,
+      windowSeconds: ACTION_WINDOW_SECONDS,
+    });
 
     const rawBody = await request.text();
 
@@ -44,7 +57,11 @@ export async function POST(request: Request, { params }: RouteContext) {
     }
 
     const options = parseGenerationOptions(body);
-    const result = await generateDocumentEmbeddings(id, options);
+    const result = await generateDocumentEmbeddings({
+      userId: user.id,
+      documentId: id,
+      options,
+    });
 
     return NextResponse.json(result);
   } catch (error) {

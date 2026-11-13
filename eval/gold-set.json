@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "q-01",
+      "question": "¿Cuál es el código del contrato entre Nube Andina y Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-01"],
+      "answerable": true,
+      "expectedFacts": ["El código del contrato es NA-2026-014."]
+    },
+    {
+      "id": "q-02",
+      "question": "¿Cuántos días de aviso exige el contrato para cancelar el servicio?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-04"],
+      "answerable": true,
+      "expectedFacts": ["Se requieren treinta (30) días corridos de aviso por escrito."]
+    },
+    {
+      "id": "q-03",
+      "question": "¿Con cuántos días de anticipación hay que avisar para no renovar automáticamente el contrato?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-03"],
+      "answerable": true,
+      "expectedFacts": ["Se debe avisar con al menos noventa (90) días de anticipación."]
+    },
+    {
+      "id": "q-04",
+      "question": "¿Cuál es el abono mensual del contrato?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-02"],
+      "answerable": true,
+      "expectedFacts": ["El abono mensual es de 1.850 USD."]
+    },
+    {
+      "id": "q-05",
+      "question": "¿Cuál es el horario de atención del soporte del contrato?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-05"],
+      "answerable": true,
+      "expectedFacts": ["El soporte se atiende de lunes a viernes de 9:00 a 18:00 (GMT-3), excepto feriados."]
+    },
+    {
+      "id": "q-06",
+      "question": "¿Qué penalidad aplica el proveedor si no alcanza la disponibilidad comprometida?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-05", "eval-chunk-contrato-06"],
+      "answerable": true,
+      "expectedFacts": ["Se aplica una penalidad del 5 % del abono mensual por cada hora de exceso, con un tope del 25 % del abono."]
+    },
+    {
+      "id": "q-07",
+      "question": "¿En qué región se almacenan los datos del cliente?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-09"],
+      "answerable": true,
+      "expectedFacts": ["Los datos se almacenan en la región de São Paulo, Brasil."]
+    },
+    {
+      "id": "q-08",
+      "question": "¿A qué hora se ejecuta la copia de seguridad diaria?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-09"],
+      "answerable": true,
+      "expectedFacts": ["La copia de seguridad diaria se ejecuta a las 02:00 UTC."]
+    },
+    {
+      "id": "q-09",
+      "question": "¿Cuál es el código de escalamiento para incidentes críticos?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-11"],
+      "answerable": true,
+      "expectedFacts": ["El código de escalamiento es ESC-104."]
+    },
+    {
+      "id": "q-10",
+      "question": "¿Cada cuánto puede el cliente auditar al proveedor?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": ["eval-chunk-contrato-12"],
+      "answerable": true,
+      "expectedFacts": ["El cliente puede auditar al proveedor una vez por año."]
+    },
+    {
+      "id": "q-11",
+      "question": "¿Cuál es el número de teléfono del propietario del edificio donde está Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": [],
+      "answerable": false,
+      "expectedFacts": []
+    },
+    {
+      "id": "q-12",
+      "question": "¿Cuántos empleados tiene Nube Andina?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": [],
+      "answerable": false,
+      "expectedFacts": []
+    },
+    {
+      "id": "q-13",
+      "question": "¿Cuál es el número de CUIT de Estudio Horizonte?",
+      "documentId": "eval-doc-contrato",
+      "relevantChunkIds": [],
+      "answerable": false,
+      "expectedFacts": []
+    },
+    {
+      "id": "q-14",
+      "question": "¿Cuál es el peso del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-01"],
+      "answerable": true,
+      "expectedFacts": ["El Atlas MX-450 pesa 12,4 kg."]
+    },
+    {
+      "id": "q-15",
+      "question": "¿Qué fusible utiliza el Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-02"],
+      "answerable": true,
+      "expectedFacts": ["Utiliza el fusible T-10A."]
+    },
+    {
+      "id": "q-16",
+      "question": "¿Qué significa el código de error E-104?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-03"],
+      "answerable": true,
+      "expectedFacts": ["E-104 indica sensor de temperatura desconectado."]
+    },
+    {
+      "id": "q-17",
+      "question": "¿Qué significa el código de error E-330?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-03"],
+      "answerable": true,
+      "expectedFacts": ["E-330 indica mantenimiento vencido."]
+    },
+    {
+      "id": "q-18",
+      "question": "¿Cada cuántas horas se realiza el mantenimiento preventivo?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-04"],
+      "answerable": true,
+      "expectedFacts": ["El mantenimiento preventivo se realiza cada 500 horas de operación."]
+    },
+    {
+      "id": "q-19",
+      "question": "¿Cuál es el número de repuesto del filtro de aire?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-04"],
+      "answerable": true,
+      "expectedFacts": ["El filtro de aire se reemplaza por el repuesto FLT-450-A."]
+    },
+    {
+      "id": "q-20",
+      "question": "¿Cuántas personas se necesitan para calibrar el sensor de presión?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-05"],
+      "answerable": true,
+      "expectedFacts": ["La calibración requiere dos personas."]
+    },
+    {
+      "id": "q-21",
+      "question": "¿Cuánto dura la garantía del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-06"],
+      "answerable": true,
+      "expectedFacts": ["La garantía es de 24 meses desde la fecha de factura."]
+    },
+    {
+      "id": "q-22",
+      "question": "¿Cuál es el precio de lista del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": [],
+      "answerable": false,
+      "expectedFacts": []
+    },
+    {
+      "id": "q-23",
+      "question": "¿En qué país se fabrica el Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": [],
+      "answerable": false,
+      "expectedFacts": []
+    },
+    {
+      "id": "q-24",
+      "question": "¿Qué repuesto corresponde al código VAL-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-09"],
+      "answerable": true,
+      "expectedFacts": ["VAL-450 corresponde a la válvula de presión."]
+    },
+    {
+      "id": "q-25",
+      "question": "¿Cuál es el correo de soporte técnico del Atlas MX-450?",
+      "documentId": "eval-doc-manual",
+      "relevantChunkIds": ["eval-chunk-manual-08"],
+      "answerable": true,
+      "expectedFacts": ["El correo de soporte es soporte@atlas.example."]
+    }
+  ]
+}
