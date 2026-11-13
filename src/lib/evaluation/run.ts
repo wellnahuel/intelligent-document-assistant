@@ -99,6 +99,8 @@ export type RunEvaluationInput = {
   reranker: Reranker | null;
   rerankSkipReason: string | null;
   strategies?: readonly StrategyName[];
+  /** Document id → owner id. The evaluation never bypasses ownership. */
+  documentOwners: ReadonlyMap<string, string>;
 };
 
 function describeError(error: unknown): string {
@@ -255,6 +257,7 @@ function aggregateStrategy(input: {
 }
 
 async function runRerankStrategy(input: {
+  userId: string;
   query: string;
   documentId: string;
   vector: readonly number[];
@@ -272,6 +275,7 @@ async function runRerankStrategy(input: {
   } | null;
 }> {
   const candidateHits: HybridHit[] = await searchHybridCandidates({
+    userId: input.userId,
     documentId: input.documentId,
     query: input.query,
     vector: input.vector,
@@ -338,6 +342,15 @@ export async function runEvaluation(
 
   const strategies = input.strategies ?? EVALUATION_STRATEGIES;
   const rerankAvailable = input.reranker !== null;
+
+  for (const goldCase of input.dataset.goldSet.cases) {
+    if (!input.documentOwners.has(goldCase.documentId)) {
+      throw new Error(
+        `No owner is known for evaluation document "${goldCase.documentId}". The fixture must be seeded with an owner before evaluating.`,
+      );
+    }
+  }
+
   const requiresVector = strategies.some(
     (strategy) => strategy === "vector" || strategy === "hybrid" || strategy === "hybrid-rerank",
   );
@@ -385,9 +398,11 @@ export async function runEvaluation(
       try {
         let chunkIds: string[] = [];
         let rerank: CaseStrategyResult["rerank"] = null;
+        const userId = input.documentOwners.get(goldCase.documentId) as string;
 
         if (strategy === "lexical") {
           const hits = await searchLexicalChunks({
+            userId,
             documentId: goldCase.documentId,
             query: goldCase.question,
             topK: input.topK,
@@ -403,6 +418,7 @@ export async function runEvaluation(
 
           if (strategy === "vector") {
             const hits = await searchVectorCandidates({
+              userId,
               documentId: goldCase.documentId,
               vector: queryVector,
               model: input.model,
@@ -412,6 +428,7 @@ export async function runEvaluation(
             chunkIds = hits.map((hit) => hit.chunkId);
           } else if (strategy === "hybrid") {
             const hits = await searchHybridCandidates({
+              userId,
               documentId: goldCase.documentId,
               query: goldCase.question,
               vector: queryVector,
@@ -424,6 +441,7 @@ export async function runEvaluation(
             chunkIds = hits.map((hit) => hit.chunkId);
           } else {
             const result = await runRerankStrategy({
+              userId,
               query: goldCase.question,
               documentId: goldCase.documentId,
               vector: queryVector,

@@ -23,12 +23,13 @@ export type RetrievalResult = {
 };
 
 export async function retrieveDocumentChunks(input: {
+  userId: string;
   documentId: string;
   question: string;
   topK: number;
 }): Promise<RetrievalResult> {
-  const document = await prisma.document.findUnique({
-    where: { id: input.documentId },
+  const document = await prisma.document.findFirst({
+    where: { id: input.documentId, userId: input.userId },
     select: {
       id: true,
       originalFilename: true,
@@ -38,12 +39,13 @@ export async function retrieveDocumentChunks(input: {
   if (!document) {
     throw new AppError(
       "DOCUMENT_NOT_FOUND",
-      "El documento indicado no existe.",
+      "Documento no encontrado.",
     );
   }
 
   const model = getEmbeddingModelInfo(getEmbeddingConfig());
   const indexedChunkCount = await countDocumentEmbeddings(
+    input.userId,
     document.id,
     model,
   );
@@ -75,6 +77,7 @@ export async function retrieveDocumentChunks(input: {
     vector,
     model,
     document.id,
+    input.userId,
     input.topK,
   );
 

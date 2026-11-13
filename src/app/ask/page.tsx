@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AskPanel } from "@/components/ask/AskPanel";
+import { requireUser } from "@/lib/dal";
 import {
   getEmbeddingConfig,
   getEmbeddingModelInfo,
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AskPage() {
+  const user = await requireUser();
   const ragConfig = getRagConfig();
   const model = getEmbeddingModelInfo(getEmbeddingConfig());
   const providerConfigured = Boolean(
@@ -28,7 +30,7 @@ export default async function AskPage() {
   let loadError: string | null = null;
 
   try {
-    documents = await listAskDocumentOptions(model);
+    documents = await listAskDocumentOptions(user.id, model);
   } catch (error) {
     console.error("[ask-page] Could not load document options.", error);
     loadError = "No se pudieron cargar los documentos.";
@@ -58,6 +60,12 @@ export default async function AskPage() {
           La respuesta es de un solo turno. No hay historial de conversación,
           herramientas ni agentes. El texto de las fuentes se trata como
           material de referencia, no como instrucciones.
+        </p>
+        <p className={styles.privacyNote}>
+          Privacidad: para generar la respuesta, la pregunta y hasta{" "}
+          {ragConfig.topK} fragmentos recuperados de tus documentos se envían a
+          OpenRouter. No envíes documentos privados sin revisar las condiciones
+          del proveedor.
         </p>
       </header>
 

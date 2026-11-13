@@ -76,6 +76,16 @@
   font-size: 0.8rem;
 }
 
+.privacyNote {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(138, 90, 0, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 0.8rem;
+}
+
 .errorCard,
 .emptyCard {
   margin: 0;

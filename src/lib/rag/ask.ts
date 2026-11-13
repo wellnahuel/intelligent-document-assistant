@@ -3,6 +3,7 @@ import "server-only";
 import { getOpenRouterConfig, getRagConfig } from "@/lib/rag/config";
 import { createNoEvidenceAnswer, generateAnswerFromChunks } from "@/lib/rag/generate";
 import { OpenRouterError, requestChatCompletion } from "@/lib/rag/openrouter";
+import { mapProviderError } from "@/lib/rag/provider-errors";
 import { retrieveDocumentChunks } from "@/lib/rag/retrieval";
 import type { AskRequestInput, RagAnswerDto } from "@/lib/rag/types";
 import { AppError } from "@/lib/errors";
@@ -11,12 +12,14 @@ function elapsedMs(startedAt: number): number {
   return Math.round(performance.now() - startedAt);
 }
 
+
 export async function answerDocumentQuestion(
-  input: AskRequestInput,
+  input: AskRequestInput & { userId: string },
 ): Promise<RagAnswerDto> {
   const config = getRagConfig();
   const retrievalStartedAt = performance.now();
   const retrieval = await retrieveDocumentChunks({
+    userId: input.userId,
     documentId: input.documentId,
     question: input.question,
     topK: config.topK,
@@ -82,18 +85,7 @@ export async function answerDocumentQuestion(
       console.error(
         `[rag] retrieval=${retrievalMs}ms provider=failed status=${error.status ?? "n/a"} kind=${error.kind} generation=${generationMs}ms`,
       );
-
-      if (error.kind === "timeout") {
-        throw new AppError(
-          "RAG_PROVIDER_TIMEOUT",
-          "El proveedor de respuestas tardó demasiado. Intentá nuevamente en unos minutos.",
-        );
-      }
-
-      throw new AppError(
-        "RAG_PROVIDER_ERROR",
-        "No se pudo obtener una respuesta del proveedor. Revisá la configuración o intentá más tarde.",
-      );
+      throw mapProviderError(error);
     }
 
     if (error instanceof AppError) {

@@ -64,13 +64,18 @@ function timestampForFileName(date: Date): string {
 }
 
 async function assertFixtureIsSeeded(input: {
-  documentIds: ReadonlyArray<{ id: string; chunkCount: number }>;
+  documents: ReadonlyArray<{ id: string; chunkCount: number }>;
   model: ReturnType<typeof getEmbeddingModelInfo>;
+  documentOwners: ReadonlyMap<string, string>;
 }): Promise<void> {
   const counts = await Promise.all(
-    input.documentIds.map(async (document) => ({
+    input.documents.map(async (document) => ({
       ...document,
-      embedded: await countDocumentEmbeddings(document.id, input.model),
+      embedded: await countDocumentEmbeddings(
+        input.documentOwners.get(document.id) as string,
+        document.id,
+        input.model,
+      ),
     })),
   );
   const missing = counts.filter(
@@ -137,9 +142,29 @@ async function main(): Promise<void> {
   const dataset = await loadDatasetFromFiles({ fixturePath, goldSetPath });
   const embeddingConfig = getEmbeddingConfig();
   const model = getEmbeddingModelInfo(embeddingConfig);
+  const fixtureDocuments = await prisma.document.findMany({
+    where: {
+      id: { in: dataset.fixture.documents.map((document) => document.id) },
+    },
+    select: { id: true, userId: true },
+  });
+  const documentOwners = new Map(
+    fixtureDocuments.map((document) => [document.id, document.userId]),
+  );
+  const missingOwners = dataset.fixture.documents.filter(
+    (document) => !documentOwners.has(document.id),
+  );
+
+  if (missingOwners.length > 0) {
+    throw new Error(
+      `The evaluation fixture is not seeded with an owner (${missingOwners
+        .map((document) => document.id)
+        .join(", ")}). Run "npm run eval:seed" first.`,
+    );
+  }
 
   await assertFixtureIsSeeded({
-    documentIds: dataset.fixture.documents.map((document) => ({
+    documents: dataset.fixture.documents.map((document) => ({
       id: document.id,
       chunkCount: document.pages.reduce(
         (total, page) => total + page.chunks.length,
@@ -147,6 +172,7 @@ async function main(): Promise<void> {
       ),
     })),
     model,
+    documentOwners,
   });
 
   let reranker: Reranker | null = null;
@@ -176,6 +202,7 @@ async function main(): Promise<void> {
     topK,
     reranker,
     rerankSkipReason,
+    documentOwners,
   });
   const answerableCaseCount = dataset.goldSet.cases.filter(
     (goldCase) => goldCase.answerable,

@@ -25,6 +25,12 @@ const fixturePath = path.join(
 );
 const goldSetPath = path.join(projectRoot, "eval", "gold-set.json");
 
+// Sprint 6 gives every document an owner. The evaluation fixture uses its own
+// non-login account so the CLI never bypasses the ownership filter and never
+// mixes fictional documents with a real user's library.
+const EVAL_FIXTURE_USER_ID = "eval-fixture-owner";
+const EVAL_FIXTURE_EMAIL = "eval-fixture@local.invalid";
+
 function pageText(chunks: readonly { content: string }[]): {
   text: string;
   offsets: Array<{ startChar: number; endChar: number }>;
@@ -73,10 +79,23 @@ async function main(): Promise<void> {
       where: { id: { in: documentIds } },
     });
 
+    await tx.user.upsert({
+      where: { id: EVAL_FIXTURE_USER_ID },
+      update: {},
+      create: {
+        id: EVAL_FIXTURE_USER_ID,
+        email: EVAL_FIXTURE_EMAIL,
+        // Invalid Argon2id value: this account cannot authenticate.
+        passwordHash: "!eval-fixture-no-login",
+        name: "Evaluation fixture owner",
+      },
+    });
+
     for (const document of dataset.fixture.documents) {
       await tx.document.create({
         data: {
           id: document.id,
+          userId: EVAL_FIXTURE_USER_ID,
           originalFilename: document.originalFilename,
           mimeType: document.mimeType,
           sizeBytes: documentSizeBytes(document),

@@ -87,6 +87,7 @@ export function buildLexicalTsQuery(query: string): string | null {
  * The deterministic tie-break keeps repeated runs comparable.
  */
 export async function searchLexicalChunks(input: {
+  userId: string;
   documentId: string;
   query: string;
   topK: number;
@@ -115,6 +116,7 @@ export async function searchLexicalChunks(input: {
     JOIN "DocumentPage" p ON p."id" = c."documentPageId"
     JOIN "Document" d ON d."id" = p."documentId"
     WHERE p."documentId" = ${input.documentId}
+      AND d."userId" = ${input.userId}
       AND to_tsvector('simple', c."content")
         @@ websearch_to_tsquery('simple', ${query})
     ORDER BY "lexicalScore" DESC, c."id" ASC

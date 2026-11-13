@@ -18,6 +18,7 @@ function assertPositiveInteger(value: number, name: string): void {
  * the requested depth.
  */
 export async function searchHybridCandidates(input: {
+  userId: string;
   documentId: string;
   query: string;
   vector: readonly number[];
@@ -33,12 +34,14 @@ export async function searchHybridCandidates(input: {
 
   const [vectorHits, lexicalHits] = await Promise.all([
     searchVectorCandidates({
+      userId: input.userId,
       documentId: input.documentId,
       vector: input.vector,
       model: input.model,
       topK: candidateCount,
     }),
     searchLexicalChunks({
+      userId: input.userId,
       documentId: input.documentId,
       query: input.query,
       topK: candidateCount,

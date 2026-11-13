@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SearchPanel } from "@/components/search/SearchPanel";
+import { requireUser } from "@/lib/dal";
 import {
   getEmbeddingModelInfo,
   getSearchConfig,
@@ -15,7 +16,8 @@ export const metadata: Metadata = {
   title: "Búsqueda semántica",
 };
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  await requireUser();
   const searchConfig = getSearchConfig();
   const model = getEmbeddingModelInfo();
 

@@ -2,7 +2,7 @@ import { getEmbeddingConfig, getEmbeddingModelInfo } from "@/lib/embeddings/conf
 import { loadEmbeddingProviderOrThrow } from "@/lib/embeddings/load-provider";
 import {
   countDocumentEmbeddings,
-  documentExists,
+  documentExistsForUser,
   findExistingChunkIds,
   listDocumentChunks,
   upsertEmbeddingBatch,
@@ -25,16 +25,18 @@ import { AppError } from "@/lib/errors";
  * A failed batch does not hide the successful ones: the result reports
  * complete, partial, or failed, with the affected batch numbers.
  */
-export async function generateDocumentEmbeddings(
-  documentId: string,
-  options: GenerationOptions,
-): Promise<EmbeddingGenerationResultDto> {
+export async function generateDocumentEmbeddings(input: {
+  userId: string;
+  documentId: string;
+  options: GenerationOptions;
+}): Promise<EmbeddingGenerationResultDto> {
+  const { userId, documentId, options } = input;
   const config = getEmbeddingConfig();
   const model = getEmbeddingModelInfo(config);
-  const chunks = await listDocumentChunks(documentId);
+  const chunks = await listDocumentChunks(userId, documentId);
 
   if (chunks.length === 0) {
-    if (!(await documentExists(documentId))) {
+    if (!(await documentExistsForUser(userId, documentId))) {
       throw new AppError("DOCUMENT_NOT_FOUND", "Documento no encontrado.");
     }
 
@@ -54,7 +56,7 @@ export async function generateDocumentEmbeddings(
   const skippedCount = chunks.length - pending.length;
 
   if (pending.length === 0) {
-    const embeddedChunkCount = await countDocumentEmbeddings(documentId, model);
+    const embeddedChunkCount = await countDocumentEmbeddings(userId, documentId, model);
 
     return {
       documentId,
@@ -128,7 +130,7 @@ export async function generateDocumentEmbeddings(
     }
   }
 
-  const embeddedChunkCount = await countDocumentEmbeddings(documentId, model);
+  const embeddedChunkCount = await countDocumentEmbeddings(userId, documentId, model);
   const status =
     failedCount === 0 ? "complete" : generatedCount > 0 ? "partial" : "failed";
 

@@ -3,10 +3,12 @@ import type { EmbeddingModelInfo } from "@/lib/embeddings/types";
 import type { AskDocumentOptionDto } from "@/lib/rag/types";
 
 export async function listAskDocumentOptions(
+  userId: string,
   model: EmbeddingModelInfo,
 ): Promise<AskDocumentOptionDto[]> {
   const [documents, embeddings] = await Promise.all([
     prisma.document.findMany({
+      where: { userId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -19,6 +21,11 @@ export async function listAskDocumentOptions(
         modelId: model.modelId,
         modelRevision: model.modelRevision,
         dimensions: model.dimensions,
+        chunk: {
+          documentPage: {
+            document: { userId },
+          },
+        },
       },
       select: {
         chunk: {

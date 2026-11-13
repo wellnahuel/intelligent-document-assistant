@@ -17,6 +17,7 @@ function assertPositiveInteger(value: number, name: string): void {
  * of comparing it with lexical scores.
  */
 export async function searchVectorCandidates(input: {
+  userId: string;
   documentId: string;
   vector: readonly number[];
   model: EmbeddingModelInfo;
@@ -28,6 +29,7 @@ export async function searchVectorCandidates(input: {
     input.vector,
     input.model,
     input.documentId,
+    input.userId,
     input.topK,
   );
 
