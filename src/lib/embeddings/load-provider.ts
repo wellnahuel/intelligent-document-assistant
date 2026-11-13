@@ -6,10 +6,14 @@ export async function loadEmbeddingProviderOrThrow(): Promise<EmbeddingProvider>
   try {
     return await getEmbeddingProvider();
   } catch (error) {
-    console.error("[embeddings] Could not load the local model.", error);
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    console.error("[embeddings] Could not load the embedding provider.", error);
     throw new AppError(
       "EMBEDDING_MODEL_UNAVAILABLE",
-      "No se pudo cargar el modelo local de embeddings. La primera ejecución puede necesitar descargar archivos; revisá la conexión y la caché.",
+      "No se pudo inicializar el proveedor de embeddings. Revisá EMBEDDING_PROVIDER, EMBEDDING_MODEL_ID y, si es remoto, OPENROUTER_API_KEY.",
     );
   }
 }

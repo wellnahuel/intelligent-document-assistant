@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/errors";
 import type { EmbeddingModelInfo } from "@/lib/embeddings/types";
 import { EMBEDDING_DIMENSIONS } from "@/lib/embeddings/vector";
 
@@ -5,24 +6,32 @@ const DEFAULT_MODEL_ID = "Xenova/multilingual-e5-small";
 // Pinned Hugging Face commit inspected for this sprint. Pinning keeps the
 // downloaded files and the stored model revision reproducible.
 const DEFAULT_MODEL_REVISION = "761b726dd34fb83930e26aab4e9ac3899aa1fa78";
+const REMOTE_UNVERSIONED_REVISION = "openrouter-managed";
 const DEFAULT_CACHE_DIR = ".cache/transformers";
 const DEFAULT_BATCH_SIZE = 4;
 const DEFAULT_TOP_K = 5;
 const DEFAULT_MAX_TOP_K = 20;
 const DEFAULT_QUERY_MAX_CHARS = 1000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
 
 const MIN_BATCH_SIZE = 1;
 const MAX_BATCH_SIZE = 16;
 const MAX_TOP_K_LIMIT = 50;
 const MAX_QUERY_CHARS_LIMIT = 4000;
+const MIN_REQUEST_TIMEOUT_MS = 1_000;
+const MAX_REQUEST_TIMEOUT_MS = 120_000;
+
+export type EmbeddingProviderKind = "local" | "openrouter";
 
 export type EmbeddingConfig = {
+  provider: EmbeddingProviderKind;
   modelId: string;
   modelRevision: string;
   dimensions: number;
   cacheDir: string;
   batchSize: number;
   dtype: "fp32";
+  requestTimeoutMs: number;
 };
 
 export type SearchConfig = {
@@ -61,13 +70,48 @@ function readIntegerInRange(
   return value;
 }
 
+function readProvider(): EmbeddingProviderKind {
+  const raw = process.env.EMBEDDING_PROVIDER?.trim().toLowerCase();
+
+  if (!raw) {
+    return "local";
+  }
+
+  if (raw === "local" || raw === "openrouter") {
+    return raw;
+  }
+
+  console.warn(
+    `[embeddings] Ignoring invalid EMBEDDING_PROVIDER="${raw}". Expected "local" or "openrouter"; using "local".`,
+  );
+  return "local";
+}
+
 export function getEmbeddingConfig(): EmbeddingConfig {
+  const provider = readProvider();
+  const configuredModelId = process.env.EMBEDDING_MODEL_ID?.trim();
+
+  // The local default names a Hugging Face repository, which is not a valid
+  // OpenRouter model id. Requiring an explicit value avoids silently sending
+  // the local slug to the remote endpoint.
+  if (provider === "openrouter" && !configuredModelId) {
+    throw new AppError(
+      "EMBEDDING_MODEL_UNAVAILABLE",
+      "El proveedor remoto de embeddings requiere EMBEDDING_MODEL_ID con el id del modelo de OpenRouter.",
+    );
+  }
+
+  const modelId = configuredModelId || DEFAULT_MODEL_ID;
+  const modelRevision =
+    process.env.EMBEDDING_MODEL_REVISION?.trim() ||
+    (provider === "openrouter"
+      ? REMOTE_UNVERSIONED_REVISION
+      : DEFAULT_MODEL_REVISION);
+
   return {
-    modelId: readNonEmptyString("EMBEDDING_MODEL_ID", DEFAULT_MODEL_ID),
-    modelRevision: readNonEmptyString(
-      "EMBEDDING_MODEL_REVISION",
-      DEFAULT_MODEL_REVISION,
-    ),
+    provider,
+    modelId,
+    modelRevision,
     dimensions: EMBEDDING_DIMENSIONS,
     cacheDir: readNonEmptyString("EMBEDDING_CACHE_DIR", DEFAULT_CACHE_DIR),
     batchSize: readIntegerInRange(
@@ -79,6 +123,12 @@ export function getEmbeddingConfig(): EmbeddingConfig {
     // Fixed because the SQL column is vector(384). The dtype is part of the
     // local model configuration and must not change silently.
     dtype: "fp32",
+    requestTimeoutMs: readIntegerInRange(
+      "OPENROUTER_EMBEDDING_TIMEOUT_MS",
+      DEFAULT_REQUEST_TIMEOUT_MS,
+      MIN_REQUEST_TIMEOUT_MS,
+      MAX_REQUEST_TIMEOUT_MS,
+    ),
   };
 }
 
