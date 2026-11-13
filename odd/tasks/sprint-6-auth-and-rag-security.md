@@ -25,17 +25,17 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integrati
 
 | ID | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- |
-| T1 | S1, S2 | inline | pending | Inspect repo and versions; branch; feature doc; schema, migration, Prisma generate |
-| T2 | S3 | inline | pending | Auth.js config, Argon2id, actions, login/register/logout UI |
-| T3 | S4, S5, S6 | inline | pending | DAL, scoped document queries, delete endpoint/UI, pages and APIs |
-| T4 | S6, S7 | inline | pending | Embeddings/store/retrieval/RAG/eval scoping |
-| T5 | S9, S10 | inline | pending | Rate-limit table module, limits config, provider 429 mapping |
-| T6 | S8, S10, S11 | inline | pending | Prompt-injection test, privacy copy, safe rendering review |
-| T7 | S12 | inline | pending | Unit tests and PostgreSQL integration harness |
-| T8 | S11, S13 | inline | pending | README, `.env.example`, commands, manual test |
+| T1 | S1, S2 | inline | done | `2042ca1`; schema, migration with legacy owner, Prisma generate, 5 migrations applied |
+| T2 | S3 | inline | done | `dd07e49`; Auth.js v5, Argon2id, register/login/logout server actions; real HTTP probes passed |
+| T3 | S4, S5, S6 | inline | done | `7a48137`; DAL, scoped queries, delete endpoint/UI, pages and document APIs |
+| T4 | S6, S7 | inline | done | `de08c16`; vector/lexical/hybrid SQL filters, RAG retrieval, ask/search, eval owner map |
+| T5 | S9, S10 | inline | done | `dd07e49` + `de08c16`; `RateLimitBucket`, quotas, 429/402 provider mapping |
+| T6 | S8, S10, S11 | inline | done | `de08c16`; prompt-injection test, privacy copy, no raw HTML rendering |
+| T7 | S12 | inline | done | `216f05a`; 197 unit tests / 24 files, 11 integration tests against `ida_test` |
+| T8 | S11, S13 | inline | done | README, `.env.example`, manual two-account probe, commands |
 | T9 | S1–S13 | delegated | pending | Independent verification at feature end; native review if due |
 
-Route note: the feature names high-risk items 1 (schema migration and existing-data backfill), 2 (auth, sessions and password storage), 3 (contract/response changes for protected resources) and 4 (SQL ownership filters). One independent verifier runs at the end, not per task. No parallel writers: the units share the schema, DAL and route surfaces, so parallel edits would collide. All implementation runs inline.
+Route note: the feature names high-risk items 1 (schema migration and existing-data backfill), 2 (auth, sessions and password storage), 3 (contract/response changes for protected resources) and 4 (SQL ownership filters). One independent verifier runs at the end, not per task. No parallel writers: the units share the schema, DAL and route surfaces, so parallel edits would collide. All implementation ran inline.
 
 ## Log
 
@@ -243,3 +243,32 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
 5. ¿Qué datos de una solicitud RAG evitarías guardar en logs y por qué?
 6. ¿Qué cambia en el riesgo de aislamiento cuando pasamos de una app local de un usuario a una aplicación multiusuario?
 ````
+
+### L2 — Implementation decisions
+
+- Auth.js v5 (`next-auth@5.0.0-beta.32`) supports the installed Next 16.4.6; there was no existing auth system to replace.
+- JWT sessions from Auth.js, stored in the library's HttpOnly cookie. No adapter tables were added because Credentials + JWT does not need them.
+- Argon2id starts at OWASP's minimum: 19 MiB, 2 iterations, 1 lane, 32-byte tag. Parameters are encoded in the hash.
+- Existing documents are preserved under `legacy-owner-0000000000000000` with an invalid hash. Reassignment is manual and documented.
+- Rate limits are persistent fixed windows in PostgreSQL, keyed by opaque hashes for email/IP. Document quota uses `SELECT ... FOR UPDATE` on the user row.
+- Vector and lexical SQL filter by `d."userId"` inside the query. The evaluation fixture has its own non-login owner and the CLI resolves the owner map.
+- No proxy/middleware was added: it would buffer uploads and was not needed; the DAL is the authorization boundary.
+- No tools/actions were added to RAG; the model output remains plain text and cannot change permissions.
+
+### L3 — Verification evidence
+
+- `npm run typecheck` passed.
+- `npm run lint` passed.
+- `npm test` passed: 12 chunker tests + 197 Vitest tests in 24 files.
+- `npm run test:integration` passed: 11 tests against the isolated `ida_test` database (created and migrated by `scripts/test-integration.ts`).
+- `npx prisma migrate status` passed: 5 migrations applied to `ida`.
+- Manual HTTP probes with two signed sessions passed: anonymous 401/redirect; foreign document GET/DELETE/chunks/embeddings/ask 404; own detail 200; search returned only owned indexed chunks; RAG sources belonged to the asking user; logout cleared the session.
+- Register/login/logout server actions were exercised over HTTP: registration created an Argon2id hash and an Auth.js session; login redirect succeeded; wrong password rendered the generic message; logout deleted the session cookie.
+- Real OpenRouter generation was exercised for both users; each answer cited sources from its own document.
+- `npm run eval:seed` and `npm run eval:retrieval` still pass; metrics match the Sprint 5 reference report. The generated temporary report was removed.
+- `next build` was not run (project rule).
+
+### L4 — Pending
+
+- T9 independent verification and native review decision at feature end.
+- No push, PR or merge requested.

@@ -1,16 +1,27 @@
-# Intelligent Document Assistant — Sprint 5
+# Intelligent Document Assistant — Sprint 6
 
-Aplicación web educativa para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
+Aplicación web educativa multiusuario para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
 
-Este es el quinto hito del proyecto de RAG. El recorrido completo es **indexar → recuperar → generar**, y ahora también **medir**. Los documentos se procesan y se vectorizan localmente; la pregunta se convierte en un vector con el mismo modelo; los chunks del documento elegido se envían como contexto a OpenRouter; el servidor valida las citas antes de mostrarlas; y un conjunto de evaluación pequeño compara búsqueda vectorial, búsqueda léxica, búsqueda híbrida con RRF y reranking opcional. La respuesta sigue siendo de un solo turno: no hay historial de conversación, herramientas ni agentes.
+Este es el sexto hito del proyecto de RAG. El recorrido completo es **autenticar → aislar → indexar → recuperar → generar**. Cada cuenta tiene su propia biblioteca: las páginas, los chunks y los embeddings heredan el dueño del documento, y las consultas vectoriales filtran por `userId` dentro del SQL. La pregunta se convierte en un vector con el modelo local; solo los chunks autorizados del documento elegido se envían como contexto a OpenRouter; el servidor valida las citas antes de mostrarlas. La respuesta sigue siendo de un solo turno: no hay historial de conversación, herramientas ni agentes.
 
-> **Solo para desarrollo local.** Esta versión no incluye autenticación ni aislamiento entre usuarios. No la expongas a Internet ni la uses con documentos reales. Los fixtures de evaluación son ficticios a propósito: si activás el reranking, la pregunta y los fragmentos candidatos salen hacia un proveedor externo.
+> **Solo para desarrollo local.** Ahora hay autenticación con email y contraseña, aislamiento por usuario y límites de uso, pero no es una implementación de producción: faltan RLS, recuperación de contraseña, verificación de email, MFA, auditoría y revisión de despliegue. No la expongas a Internet ni la uses con documentos reales sin completar el Sprint 7. Los fixtures de evaluación son ficticios: si activás el reranking, la pregunta y los fragmentos candidatos salen hacia un proveedor externo.
 
 ## Qué incluye
 
 - Todo lo del Sprint 1: carga de PDF, validación, extracción por página y biblioteca.
 - Todo lo del Sprint 2: chunking con overlap, offsets de caracteres y regeneración idempotente.
-- `EmbeddingProvider` local con `Transformers.js` y el modelo multilingüe `Xenova/multilingual-e5-small`.
+- Autenticación con **Auth.js v5** y Credentials provider; sesión JWT en cookie HttpOnly de la librería, nunca en `localStorage`.
+- Registro e ingreso con email normalizado y único; contraseñas guardadas solo como **hash Argon2id** (19 MiB, 2 iteraciones, 1 lane, 32 bytes).
+- Logout y protección de páginas y endpoints; los anónimos reciben redirect o `401`.
+- DAL `server-only` que obtiene la identidad verificada y devuelve documentos acotados por `userId`.
+- `User`, `Document.userId` y ownership transitivo de páginas, chunks y embeddings; borrado en cascada.
+- Prevención de IDOR en listado, detalle, carga, borrado, chunking, embeddings, búsqueda, RAG y citas.
+- Filtro de `userId` dentro del SQL vectorial y léxico; la evaluación también resuelve el dueño del fixture.
+- Límites persistentes en PostgreSQL por usuario para cargas, embeddings, preguntas y búsquedas; límite de documentos y rate limit de login/registro.
+- Respuestas `429` con `Retry-After` y mapeo seguro de `429`/`402` de OpenRouter.
+- Pruebas de aislamiento con dos usuarios y dos documentos contra PostgreSQL real.
+- Prueba de prompt injection: el texto malicioso queda como dato, no dispara acciones y las citas inventadas se eliminan.
+- Todo lo del Sprint 3: `EmbeddingProvider` local con `Transformers.js` y el modelo multilingüe `Xenova/multilingual-e5-small`.
 - Prefijos E5 `passage: ` y `query: `, pooling mean y normalización L2.
 - Validación de vectores de exactamente 384 dimensiones y rechazo de `NaN`/`Infinity`.
 - Migración con `CREATE EXTENSION IF NOT EXISTS vector` y tabla `ChunkEmbedding`.
@@ -40,6 +51,7 @@ Este es el quinto hito del proyecto de RAG. El recorrido completo es **indexar �
 
 ## Documentación del sprint
 
+- **Sprint 6:** la sección [Autenticación, autorización y seguridad](#sprint-6--autenticación-autorización-y-seguridad) de este README explica el flujo de identidad, la DAL, la prevención de IDOR, el aislamiento SQL, los límites y las amenazas abiertas. No se agregó una guía PDF nueva en este sprint.
 - `docs/sprint-5-como-funciona.pdf` — guía de estudio del Sprint 5 (17 páginas): gold set, métricas, búsqueda vectorial y léxica, RRF, reranking opcional, CLI, reporte reproducible, resultados reales, límites y checklist para el Sprint 6.
 - `docs/sprint-5-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - **Sprint 5:** la sección [Evaluación de recuperación](#flujo-de-evaluación-de-recuperación-sprint-5) de este README explica el gold set, las métricas, RRF, el reranking opcional, el índice GIN y los límites. Los artefactos viven en `eval/gold-set.json`, `eval/fixtures/fictional-documents.json`, `eval/answer-quality-review.md` y `eval/reports/reference-report.json`.
@@ -54,15 +66,19 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 
 - Streaming de la respuesta.
 - Historial de conversación, herramientas o agentes.
+- Herramientas ejecutables para el modelo; la salida del modelo nunca modifica datos, permisos ni consultas.
+- Recuperación de contraseña, verificación de email, MFA, OAuth o inicio de sesión con proveedores externos.
+- Row-Level Security de PostgreSQL. El aislamiento se aplica en la DAL y en cada consulta; RLS queda como defensa adicional para el Sprint 7.
+- Un panel de administración, auditoría de accesos o borrado de cuenta.
 - Conectar la búsqueda híbrida o el reranking al flujo de `/ask`; por ahora se comparan en la evaluación.
 - Un LLM juez automático para calidad de respuesta.
 - Umbral universal de similitud.
 - Índices HNSW o IVFFlat.
 - Stemming específico para español o italiano; la búsqueda léxica usa la configuración `simple`.
 - OCR para PDFs escaneados.
-- Autenticación, permisos por documento, rate limiting o aislamiento entre usuarios.
 - Almacenamiento del archivo PDF original.
-- Controles de prompt injection más allá de la instrucción del prompt.
+- Antivirus o análisis de malware de los PDFs.
+- Garantías de privacidad del proveedor externo: la pregunta y los fragmentos recuperados se envían a OpenRouter cuando se genera una respuesta.
 
 ## Stack
 
@@ -73,6 +89,10 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 | Estilos | CSS Modules, sin Tailwind |
 | Base de datos | PostgreSQL 17 con pgvector, vía Docker |
 | ORM | Prisma 7 + `@prisma/adapter-pg` |
+| Autenticación | Auth.js v5 (`next-auth` beta compatible con Next 16) + Credentials provider |
+| Hash de contraseñas | `@node-rs/argon2` con Argon2id (OWASP starting point) |
+| Sesión | JWT firmado y cifrado por Auth.js en cookie HttpOnly |
+| Límites de uso | Fixed window persistente en PostgreSQL (`RateLimitBucket`) |
 | Extracción | PDF.js (`pdfjs-dist` 6) |
 | Chunking | Módulo TypeScript puro, sin dependencias de IA |
 | Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local |
@@ -83,7 +103,7 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 | Reranking opcional | OpenRouter `/api/v1/rerank` vía `fetch` en el servidor |
 | Scripts de evaluación | `tsx` para ejecutar TypeScript fuera de Next.js |
 | Validación de entrada | Zod |
-| Tests | `node:test` para el chunker + Vitest para embeddings, RAG, métricas y retrieval |
+| Tests | `node:test` para el chunker + Vitest unitario e integración contra PostgreSQL |
 
 ## Requisitos
 
@@ -100,7 +120,8 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 ```bash
 # 1. Variables de entorno locales
 cp .env.example .env
-# Completá OPENROUTER_API_KEY y OPENROUTER_MODEL en .env
+# Completá AUTH_SECRET, OPENROUTER_API_KEY y OPENROUTER_MODEL en .env
+# AUTH_SECRET se genera con: openssl rand -base64 32
 
 # 2. Dependencias
 npm install
@@ -111,7 +132,7 @@ docker compose up -d
 # 4. Cliente de Prisma
 npm run db:generate
 
-# 5. Migraciones (incluye CREATE EXTENSION vector y el índice GIN de Sprint 5)
+# 5. Migraciones (incluye users/ownership/rate limits, CREATE EXTENSION vector y el índice GIN)
 npm run db:migrate
 
 # 6. Fixture de evaluación ficticio (opcional; requiere el modelo local)
@@ -122,7 +143,7 @@ npm run eval:retrieval
 npm run dev
 ```
 
-Abre <http://localhost:3000>, sube un PDF con texto seleccionable, genera los fragmentos y después los embeddings. La primera generación de embeddings descarga el modelo y puede tardar varios minutos; las siguientes usan la caché.
+Abre <http://localhost:3000>, crea una cuenta en `/register` y sube un PDF con texto seleccionable, genera los fragmentos y después los embeddings. Cada cuenta ve solo sus propios documentos. La primera generación de embeddings descarga el modelo y puede tardar varios minutos; las siguientes usan la caché.
 
 ### Detener y reiniciar
 
@@ -147,6 +168,16 @@ rm -rf .cache/transformers
 | Variable | Obligatoria | Valor por defecto | Descripción |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | Sí | — | Cadena de conexión de PostgreSQL. |
+| `AUTH_SECRET` | Sí | — | Secreto de Auth.js para firmar/cifrar la cookie de sesión. Generarlo con `openssl rand -base64 32`. Nunca usar el prefijo `NEXT_PUBLIC_` ni commitearlo. |
+| `MAX_DOCUMENTS_PER_USER` | No | `20` | Cantidad máxima de documentos por cuenta. Se verifica dentro de la transacción de creación. |
+| `UPLOAD_RATE_LIMIT_PER_HOUR` | No | `10` | Cargas por usuario por hora. |
+| `EMBEDDING_RATE_LIMIT_PER_HOUR` | No | `10` | Generaciones de embeddings por usuario por hora. |
+| `ASK_RATE_LIMIT_PER_HOUR` | No | `30` | Preguntas RAG por usuario por hora. |
+| `SEARCH_RATE_LIMIT_PER_HOUR` | No | `60` | Búsquedas semánticas por usuario por hora. |
+| `LOGIN_RATE_LIMIT_PER_15_MIN` | No | `10` | Intentos de login por email cada 15 minutos. |
+| `LOGIN_IP_RATE_LIMIT_PER_15_MIN` | No | `30` | Intentos de login por IP cada 15 minutos. |
+| `REGISTER_RATE_LIMIT_PER_HOUR` | No | `5` | Registros por IP por hora. |
+| `REGISTER_EMAIL_RATE_LIMIT_PER_HOUR` | No | `3` | Intentos de registro por email por hora. |
 | `MAX_PDF_SIZE_MB` | No | `10` | Tamaño máximo del PDF en MB. |
 | `MAX_PDF_PAGES` | No | `50` | Cantidad máxima de páginas. |
 | `CHUNK_TARGET_CHARS` | No | `1200` | Tamaño objetivo de cada fragmento, en caracteres. |
@@ -175,6 +206,8 @@ rm -rf .cache/transformers
 
 Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y el proveedor valida que el modelo produzca exactamente 384 números. Cambiar de modelo exige una migración y regenerar los vectores.
 
+`AUTH_SECRET` es obligatorio para que Auth.js pueda firmar y cifrar la cookie de sesión. No se expone al cliente. Los límites son opcionales: si no se configuran, se usan los valores de la tabla. Los contadores viven en `RateLimitBucket`, no en memoria, así que sobreviven reinicios y se comparten entre procesos que usen la misma base. Las filas vencidas se pueden limpiar con `DELETE FROM "RateLimitBucket" WHERE "expiresAt" < now();`.
+
 `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` se leen solo en el servidor. Si faltan, `/api/ask` responde `503` con un mensaje seguro después de recuperar los fragmentos; el camino sin evidencia sigue funcionando sin llamar al proveedor. La clave no aparece en el bundle del navegador, en la API ni en los logs.
 
 El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:retrieval` lo marca como `skipped` y termina normalmente. Cuando se activa, la pregunta y los fragmentos candidatos se envían a OpenRouter; usá solo documentos ficticios o que puedas compartir. No se asume que exista un modelo gratuito disponible.
@@ -190,8 +223,9 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 | `npm run typecheck` | `tsc --noEmit` con TypeScript estricto. |
 | `npm test` | Ejecuta los tests del chunker y los tests unitarios de embeddings y RAG. |
 | `npm run test:chunking` | Tests del chunker con el runner nativo de Node. |
-| `npm run test:unit` | Tests de embeddings y RAG con Vitest. |
+| `npm run test:unit` | Tests unitarios con Vitest. |
 | `npm run test:unit:watch` | Vitest en modo watch. |
+| `npm run test:integration` | Crea/migra una base `*_test` aislada y ejecuta las pruebas de aislamiento contra PostgreSQL real. |
 | `npm run db:generate` | Genera el cliente de Prisma en `src/generated/prisma`. |
 | `npm run db:migrate` | Aplica migraciones en desarrollo. |
 | `npm run db:deploy` | Aplica migraciones en un entorno desplegado. |
@@ -205,8 +239,8 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 ```text
 .
 ├── prisma/
-│   ├── schema.prisma              # Document, DocumentPage, DocumentChunk, ChunkEmbedding
-│   └── migrations/                # Inicial, chunks, embeddings/pgvector e índice GIN
+│   ├── schema.prisma              # User, Document, páginas, chunks, embeddings y rate limits
+│   └── migrations/                # Inicial, chunks, embeddings/GIN y users/ownership/limits
 ├── eval/
 │   ├── gold-set.json              # 25 casos con chunks relevantes y hechos esperados
 │   ├── fixtures/
@@ -216,14 +250,16 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │       └── reference-report.json  # Ejecución real de referencia
 ├── src/
 │   ├── app/
+│   │   ├── (auth)/                # Login, registro y server actions de sesión
 │   │   ├── api/
+│   │   │   ├── auth/[...nextauth]/route.ts
 │   │   │   ├── documents/
-│   │   │   │   ├── route.ts       # GET (lista) y POST (carga)
+│   │   │   │   ├── route.ts       # GET (lista propia) y POST (carga)
 │   │   │   │   └── [id]/
-│   │   │   │       ├── route.ts   # GET de un documento con páginas y chunks
+│   │   │   │       ├── route.ts   # GET y DELETE acotados por dueño
 │   │   │   │       ├── chunks/route.ts
 │   │   │   │       └── embeddings/route.ts
-│   │   │   ├── search/route.ts    # POST de búsqueda vectorial
+│   │   │   ├── search/route.ts    # POST de búsqueda vectorial propia
 │   │   │   └── ask/route.ts       # POST de pregunta + generación
 │   │   ├── documents/[id]/page.tsx
 │   │   ├── search/page.tsx        # Pantalla de diagnóstico
@@ -234,10 +270,12 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │   │   ├── page.tsx
 │   │   └── globals.css
 │   ├── components/
+│   │   ├── auth/                  # LoginForm, RegisterForm y estilos
 │   │   ├── documents/
 │   │   │   ├── DocumentLibrary.tsx
 │   │   │   ├── UploadForm.tsx
 │   │   │   ├── DocumentDetail.tsx
+│   │   │   ├── DeleteDocumentButton.tsx
 │   │   │   ├── DocumentChunkViewer.tsx
 │   │   │   ├── DocumentEmbeddingsPanel.tsx
 │   │   │   └── StatusBadge.tsx
@@ -247,12 +285,14 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │   │       └── AskPanel.tsx       # Pregunta, respuesta y fuentes verificadas
 │   ├── generated/prisma/          # Cliente generado (ignorado por git)
 │   └── lib/
+│       ├── auth/                  # Argon2id, input, credenciales, registro y usuarios
 │       ├── chunking/
 │       │   ├── chunk-text.ts
 │       │   └── config.ts
 │       ├── client/
 │       │   └── read-error.ts      # Lectura segura de errores de la API
 │       ├── config.ts
+│       ├── dal.ts                 # Identidad verificada y helpers requireUser/requireApiUser
 │       ├── db.ts
 │       ├── documents/
 │       │   ├── chunks.ts
@@ -300,6 +340,7 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │       │   ├── queries.ts         # Opciones de documento para la UI
 │       │   ├── retrieval.ts       # Búsqueda filtrada por documento
 │       │   └── types.ts
+│       ├── rate-limit/           # Configuración, claves opacas y fixed window SQL
 │       ├── errors.ts
 │       ├── format.ts
 │       ├── http.ts
@@ -309,6 +350,10 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │           └── pdfjs-config.ts
 ├── tests/
 │   ├── chunking.test.mjs
+│   ├── integration/
+│   │   └── access-control.test.ts # Dos usuarios, dos documentos, SQL real
+│   ├── stubs/
+│   │   └── server-only.ts
 │   └── unit/
 │       ├── embeddings.test.ts
 │       ├── embeddings-boundaries.test.ts
@@ -323,6 +368,10 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 │       ├── rag-openrouter.test.ts
 │       ├── rag-prompt.test.ts
 │       ├── rag-verification.test.ts
+│       ├── rag-injection.test.ts
+│       ├── rag-provider-errors.test.ts
+│       ├── auth-input.test.ts
+│       ├── auth-password.test.ts
 │       ├── reranker-validation.test.ts
 │       ├── retrieval-hybrid.test.ts
 │       ├── retrieval-lexical.test.ts
@@ -333,11 +382,13 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 ├── scripts/
 │   ├── eval-retrieval.ts
 │   ├── eval-seed.ts
-│   └── generate-sample-pdf.mjs
+│   ├── generate-sample-pdf.mjs
+│   └── test-integration.ts
 ├── docker-compose.yml
 ├── prisma.config.ts
 ├── next.config.ts
 ├── vitest.config.ts
+├── vitest.integration.config.ts
 └── package.json
 ```
 
@@ -521,11 +572,174 @@ La expresión del índice debe coincidir exactamente con la de la consulta para 
 - No hay juez automático ni intervalo de confianza. Con 20 casos respondibles, una diferencia de MRR puede ser ruido.
 - Próximos pasos: ampliar el gold set, agregar documentos reales anonimizados, conectar la estrategia ganadora a `/ask` con una comparación A/B, evaluar un juez LLM contra la revisión manual, medir costo/latencia con más volumen y probar configuraciones de texto en español e italiano.
 
+## Sprint 6 — Autenticación, autorización y seguridad
+
+### Autenticación no es autorización
+
+**Autenticación** responde quién hace la solicitud. **Autorización** responde si esa persona puede acceder a un documento concreto. En esta app, Auth.js verifica email y contraseña y produce una sesión; la DAL usa el `userId` de esa sesión como único origen de identidad. Un `documentId` que llega por la URL, el body o un formulario no demuestra nada: siempre se combina con el `userId` verificado en la misma consulta.
+
+### Flujo de autenticación
+
+1. `/register` valida email y contraseña en el servidor y aplica rate limits por email e IP.
+2. La contraseña se deriva con **Argon2id** (`m=19456`, `t=2`, `p=1`, salida de 32 bytes). La base guarda solo el hash; nunca la contraseña ni un cifrado reversible.
+3. Auth.js Credentials compara el hash y emite una sesión **JWT** dentro de una cookie HttpOnly, SameSite=Lax, firmada y cifrada por la librería. No hay tokens en `localStorage` ni cookies de sesión propias.
+4. El email se normaliza a minúsculas y se recorta antes de guardar/comparar; la unicidad la garantiza el índice de PostgreSQL.
+5. Los errores de login son siempre `Email o contraseña incorrectos.` y un email inexistente recorre una verificación Argon2id ficticia para reducir la diferencia de tiempo. El registro usa un mensaje genérico ante un email duplicado.
+6. `/api/auth/[...nextauth]` expone los handlers de Auth.js; `/login` y `/register` son las páginas. El logout se ejecuta con `signOut` de Auth.js desde una server action.
+7. `AUTH_SECRET` firma/cifra la cookie. Es un secreto de servidor: no se expone con `NEXT_PUBLIC_` y no se commitea.
+
+No hay OAuth, proveedor de email, recuperación de contraseña, verificación de email ni MFA porque no hay credenciales ni proveedor configurados. No se inventaron.
+
+### DAL y prevención de IDOR
+
+`src/lib/dal.ts` es `server-only` y expone:
+
+- `getSessionUser()`: lee la sesión verificada de Auth.js y devuelve `{ id, email }` o `null`.
+- `requireUser()`: para páginas; redirige a `/login`.
+- `requireApiUser()`: para route handlers; lanza `401 UNAUTHENTICATED`.
+
+Las consultas de documentos viven en `src/lib/documents/queries.ts` y empiezan por el dueño:
+
+```ts
+const document = await prisma.document.findFirst({
+  where: { id: documentId, userId: session.user.id },
+});
+```
+
+No existe un `findUnique({ where: { id } })` seguido de una autorización tardía. Un documento ajeno y uno inexistente producen la misma respuesta: `notFound()` en la página y `404 DOCUMENT_NOT_FOUND` en la API. Cubre listado, detalle, carga, borrado, chunks, embeddings, búsqueda, RAG y citas. Ocultar un botón no es un control de seguridad.
+
+### Aislamiento de datos y migración
+
+```text
+User
+└── Document (userId, FK onDelete: Cascade)
+    └── DocumentPage (cascade)
+        └── DocumentChunk (cascade)
+            └── ChunkEmbedding (cascade)
+```
+
+La migración `20261113113000_add_users_ownership_and_rate_limits`:
+
+1. crea `User` y `RateLimitBucket`;
+2. agrega `Document.userId` nullable;
+3. crea un usuario legacy `legacy-owner-0000000000000000` con un hash inválido que no puede autenticarse;
+4. asigna todos los documentos existentes a ese usuario;
+5. vuelve `userId` obligatorio, agrega el índice y la FK con cascada.
+
+Los documentos legacy se preservan, pero no son accesibles desde ninguna sesión. Para reasignarlos hay que decidir su dueño real y ejecutar, por ejemplo:
+
+```sql
+UPDATE "Document" SET "userId" = '<real-user-id>' WHERE "id" = '<document-id>';
+```
+
+El fixture de evaluación usa un dueño propio (`eval-fixture-owner`), también sin login, y el CLI resuelve ese dueño para no saltarse el filtro.
+
+### Ownership dentro del SQL vectorial
+
+La búsqueda vectorial no recupera filas para autorizarlas después. El `JOIN` con `Document` y el predicado `d."userId" = $userId` están dentro de la misma consulta que ordena por distancia coseno:
+
+```sql
+FROM "ChunkEmbedding" e
+JOIN "DocumentChunk" c ON c."id" = e."chunkId"
+JOIN "DocumentPage" p ON p."id" = c."documentPageId"
+JOIN "Document" d ON d."id" = p."documentId"
+WHERE e."modelId" = $modelId
+  AND e."modelRevision" = $modelRevision
+  AND e."dimensions" = $dimensions
+  AND d."userId" = $userId
+ORDER BY e."embedding" <=> $vector ASC
+LIMIT $topK
+```
+
+La búsqueda léxica y la híbrida aplican el mismo filtro. Los conteos de la UI también están acotados. La evaluación recibe un mapa `documentId → userId`; si falta el dueño, falla en vez de consultar globalmente.
+
+### RAG, prompt injection y salida del modelo
+
+El texto de un PDF y la pregunta son datos no confiables. El system prompt separa instrucciones de fuentes y aclara que el contexto no son instrucciones, pero **el prompt no es una frontera de seguridad**. Las defensas reales de este sprint son:
+
+- no hay herramientas, agentes ni acciones ejecutables;
+- la salida del modelo no modifica datos, permisos ni consultas;
+- los IDs de cita `[S#]` se validan contra los chunks recuperados y autorizados; los inventados se eliminan;
+- la respuesta se renderiza como texto de React, sin `dangerouslySetInnerHTML`;
+- el `userId`, el documento y los filtros se deciden en el servidor, nunca en el modelo;
+- el request a OpenRouter solo envía mensajes `system` y `user`; no incluye `tools` ni `tool_choice`;
+- los logs no incluyen prompts, contraseñas, cookies, API keys, preguntas completas ni texto completo de documentos.
+
+La prueba `tests/unit/rag-injection.test.ts` incluye un chunk con instrucciones maliciosas, comprueba que no contamina el system prompt, que no se envían herramientas y que una cita inventada no se convierte en fuente.
+
+Amenazas que siguen abiertas en este sprint: un modelo puede seguir influenciado por texto malicioso dentro de la respuesta (aunque no puede ejecutar acciones), no hay detección de contenido malicioso en PDFs, no hay antivirus, no hay aislamiento a nivel de fila en PostgreSQL y no hay auditoría de accesos.
+
+### Límites de uso
+
+`RateLimitBucket` implementa una ventana fija atómica con `INSERT ... ON CONFLICT`. Es persistente y compartida entre réplicas; no es un límite en memoria. Las claves de email/IP se guardan hasheadas.
+
+| Acción | Límite por defecto | Alcance |
+| --- | --- | --- |
+| Carga de PDF | 10/hora | Usuario |
+| Documentos | 20 en total | Usuario |
+| Embeddings | 10/hora | Usuario |
+| Preguntas RAG | 30/hora | Usuario |
+| Búsquedas | 60/hora | Usuario |
+| Login | 10/15 min por email; 30/15 min por IP | Email/IP |
+| Registro | 5/hora por IP; 3/hora por email | IP/email |
+
+La cuota de documentos se verifica dentro de la transacción con `SELECT ... FOR UPDATE` sobre el usuario, para que dos cargas simultáneas no pasen ambas el conteo. Los endpoints devuelven `429` con `Retry-After`. OpenRouter `429` se traduce a `RAG_PROVIDER_RATE_LIMITED` y `402` a `RAG_PROVIDER_QUOTA_EXCEEDED`, sin exponer el cuerpo ni la clave del proveedor.
+
+### Privacidad y retención actual
+
+- No se guarda el PDF binario; sí el texto extraído, los chunks y los embeddings en PostgreSQL.
+- La generación de respuestas envía la pregunta y hasta `RAG_TOP_K` fragmentos recuperados a OpenRouter. La UI de `/ask` y este README lo indican. Revisá las condiciones del proveedor antes de usar documentos privados.
+- No hay política de retención automática inventada. Borrar un documento elimina en cascada sus páginas, chunks y embeddings; la fila de `RateLimitBucket` vence según su ventana.
+- Los logs de la app no registran contenido de documentos ni preguntas completas. Los errores inesperados se registran sin volcar el body.
+
+### Cómo probar el aislamiento con dos cuentas
+
+1. `npm run dev` y abrí `http://localhost:3000/register`.
+2. Creá `cuenta-a@example.test` y `cuenta-b@example.test` con contraseñas distintas.
+3. Con A, subí `samples/documento-de-prueba.pdf`, generá fragmentos y embeddings. Copiá el id del documento A.
+4. Con B, comprobá que la biblioteca no muestra el documento A, que `/documents/<id-A>` devuelve 404 y que `GET`, `DELETE`, `/chunks`, `/embeddings` y `/api/ask` contra ese id devuelven 404.
+5. Con B, subí otro PDF y generá sus embeddings. En `/search`, B solo debe ver sus propios chunks; en `/ask`, las fuentes deben apuntar al documento B.
+6. Con A, preguntá sobre su documento: las fuentes deben pertenecer a A. Cerrá sesión y comprobá que `/api/documents` devuelve 401.
+7. La suite automatizada equivalente es `npm run test:integration`.
+
+### Comandos de migración y ejecución
+
+```bash
+npm install
+docker compose up -d
+npm run db:generate
+npm run db:migrate          # desarrollo
+npm run db:deploy           # entorno desplegado
+npm run dev
+npm run typecheck
+npm run lint
+npm test
+npm run test:integration    # crea/migra una base *_test aislada
+```
+
+### Módulos para leer primero
+
+1. `prisma/schema.prisma` y la migración de Sprint 6.
+2. `src/lib/dal.ts` y `src/lib/documents/queries.ts`.
+3. `src/auth.ts`, `src/lib/auth/password.ts` y `src/lib/auth/credentials.ts`.
+4. `src/lib/embeddings/store.ts` (SQL con `userId`).
+5. `src/lib/rag/retrieval.ts`, `src/lib/rag/generate.ts` y `src/lib/rag/citations.ts`.
+6. `src/lib/rate-limit/limiter.ts` y `src/lib/rate-limit/config.ts`.
+7. `tests/integration/access-control.test.ts` y `tests/unit/rag-injection.test.ts`.
+
 ## Modelo de datos
 
 ```prisma
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  documents    Document[]
+}
+
 model Document {
   id               String         @id @default(cuid())
+  userId           String
   originalFilename String
   mimeType         String
   sizeBytes        Int
@@ -534,7 +748,20 @@ model Document {
   errorMessage     String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   pages            DocumentPage[]
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model RateLimitBucket {
+  key             String   @id
+  count           Int      @default(0)
+  windowStartedAt DateTime
+  expiresAt       DateTime
+
+  @@index([expiresAt])
 }
 
 model DocumentPage {
@@ -585,25 +812,35 @@ La clave foránea con `onDelete: Cascade` hace que al borrar un chunk (o una pá
 
 ## API
 
+Todas las rutas de documentos, búsqueda y preguntas requieren una sesión de Auth.js. Sin sesión devuelven `401 UNAUTHENTICATED`. Un documento ajeno o inexistente devuelve `404 DOCUMENT_NOT_FOUND`; no se revela si existe. Los límites excedidos devuelven `429 RATE_LIMITED` con `Retry-After`.
+
+### `GET|POST /api/auth/[...nextauth]`
+
+Handlers de Auth.js para CSRF, callback de credenciales, sesión y logout. La app no implementa cookies ni tokens propios.
+
+### `DELETE /api/documents/[id]`
+
+Borra el documento del usuario autenticado. La FK en cascada elimina páginas, chunks y embeddings. Un id ajeno o inexistente devuelve el mismo `404`.
+
 ### `POST /api/documents`
 
 `multipart/form-data` con el campo `file`. Responde `201` con el resumen del documento.
 
 ### `GET /api/documents`
 
-Devuelve `{ "documents": [...] }` ordenados por fecha de creación descendente.
+Devuelve `{ "documents": [...] }` del usuario autenticado, ordenados por fecha de creación descendente. No incluye documentos de otras cuentas.
 
 ### `GET /api/documents/[id]`
 
-Devuelve el documento con `pages` ordenadas por `pageNumber` y sus `chunks` ordenados por `chunkIndex`.
+Devuelve el documento del usuario autenticado con `pages` ordenadas por `pageNumber` y sus `chunks` ordenados por `chunkIndex`.
 
 ### `POST /api/documents/[id]/chunks`
 
-Genera o regenera los fragmentos. No recibe cuerpo; los parámetros salen de `CHUNK_*`. Es idempotente: reemplaza los fragmentos anteriores dentro de una transacción.
+Genera o regenera los fragmentos del documento del usuario autenticado. No recibe cuerpo; los parámetros salen de `CHUNK_*`. Es idempotente: reemplaza los fragmentos anteriores dentro de una transacción.
 
 ### `POST /api/documents/[id]/embeddings`
 
-Genera embeddings para los chunks del documento.
+Genera embeddings para los chunks del documento del usuario autenticado. Aplica el rate limit de embeddings.
 
 ```bash
 # Generar solo los pendientes
@@ -676,7 +913,7 @@ Respuesta `200`:
 }
 ```
 
-Los resultados se ordenan por distancia ascendente. No se devuelve el vector. No se aplica un umbral de distancia. Si no hay embeddings para el modelo actual, `indexedChunkCount` es `0` y `results` es `[]`.
+Los resultados se ordenan por distancia ascendente y pertenecen solo al usuario autenticado. No se devuelve el vector. No se aplica un umbral de distancia. Si el usuario no tiene embeddings para el modelo actual, `indexedChunkCount` es `0` y `results` es `[]`; los chunks de otras cuentas nunca se cuentan ni se devuelven.
 
 ### `POST /api/ask`
 
@@ -753,7 +990,7 @@ Todas las respuestas de error tienen la misma forma:
 | `TOO_MANY_PAGES` | 422 | Supera `MAX_PDF_PAGES`. |
 | `NO_EXTRACTABLE_TEXT` | 422 | Ninguna página tiene texto seleccionable. |
 | `CORRUPT_PDF` | 422 | PDF.js no pudo interpretar el archivo. |
-| `DOCUMENT_NOT_FOUND` | 404 | El id no existe. |
+| `DOCUMENT_NOT_FOUND` | 404 | El id no existe o no pertenece al usuario autenticado. |
 | `INVALID_DOCUMENT_ID` | 400 | El id no tiene un formato seguro. |
 | `INVALID_REQUEST_BODY` | 400 | El cuerpo JSON es inválido, demasiado grande o tiene un campo con el tipo equivocado. |
 | `INVALID_SEARCH_QUERY` | 400 | La pregunta está vacía, no es texto o supera el límite. |
@@ -762,8 +999,14 @@ Todas las respuestas de error tienen la misma forma:
 | `EMBEDDING_MODEL_UNAVAILABLE` | 503 | El modelo no se pudo cargar (descarga, caché o configuración). |
 | `EMBEDDING_QUERY_FAILED` | 500 | El modelo no pudo generar el vector de la pregunta. |
 | `INVALID_ASK_QUESTION` | 400 | La pregunta está vacía o supera `RAG_QUESTION_MAX_CHARS`. |
+| `UNAUTHENTICATED` | 401 | No hay una sesión válida de Auth.js. |
+| `RATE_LIMITED` | 429 | Se superó un límite por usuario, email o IP. Incluye `Retry-After`. |
+| `DOCUMENT_QUOTA_EXCEEDED` | 429 | La cuenta alcanzó `MAX_DOCUMENTS_PER_USER`. |
+| `REGISTRATION_FAILED` | 400 | El registro no se pudo completar (por ejemplo, email ya usado); el mensaje es genérico. |
 | `OPENROUTER_NOT_CONFIGURED` | 503 | Faltan `OPENROUTER_API_KEY` u `OPENROUTER_MODEL` en el servidor. |
 | `RAG_PROVIDER_TIMEOUT` | 504 | OpenRouter no respondió dentro de `RAG_PROVIDER_TIMEOUT_MS`. |
+| `RAG_PROVIDER_RATE_LIMITED` | 429 | OpenRouter devolvió `429`; se muestra un mensaje seguro. |
+| `RAG_PROVIDER_QUOTA_EXCEEDED` | 503 | OpenRouter devolvió `402` (sin cuota); no se exponen detalles del proveedor. |
 | `RAG_PROVIDER_ERROR` | 502 | OpenRouter devolvió un error, una respuesta malformada o un error embebido. |
 | `INTERNAL_ERROR` | 500 | Error inesperado; el detalle queda en la terminal. |
 
@@ -856,9 +1099,13 @@ Prisma no puede declarar índices de expresión como `to_tsvector('simple', cont
 
 ## Seguridad y límites conocidos
 
-- **Sin autenticación ni aislamiento:** cualquier persona con acceso a la URL puede subir, leer, buscar y preguntar sobre cualquier documento de la biblioteca. `/ask` filtra los chunks por documento, pero no hay usuarios ni ownership: el filtro es de alcance de la pregunta, no de permisos. No exponer públicamente.
+- **Autenticación local, no producción:** hay registro/login con Argon2id, sesión JWT y aislamiento, pero faltan recuperación de contraseña, verificación de email, MFA, auditoría, revocación inmediata de sesiones y revisión de despliegue. Un JWT robado sigue siendo válido hasta su expiración (7 días por defecto) porque no hay lista de revocación.
+- **Sin Row-Level Security:** el aislamiento depende de la DAL y de cada consulta; RLS sería una defensa adicional, pero no se activó porque el adaptador de conexión no transmite una identidad de usuario a PostgreSQL.
+- **Documentos legacy:** los documentos anteriores al Sprint 6 quedaron asignados a `legacy-owner-0000000000000000`, una cuenta sin login. No son accesibles desde la app; reasignarlos requiere una decisión y un `UPDATE` manual.
+- **Confianza en headers de proxy:** el rate limit por IP usa `x-forwarded-for`/`x-real-ip`. Solo es confiable detrás de un proxy que sobrescriba esos headers; el límite por email sigue protegiendo una cuenta concreta.
+- **`trustHost: true` en Auth.js:** está pensado para desarrollo local y self-hosting directo. Detrás de un reverse proxy, el proxy debe controlar el header `Host`; en producción conviene fijar `AUTH_URL` y revisar esta configuración.
 - **Sin OCR:** un PDF escaneado como imagen se rechaza con “No se encontró texto seleccionable en el PDF.”.
-- **Límites en memoria:** 10 MB y 50 páginas por defecto. La extracción es síncrona y ocurre en el proceso de Next.js.
+- **Límites de archivo y uso:** 10 MB y 50 páginas por defecto para el PDF. Los límites por usuario viven en PostgreSQL; la extracción es síncrona y ocurre en el proceso de Next.js.
 - **Inferencia en CPU:** la generación de embeddings puede tardar varios segundos o minutos según la cantidad de chunks y el hardware. La primera ejecución incluye la descarga del modelo.
 - **Dependencia de red la primera vez:** sin conexión a Hugging Face, el modelo no se puede descargar. Después los archivos se reutilizan desde la caché local, pero Transformers.js puede seguir resolviendo metadatos remotos; no se verificó un arranque completamente offline.
 - **Límite de tokens del modelo:** E5 tiene una ventana de 512 tokens. El chunker mide caracteres, no tokens; un chunk de 1.200 caracteres puede truncarse en algunos idiomas. La pregunta también se trunca si supera la ventana, aunque la API limite los caracteres.
@@ -871,10 +1118,10 @@ Prisma no puede declarar índices de expresión como `to_tsvector('simple', cont
 - **Sin streaming:** la respuesta se valida completa antes de mostrarse. Esto facilita comprobar citas, pero aumenta la espera percibida.
 - **Sin historial ni agentes:** cada pregunta es independiente; no hay memoria de la conversación ni herramientas.
 - **El documento sale del servidor:** a diferencia de los embeddings, la generación envía los fragmentos recuperados a OpenRouter. Si activás el reranking, la pregunta y los chunks candidatos también se envían al proveedor. No uses documentos confidenciales en esta versión local sin evaluar ese intercambio.
-- **Prompt injection:** el system prompt indica tratar las fuentes como datos y no como instrucciones, pero no es una barrera de seguridad completa. Falta una capa de controles adicionales.
+- **Prompt injection:** el system prompt indica tratar las fuentes como datos y no como instrucciones, pero no es una barrera de seguridad completa. Las defensas reales son la ausencia de herramientas/acciones, la validación de citas, el renderizado como texto y los filtros de ownership fuera del control del modelo. El modelo todavía puede incluir instrucciones maliciosas en el texto de su respuesta.
 - **Respuestas no garantizadas:** pedir “no alucines” reduce el riesgo, no lo elimina. La app muestra fuentes y citas para que una persona pueda revisar el origen.
 - **Evaluación pequeña y no representativa:** hay 25 casos sobre dos documentos ficticios y un solo modelo de embeddings. Sirve para detectar regresiones y aprender, no para afirmar qué estrategia es mejor en general. La calidad de respuesta se revisa a mano con `eval/answer-quality-review.md`; no hay juez automático.
-- **Sin rate limiting:** no hay protección contra abuso de la API ni del proveedor.
+- **Rate limit de ventana fija:** no es un token bucket ni un sliding window; un atacante puede concentrar solicitudes en el borde de la ventana. El objetivo es frenar abuso casual, no resistir un ataque distribuido. Las filas vencidas se limpian manualmente.
 - **Sin progreso en tiempo real:** la UI muestra “Generando respuesta…” mientras espera; no hay porcentaje ni streaming.
 - **Regeneración concurrente:** dos pedidos simultáneos sobre el mismo documento pueden competir. El `ON CONFLICT` y la transacción protegen la integridad, pero el resultado de cada pedido puede ser distinto. No es un escenario esperado en esta versión local.
 - **Regenerar chunks borra embeddings:** la cascada elimina los vectores de los chunks reemplazados. Hay que volver a generarlos.
@@ -884,33 +1131,37 @@ Prisma no puede declarar índices de expresión como `to_tsvector('simple', cont
 
 ## Cómo probar manualmente
 
-1. Usa `samples/documento-de-prueba.pdf` o sube un PDF con texto seleccionable.
-2. Abre el documento y pulsa **Generar fragmentos** si todavía no tiene.
-3. Pulsa **Generar embeddings**. La primera vez puede descargar el modelo; revisa la terminal y `.cache/transformers/`.
-4. Verifica que el panel muestre “2 de 2 fragmentos con embeddings” (o el total del documento).
-5. Pulsa **Regenerar todos** y confirma que la cantidad de filas no cambia.
-6. Ve a **Buscar** y prueba:
+1. Copiá `.env.example` a `.env`, generá `AUTH_SECRET` con `openssl rand -base64 32`, levantá PostgreSQL y aplicá las migraciones.
+2. Abrí `http://localhost:3000/register`, creá una cuenta A y una cuenta B con emails distintos.
+3. Con A, subí `samples/documento-de-prueba.pdf`; con B, subí otro PDF. Cada biblioteca debe mostrar solo su documento.
+4. Copiá el id del documento A y, desde la sesión B, probá `/documents/<id-A>`, `GET`, `DELETE`, `/chunks`, `/embeddings` y `/api/ask` con ese id. Todo debe responder 404 sin revelar si existe.
+5. Usa `samples/documento-de-prueba.pdf` o sube un PDF con texto seleccionable.
+6. Abre el documento y pulsa **Generar fragmentos** si todavía no tiene.
+7. Pulsa **Generar embeddings**. La primera vez puede descargar el modelo; revisa la terminal y `.cache/transformers/`.
+8. Verifica que el panel muestre “2 de 2 fragmentos con embeddings” (o el total del documento).
+9. Pulsa **Regenerar todos** y confirma que la cantidad de filas no cambia.
+10. Ve a **Buscar** y prueba:
    - “¿Cuál es el período de garantía del producto?” → debe recuperar la página 1.
    - “¿Qué hace el asistente con el texto?” → debe recuperar la página 2.
-7. Confirma que cada resultado muestra documento, página, distancia y similitud.
-8. Configura `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` en `.env` y reinicia el servidor. Sin esas variables, comprueba que `/api/ask` responde `503` después de recuperar fragmentos.
-9. Ve a **Preguntar**, elige el documento y pregunta algo cuya respuesta esté claramente en una página. Confirma que la respuesta cita `[S1]` (o el ID correspondiente) y que la fuente muestra la página correcta.
-10. Pregunta algo que no esté en el documento. El modelo debe decir que no encontró evidencia suficiente; si responde de todos modos, revisa las fuentes y no lo tomes como una respuesta respaldada.
-11. Abre el detalle de fuentes y confirma que aparecen todos los fragmentos enviados al modelo, incluso los que no fueron citados, con documento, página, excerpt y distancia.
-12. Fuerza un error del proveedor (por ejemplo, una API key inválida o un modelo inexistente) y comprueba que la UI muestra un mensaje entendible, sin claves, prompts ni respuestas crudas.
-13. Abre las herramientas del navegador y busca `OPENROUTER_API_KEY` en el bundle, Network y Local Storage: no debe aparecer.
-14. Prueba una pregunta vacía y una de más de `RAG_QUESTION_MAX_CHARS`: la API debe responder `400`.
-15. Prueba `RAG_TOP_K` en `0` o `21`: se usa el valor por defecto con una advertencia, no se rompe la app.
-16. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y pregunta: el documento debe quedar sin embeddings compatibles y la API debe devolver `noEvidence: true` sin llamar a OpenRouter.
-17. Si regeneras los chunks de un documento, vuelve a generar sus embeddings antes de preguntar.
-18. Ejecuta `npm run eval:seed` y confirma que inserta 2 documentos y 21 chunks con embeddings. El comando es idempotente: repetirlo no duplica filas.
-19. Ejecuta `npm run eval:retrieval`. Debe imprimir las estrategias `vector`, `lexical`, `hybrid` y `hybrid-rerank` (esta última como `skipped` si no configuraste un modelo) y escribir un JSON en `eval/reports/`.
-20. Abre el reporte y verifica que incluya fecha, modelo/revisión/dimensión, `topK`, candidatos, RRF `k`, hashes del fixture y del gold set, y los rangos de cada chunk relevante. No confíes en el resumen sin mirar los casos.
-21. Prueba `npm run eval:retrieval -- --top-k 1`: Recall@1 y MRR deben cambiar respecto de `k = 5`; si un relevante estaba en la posición 2, deja de aparecer en Recall@1.
-22. Compara las listas de `vector` y `hybrid` para un caso con código exacto, por ejemplo `q-09` (`ESC-104`) o `q-19` (`FLT-450-A`). La búsqueda léxica debería priorizar la coincidencia literal; la vectorial puede fallar en códigos poco frecuentes.
-23. Si configuras `RERANK_MODEL` (y una clave), ejecuta una vez sin `--no-rerank` y otra con `--no-rerank`; compara el orden de los candidatos y el MRR. Usa solo el fixture ficticio: el reranker envía la pregunta y los chunk candidatos a OpenRouter.
-24. Revisa al menos una respuesta con `eval/answer-quality-review.md`: comprueba que cada cita `[S#]` apunte a una fuente recuperada y que el excerpt sostenga la afirmación. No cambies el prompt durante la revisión.
-25. Si editas el fixture o el gold set, vuelve a ejecutar `npm run eval:seed` antes de `npm run eval:retrieval`; los embeddings guardados no se recalculan solos.
+11. Confirma que cada resultado muestra documento, página, distancia y similitud, y que una cuenta nunca ve chunks de la otra.
+12. Configura `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` en `.env` y reinicia el servidor. Sin esas variables, comprueba que `/api/ask` responde `503` después de recuperar fragmentos.
+13. Ve a **Preguntar**, elige el documento y pregunta algo cuya respuesta esté claramente en una página. Confirma que la respuesta cita `[S1]` (o el ID correspondiente) y que la fuente muestra la página correcta.
+14. Pregunta algo que no esté en el documento. El modelo debe decir que no encontró evidencia suficiente; si responde de todos modos, revisa las fuentes y no lo tomes como una respuesta respaldada.
+15. Abre el detalle de fuentes y confirma que aparecen todos los fragmentos enviados al modelo, incluso los que no fueron citados, con documento, página, excerpt y distancia.
+16. Fuerza un error del proveedor (por ejemplo, una API key inválida o un modelo inexistente) y comprueba que la UI muestra un mensaje entendible, sin claves, prompts ni respuestas crudas.
+17. Abre las herramientas del navegador y busca `OPENROUTER_API_KEY` en el bundle, Network y Local Storage: no debe aparecer.
+18. Prueba una pregunta vacía y una de más de `RAG_QUESTION_MAX_CHARS`: la API debe responder `400`.
+19. Prueba `RAG_TOP_K` en `0` o `21`: se usa el valor por defecto con una advertencia, no se rompe la app.
+20. Cambia `EMBEDDING_MODEL_ID` o `EMBEDDING_MODEL_REVISION` en `.env`, reinicia el servidor y pregunta: el documento debe quedar sin embeddings compatibles y la API debe devolver `noEvidence: true` sin llamar a OpenRouter.
+21. Si regeneras los chunks de un documento, vuelve a generar sus embeddings antes de preguntar.
+22. Ejecuta `npm run eval:seed` y confirma que inserta 2 documentos y 21 chunks con embeddings. El comando es idempotente: repetirlo no duplica filas.
+23. Ejecuta `npm run eval:retrieval`. Debe imprimir las estrategias `vector`, `lexical`, `hybrid` y `hybrid-rerank` (esta última como `skipped` si no configuraste un modelo) y escribir un JSON en `eval/reports/`.
+24. Abre el reporte y verifica que incluya fecha, modelo/revisión/dimensión, `topK`, candidatos, RRF `k`, hashes del fixture y del gold set, y los rangos de cada chunk relevante. No confíes en el resumen sin mirar los casos.
+25. Prueba `npm run eval:retrieval -- --top-k 1`: Recall@1 y MRR deben cambiar respecto de `k = 5`; si un relevante estaba en la posición 2, deja de aparecer en Recall@1.
+26. Compara las listas de `vector` y `hybrid` para un caso con código exacto, por ejemplo `q-09` (`ESC-104`) o `q-19` (`FLT-450-A`). La búsqueda léxica debería priorizar la coincidencia literal; la vectorial puede fallar en códigos poco frecuentes.
+27. Si configuras `RERANK_MODEL` (y una clave), ejecuta una vez sin `--no-rerank` y otra con `--no-rerank`; compara el orden de los candidatos y el MRR. Usa solo el fixture ficticio: el reranker envía la pregunta y los chunk candidatos a OpenRouter.
+28. Revisa al menos una respuesta con `eval/answer-quality-review.md`: comprueba que cada cita `[S#]` apunte a una fuente recuperada y que el excerpt sostenga la afirmación. No cambies el prompt durante la revisión.
+29. Si editas el fixture o el gold set, vuelve a ejecutar `npm run eval:seed` antes de `npm run eval:retrieval`; los embeddings guardados no se recalculan solos.
 
 Consultas útiles:
 
@@ -962,59 +1213,52 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (169 tests en 19 archivos; incluye métricas, dataset, RRF, léxico, vector, reranking mockeado, los probes del verificador y toda la suite anterior)
-- `npm test` ✅ (12 + 169)
-- `npx prisma migrate status` ✅ (4 migraciones aplicadas, esquema al día). La migración `20261112220247_add_document_chunk_fts_index` creó `DocumentChunk_content_simple_fts_idx` con GIN sobre `to_tsvector('simple', "content")`; se verificó con `pg_indexes`. Con `enable_seqscan = off`, `EXPLAIN` mostró `Bitmap Index Scan on DocumentChunk_content_simple_fts_idx`; con el corpus pequeño el planner puede preferir un scan secuencial.
-- `npm run eval:seed` ✅: 2 documentos ficticios, 21 chunks y 21 embeddings con `Xenova/multilingual-e5-small@761b726...` (384 dimensiones). Es idempotente.
-- `npm run eval:retrieval` ✅ (ejecución real, sin llamadas a un LLM): 25 casos, 20 respondibles y 5 no respondibles. Resultados agregados:
-  - `vector`: Recall@5 1.0000, Precision@5 0.2100, MRR 0.9667.
-  - `lexical`: Recall@5 0.9500, Precision@5 0.2000, MRR 0.6350.
-  - `hybrid`: Recall@5 1.0000, Precision@5 0.2100, MRR 0.9000.
-  - `hybrid-rerank`: `skipped`, motivo `missing_model`.
-  El reporte real quedó en `eval/reports/reference-report.json`.
-- Correción detectada por la ejecución real ✅: la primera versión léxica pasaba la pregunta completa a `websearch_to_tsquery`, que une todos los términos con AND y devolvía cero resultados. Se cambió a un tsquery OR de términos citados y parametrizados; la suite léxica se actualizó y la evaluación pasó de 0 % a 95 % de Recall@5 léxico. Esto queda como evidencia de por qué hay que ejecutar el comando antes de afirmar resultados.
-- Sensibilidad al corte ✅: `npm run eval:retrieval -- --top-k 1` produjo `vector` Recall@1 0.9250 / MRR 0.9500, `lexical` 0.4250 / 0.4500 y `hybrid` 0.8250 / 0.8500. Las métricas cambian como se espera al reducir `k`. El reporte temporal se eliminó después de la comprobación.
-- Reranking desactivado ✅: `npm run eval:retrieval -- --no-rerank` terminó con éxito y reportó `hybrid-rerank` como `skipped` con motivo `disabled_by_flag`.
-- Reranking mockeado ✅: éxito con body `documents`/`top_n`, timeout, 429, 500, JSON malformado, respuesta vacía, error embebido en 200, índice fuera de rango, índice duplicado e índice no entero. No se envió ninguna consulta a la red y no se registró texto de candidatos ni la clave.
-- Calidad de respuesta ❌ no ejecutada: la plantilla `eval/answer-quality-review.md` está lista, pero no se hizo una revisión manual de respuestas del Sprint 4 en este sprint.
-- Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado y no se asume un modelo gratuito. La integración se validó con `fetch` mockeado.
-- Generación real de OpenRouter ❌ no ejecutada en este sprint: no se repitió una llamada de chat real; la suite existente y los mocks siguen pasando.
-- Guía de estudio ✅: `docs/sprint-5-como-funciona.pdf` (17 páginas, A4) y su fuente HTML. Se validó con `pdfinfo` y `pdftotext`: sin páginas vacías, sin claves, sin rutas absolutas locales y sin referencias al Sprint 4.
-- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests y los comandos de evaluación.
-- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-5-retrieval-evaluation`.
+- `npm run test:unit` ✅ (197 tests en 24 archivos; incluye autenticación/Argon2id, input, prompt injection, mapeo de errores del proveedor, endpoints protegidos y toda la suite anterior)
+- `npm run test:integration` ✅ (11 tests contra PostgreSQL real: dos usuarios, dos documentos, listado, lectura, borrado, procesamiento, RAG, SQL vectorial/léxico, cuota, rate limit y cascada)
+- `npx prisma migrate status` ✅ (5 migraciones aplicadas, esquema al día; la migración de Sprint 6 crea `User`, `RateLimitBucket`, `Document.userId`, el índice y la FK en cascada).
+- Prueba HTTP manual con dos cuentas ✅:
+  - anónimo: `GET /api/documents` y `POST /api/search` → `401`; `/` y `/documents/<id>` → redirect a `/login`;
+  - A y B subieron un PDF cada uno; cada listado mostró solo su documento;
+  - B contra el documento A: `GET`, `DELETE`, `/chunks`, `/embeddings` y `/api/ask` → `404 DOCUMENT_NOT_FOUND`;
+  - A leyó su detalle → `200`; B contra la página de detalle A → `404`;
+  - A generó 2 chunks y 2 embeddings; B, sin embeddings, vio `indexedChunkCount: 0` y `[]` en `/api/search`; después B generó los suyos y solo recuperó su documento;
+  - A preguntó sobre su documento y todas las fuentes pertenecieron a A; B hizo lo mismo y todas las fuentes pertenecieron a B;
+  - B borró su propio documento → `200 { deleted: true }`; una lectura posterior devolvió `404`;
+  - login con contraseña incorrecta y con email inexistente devolvió el mismo `CredentialsSignin` genérico;
+  - logout limpió la cookie de sesión y la siguiente llamada devolvió `401`.
+- Generación real con OpenRouter ✅: con `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` configurados en `.env`, A preguntó “¿Cuánto dura la garantía del producto?” y recibió `El período de garantía del producto es de dos años. [S1]` con fuentes de su propio documento. B recibió una respuesta equivalente con fuentes del documento de B. No se registraron preguntas completas ni texto completo de documentos.
+- `npm run eval:seed` / `npm run eval:retrieval` ✅ sin cambios de contrato; el fixture ahora tiene dueño `eval-fixture-owner` y el CLI resuelve el `userId` antes de consultar. El reporte de referencia del Sprint 5 sigue siendo el artefacto histórico.
+- Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado; la integración sigue validada con `fetch` mockeado.
+- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y probes HTTP reales.
+- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-6-auth-and-rag-security`.
 
 ## Próximo sprint
 
-Sprint 6: conectar la mejor estrategia medida a `/ask` y comparar el flujo completo, no solo el retrieval. Antes de cambiar el prompt de respuesta, hay que ampliar el gold set, hacer la revisión manual de respuestas y citas, y decidir con datos si conviene un umbral de similitud, un reranker pago o un índice ANN. También quedan pendientes:
+Sprint 7: producción, despliegue y optimización. Antes de exponer la app fuera de localhost hay que:
 
-- Evaluar configuraciones de texto en español e italiano en lugar de `simple`.
-- Probar más modelos de embeddings y de generación, midiendo costo y latencia.
-- Convertir `npm run eval:retrieval` en una comprobación de regresión repetible.
-- Evaluar un juez LLM contra la revisión manual, sin reemplazarla.
-- Medir el corpus con más documentos y con datos anonimizados.
+- decidir y probar el patrón de conexión y, si se adopta, Row-Level Security con una identidad de usuario transmitida a PostgreSQL;
+- agregar recuperación de contraseña, verificación de email, MFA opcional y revocación de sesiones;
+- definir retención, borrado de cuenta, auditoría de accesos y respaldo/restauración;
+- revisar los headers de proxy y la confianza en `x-forwarded-for` detrás del despliegue real;
+- ejecutar `npm run build` y una prueba de humo de producción con el empaquetado de `@huggingface/transformers`, `onnxruntime-node`, `sharp` y `@node-rs/argon2`;
+- medir el corpus con más documentos, evaluar índices ANN y decidir si conviene conectar híbrida/reranking a `/ask`;
+- revisar las condiciones de privacidad de OpenRouter para documentos reales;
+- agregar antivirus o análisis de archivos si el producto lo requiere.
 
 ## Orden sugerido para revisar el código
 
-1. `eval/gold-set.json` y `eval/fixtures/fictional-documents.json` — qué se considera relevante y por qué.
-2. `src/lib/evaluation/dataset.ts` — validación Zod y consistencia entre fixture y gold set.
-3. `src/lib/evaluation/metrics.ts` — Recall@k, Precision@k con denominador `k`, MRR y promedios.
-4. `src/lib/retrieval/lexical.ts` — tsvector/tsquery, OR de términos y SQL parametrizado.
-5. `src/lib/retrieval/rrf.ts` — fusión por posiciones, duplicados y desempate.
-6. `src/lib/retrieval/hybrid.ts` — ventana de candidatos y composición de vector + léxico.
-7. `src/lib/retrieval/reranker.ts` y `openrouter-reranker.ts` — contrato, validación de índices y cliente opcional.
-8. `src/lib/evaluation/run.ts` — orquestación, latencias, errores y agregados.
-9. `scripts/eval-retrieval.ts` y `scripts/eval-seed.ts` — CLI, reporte y fixture.
-10. `prisma/migrations/20261112220247_add_document_chunk_fts_index/migration.sql` — índice GIN y su costo.
-11. `src/lib/embeddings/vector.ts` — validación, formato pgvector y similitud.
-12. `src/lib/embeddings/provider-core.ts` — prefijos E5, pooling mean, normalización y contrato del proveedor.
-13. `src/lib/embeddings/store.ts` — SQL parametrizado, upsert, búsqueda global y búsqueda filtrada por documento.
-14. `src/lib/rag/config.ts` — límites, timeout y lectura server-only de las credenciales.
-15. `src/lib/rag/input.ts` — validación Zod.
-16. `src/lib/rag/retrieval.ts` — documento, embeddings y recuperación.
-17. `src/lib/rag/prompt.ts` — etiquetas `[S#]`, presupuesto de contexto y system prompt.
-18. `src/lib/rag/openrouter.ts` — cliente HTTP, timeout y errores del proveedor.
-19. `src/lib/rag/citations.ts` — limpieza de citas inventadas.
-20. `src/lib/rag/generate.ts` — unión de contexto, respuesta y metadata.
-21. `src/lib/rag/ask.ts` — orquestación y logging seguro.
-22. `src/app/api/ask/route.ts` — contrato HTTP.
-23. `src/components/ask/AskPanel.tsx` y `src/app/ask/page.tsx` — UI y estados.
+1. `prisma/schema.prisma` y `prisma/migrations/20261113113000_add_users_ownership_and_rate_limits/migration.sql` — User, ownership, backfill legacy, cascada y rate limits.
+2. `src/auth.ts` y `src/lib/auth/password.ts` — Auth.js, JWT cookie y Argon2id.
+3. `src/lib/auth/input.ts`, `credentials.ts`, `registration.ts` y `users.ts` — normalización, comparación, registro y rate limit de login.
+4. `src/lib/dal.ts` — única fuente de identidad y helpers para páginas/API.
+5. `src/lib/documents/queries.ts` — consultas acotadas por `userId`, borrado y detalle.
+6. `src/lib/documents/create-document.ts` — cuota con lock por usuario.
+7. `src/lib/embeddings/store.ts` — SQL vectorial con `d."userId"` y búsquedas acotadas.
+8. `src/lib/retrieval/lexical.ts` y `hybrid.ts` — filtro de dueño en SQL léxico y paso a vector.
+9. `src/lib/rag/retrieval.ts`, `generate.ts`, `citations.ts` y `prompt.ts` — recuperación autorizada, citas y separación de instrucciones.
+10. `src/lib/rate-limit/limiter.ts`, `config.ts` y `keys.ts` — fixed window atómico y claves opacas.
+11. `src/app/api/documents/route.ts`, `[id]/route.ts`, `search/route.ts` y `ask/route.ts` — protección de endpoints.
+12. `src/app/(auth)/actions.ts`, `login/page.tsx` y `register/page.tsx` — flujo de sesión.
+13. `tests/integration/access-control.test.ts` — aislamiento con dos cuentas contra PostgreSQL real.
+14. `tests/unit/rag-injection.test.ts` y `auth-password.test.ts` — prompt injection y almacenamiento de contraseñas.
+15. La sección [Sprint 6](#sprint-6--autenticación-autorización-y-seguridad) de este README — amenazas abiertas y prueba manual.
