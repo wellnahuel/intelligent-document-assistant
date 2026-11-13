@@ -15,6 +15,7 @@ const MODEL = {
 };
 const vector = [0.1, 0.2, 0.3];
 const documentId = "doc-demo";
+const userId = "user-demo";
 
 const ROW = {
   chunkId: "chunk-7",
@@ -36,6 +37,7 @@ describe("searchVectorCandidates", () => {
     store.findNearestChunksForDocument.mockResolvedValue([ROW]);
 
     const result = await searchVectorCandidates({
+      userId,
       documentId,
       vector,
       model: MODEL,
@@ -46,6 +48,7 @@ describe("searchVectorCandidates", () => {
       vector,
       MODEL,
       documentId,
+      userId,
       5,
     );
 
@@ -70,6 +73,7 @@ describe("searchVectorCandidates", () => {
     ]);
 
     const result = await searchVectorCandidates({
+      userId,
       documentId,
       vector,
       model: MODEL,
@@ -86,7 +90,7 @@ describe("searchVectorCandidates", () => {
     "rejects invalid topK %s without searching",
     async (topK) => {
       await expect(
-        searchVectorCandidates({ documentId, vector, model: MODEL, topK }),
+        searchVectorCandidates({ userId, documentId, vector, model: MODEL, topK }),
       ).rejects.toThrow(/topK must be a positive integer/);
 
       expect(store.findNearestChunksForDocument).not.toHaveBeenCalled();
@@ -102,6 +106,7 @@ describe("searchVectorCandidates", () => {
 
       await expect(
         searchVectorCandidates({
+          userId,
           documentId,
           vector,
           model: MODEL,

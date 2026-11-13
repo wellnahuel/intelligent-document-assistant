@@ -140,7 +140,12 @@ describe("S7 lexical empty-query short circuit", () => {
   it("returns [] without querying the database for blank or punctuation queries", async () => {
     for (const query of ["", "   \n\t ", "...!!!", "—–🔥"]) {
       await expect(
-        searchLexicalChunks({ documentId: "doc-a", query, topK: 5 }),
+        searchLexicalChunks({
+          userId: "user-a",
+          documentId: "doc-a",
+          query,
+          topK: 5,
+        }),
       ).resolves.toEqual([]);
     }
 

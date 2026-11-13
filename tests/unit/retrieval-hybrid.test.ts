@@ -20,6 +20,7 @@ const MODEL = {
 };
 const vector = [0.1, 0.2, 0.3];
 const documentId = "doc-demo";
+const userId = "user-demo";
 const query = "notice period";
 
 function makeHit(chunkId: string, score: number): VectorHit {
@@ -76,6 +77,7 @@ describe("searchHybridCandidates", () => {
     ]);
 
     const result = await searchHybridCandidates({
+      userId,
       documentId,
       query,
       vector,
@@ -86,12 +88,14 @@ describe("searchHybridCandidates", () => {
     });
 
     expect(vectorSearch.searchVectorCandidates).toHaveBeenCalledWith({
+      userId,
       documentId,
       vector,
       model: MODEL,
       topK: 10,
     });
     expect(lexicalSearch.searchLexicalChunks).toHaveBeenCalledWith({
+      userId,
       documentId,
       query,
       topK: 10,
@@ -115,6 +119,7 @@ describe("searchHybridCandidates", () => {
 
   it("raises the requested count when topK is larger than candidates", async () => {
     await searchHybridCandidates({
+      userId,
       documentId,
       query,
       vector,
@@ -139,6 +144,7 @@ describe("searchHybridCandidates", () => {
     ]);
 
     const result = await searchHybridCandidates({
+      userId,
       documentId,
       query: "...",
       vector,
@@ -159,6 +165,7 @@ describe("searchHybridCandidates", () => {
     async (candidates) => {
       await expect(
         searchHybridCandidates({
+          userId,
           documentId,
           query,
           vector,
@@ -179,6 +186,7 @@ describe("searchHybridCandidates", () => {
     async (topK) => {
       await expect(
         searchHybridCandidates({
+          userId,
           documentId,
           query,
           vector,

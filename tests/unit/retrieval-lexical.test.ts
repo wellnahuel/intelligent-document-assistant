@@ -22,6 +22,8 @@ function sqlText(sql: SqlLike): string {
   return sql.sql ?? sql.strings?.join("?") ?? "";
 }
 
+const userId = "user-demo";
+
 const ROW = {
   chunkId: "chunk-7",
   content: "The contract requires thirty days of written notice.",
@@ -79,7 +81,7 @@ describe("searchLexicalChunks", () => {
     "returns no results without querying the database for %j",
     async (query) => {
       await expect(
-        searchLexicalChunks({ documentId: "doc-demo", query, topK: 5 }),
+        searchLexicalChunks({ userId, documentId: "doc-demo", query, topK: 5 }),
       ).resolves.toEqual([]);
 
       expect(db.$queryRaw).not.toHaveBeenCalled();
@@ -88,6 +90,7 @@ describe("searchLexicalChunks", () => {
 
   it("runs a stopword-only query instead of rejecting it", async () => {
     await searchLexicalChunks({
+      userId,
       documentId: "doc-demo",
       query: "the and of",
       topK: 5,
@@ -100,6 +103,7 @@ describe("searchLexicalChunks", () => {
     db.$queryRaw.mockResolvedValue([ROW]);
 
     const result = await searchLexicalChunks({
+      userId,
       documentId: "doc-demo",
       query: "notice period",
       topK: 5,
@@ -144,12 +148,14 @@ describe("searchLexicalChunks", () => {
   it("keeps quoted and punctuated queries parameterized", async () => {
     const query = `owner's "notice" & termination`;
 
-    await searchLexicalChunks({ documentId: "doc-demo", query, topK: 3 });
+    await searchLexicalChunks({ userId, documentId: "doc-demo", query, topK: 3 });
 
     const arg = db.$queryRaw.mock.calls[0]?.[0] as SqlLike;
     const tsQuery = '"owner" or "s" or "notice" or "termination"';
 
     expect(sqlText(arg)).not.toContain("owner's");
+    expect(sqlText(arg)).toContain('d."userId" =');
+    expect(arg.values).toContain(userId);
     expect(arg.values?.filter((value) => value === tsQuery)).toHaveLength(2);
   });
 
@@ -157,7 +163,7 @@ describe("searchLexicalChunks", () => {
     "rejects invalid topK %s without querying the database",
     async (topK) => {
       await expect(
-        searchLexicalChunks({ documentId: "doc-demo", query: "notice", topK }),
+        searchLexicalChunks({ userId, documentId: "doc-demo", query: "notice", topK }),
       ).rejects.toThrow(/topK must be a positive integer/);
 
       expect(db.$queryRaw).not.toHaveBeenCalled();
@@ -169,6 +175,7 @@ describe("searchLexicalChunks", () => {
 
     await expect(
       searchLexicalChunks({
+        userId,
         documentId: "doc-demo",
         query: "notice period",
         topK: 5,
