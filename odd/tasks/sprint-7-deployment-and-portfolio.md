@@ -38,7 +38,7 @@ Scope: deployment readiness, remote embedding option, observability, CI, portfol
 | T5 | S7 | Structured logger, request IDs, stage timings, `/api/health` | inline | done | `57905d1` |
 | T6 | S6 | GitHub Actions: install, generate, lint, typecheck, tests, build, integration | inline | done | `904f6a4` |
 | T7 | S8 | README Sprint 7: deployment, architecture, eval results, limits, checklist | inline | done | `0d659d2` |
-| T8 | S9, S10 | Local verification (no build), honest record, delivery summary | inline | in progress | — |
+| T8 | S9, S10 | Local verification (no build), honest record, delivery summary | inline | done | `1a20dab` |
 
 ## Log
 
@@ -273,4 +273,5 @@ Con este sprint termina el plan de 7 sprints del **Intelligent Document Assistan
 - **Blocker corregido (S4/S6):** `scripts/test-integration.ts` solo pisaba `DATABASE_URL`; `prisma.config.ts` prefiere `DIRECT_URL` para el CLI, así que un `DIRECT_URL` heredado podía recibir `prisma migrate deploy`. Ahora el runner fija `DATABASE_URL` y `DIRECT_URL` al `*_test` y agrega un test de regresión.
 - **Advisories corregidos:** `/api/documents/[id]` y `/chunks` ahora usan `runRoute` (requestId consistente); mensaje de error local recupera la pista de descarga/caché; tabla histórica de latencias de evaluación corregida a los valores reales del reporte; este documento actualizado con estados y commits.
 - **Advisory no corregido:** ninguno pendiente.
-- Queda un recheck acotado al blocker corregido.
+- Recheck acotado: `BLOCKER RESOLVED`. El probe de configuración resolvió el `*_test` con ambas URLs fijadas; typecheck, lint y 34 tests dirigidos pasan. Sin defecto nuevo observado en las líneas corregidas.
+- Límites de la evidencia: build, integración real, Neon, Vercel y embeddings remotos en vivo quedan sin ejecutar y así se declaran en el README.

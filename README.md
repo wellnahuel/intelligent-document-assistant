@@ -1220,7 +1220,7 @@ No corras migraciones desde cada request ni desde funciones concurrentes. El lug
 2. Usar Node.js 22 (o la versión soportada que coincida con `package.json` y las dependencias nativas).
 3. Configurar las variables de la tabla anterior **por entorno**. Preview y Production deben apuntar a bases distintas.
 4. Build command: `npm run build`. El script ejecuta `prisma generate` antes de `next build`, porque el cliente generado está ignorado por git y no se versiona.
-5. El límite de PDF en Vercel es 4 MB. La app lo aplica en servidor y devuelve `413 FILE_TOO_LARGE` con un mensaje claro; no se cambia en silencio el límite local.
+5. El límite de PDF en Vercel es 4 MB. La app lo aplica en servidor y devuelve `413 FILE_TOO_LARGE` con un mensaje claro; no se cambia en silencio el límite local. Un archivo apenas mayor a 4 MB llega a la Function y recibe ese JSON; uno mayor a 4,5 MB puede ser rechazado por la plataforma antes de ejecutar el handler, con la respuesta propia de Vercel.
 6. Crear el deployment de Preview, aplicar migraciones en la base de Preview, ejecutar los smoke checks y recién después promover a Production.
 7. Aplicar migraciones en Production una vez y ejecutar los smoke checks.
 
@@ -1323,7 +1323,7 @@ Marcar solo lo que se comprobó de verdad. En este entorno no se ejecutó ningun
 - [ ] Registro y login de dos cuentas.
 - [ ] Aislamiento: cada cuenta ve solo sus documentos; un id ajeno devuelve 404.
 - [ ] PDF menor al límite: se sube y extrae texto.
-- [ ] PDF mayor al límite: se rechaza con `413 FILE_TOO_LARGE`.
+- [ ] PDF apenas mayor a 4 MB: rechazo `413 FILE_TOO_LARGE` de la app. (Por encima de 4,5 MB puede rechazarlo Vercel antes de la Function.)
 - [ ] Chunking y generación de embeddings completan.
 - [ ] Pregunta con evidencia: respuesta con al menos una cita válida.
 - [ ] Pregunta sin evidencia: `noEvidence: true` y sin llamada innecesaria al proveedor.
@@ -1467,9 +1467,11 @@ Comprobado en este entorno (Node 22.13.1). El Sprint 7 **no** se desplegó ni ac
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (231 tests en 28 archivos; agrega límite de producción, proveedor remoto de embeddings, logger y health a la suite existente)
+- `npm run test:unit` ✅ (232 tests en 29 archivos; agrega límite de producción, proveedor remoto de embeddings, logger, health y el guard de aislamiento del test de integración)
 - `npm run test:integration` ❌ no ejecutado en este sprint: requiere PostgreSQL local con pgvector y migraciones aplicadas. El workflow de CI lo ejecuta contra un servicio desechable.
 - `npm run build` ❌ no ejecutado localmente por la regla del proyecto. El workflow de CI ejecuta `npm run build`, que incluye `prisma generate`.
+- Verificador independiente ✅: `PASS` sobre el blocker corregido (aislamiento de `DIRECT_URL` en el runner de integración); typecheck, lint y 34 tests dirigidos pasaron en el recheck. No se ejecutaron build, integración, Neon ni llamadas reales.
+- Native receipt review ❌ no disponible: `gentle-ai review assess` devolvió `risk: high` con `unassessable` porque este runtime OpenCode no es elegible para immutable receipt review. Se preserva el resultado tipado y no se inventa un PASS.
 - `npx prisma migrate status` ❌ no ejecutado en este sprint; no se modificó el esquema ni se agregaron migraciones.
 - Deployment Preview/Production ❌ no creado.
 - Migraciones en Neon ❌ no ejecutadas.
