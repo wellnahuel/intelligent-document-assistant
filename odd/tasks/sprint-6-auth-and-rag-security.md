@@ -31,7 +31,7 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integrati
 | T4 | S6, S7 | inline | done | `de08c16`; vector/lexical/hybrid SQL filters, RAG retrieval, ask/search, eval owner map |
 | T5 | S9, S10 | inline | done | `dd07e49` + `de08c16`; `RateLimitBucket`, quotas, 429/402 provider mapping |
 | T6 | S8, S10, S11 | inline | done | `de08c16`; prompt-injection test, privacy copy, no raw HTML rendering |
-| T7 | S12 | inline | done | `216f05a`; 197 unit tests / 24 files, 11 integration tests against `ida_test` |
+| T7 | S12 | inline | done | `216f05a`; 198 unit tests / 24 files, 12 integration tests against `ida_test` |
 | T8 | S11, S13 | inline | done | README, `.env.example`, manual two-account probe, commands |
 | T9 | S1–S13 | delegated | pending | Independent verification at feature end; native review if due |
 
@@ -259,8 +259,8 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
 
 - `npm run typecheck` passed.
 - `npm run lint` passed.
-- `npm test` passed: 12 chunker tests + 197 Vitest tests in 24 files.
-- `npm run test:integration` passed: 11 tests against the isolated `ida_test` database (created and migrated by `scripts/test-integration.ts`).
+- `npm test` passed: 12 chunker tests + 198 Vitest tests in 24 files.
+- `npm run test:integration` passed: 12 tests against the isolated `ida_test` database (created and migrated by `scripts/test-integration.ts`).
 - `npx prisma migrate status` passed: 5 migrations applied to `ida`.
 - Manual HTTP probes with two signed sessions passed: anonymous 401/redirect; foreign document GET/DELETE/chunks/embeddings/ask 404; own detail 200; search returned only owned indexed chunks; RAG sources belonged to the asking user; logout cleared the session.
 - Register/login/logout server actions were exercised over HTTP: registration created an Argon2id hash and an Auth.js session; login redirect succeeded; wrong password rendered the generic message; logout deleted the session cookie.

@@ -95,6 +95,7 @@ export async function countDocumentChunks(
  * the chunk ids to the authenticated user's document.
  */
 export async function findExistingChunkIds(
+  userId: string,
   chunkIds: readonly string[],
   model: EmbeddingModelInfo,
 ): Promise<Set<string>> {
@@ -108,6 +109,11 @@ export async function findExistingChunkIds(
       modelId: model.modelId,
       modelRevision: model.modelRevision,
       dimensions: model.dimensions,
+      chunk: {
+        documentPage: {
+          document: { userId },
+        },
+      },
     },
     select: { chunkId: true },
   });
@@ -157,13 +163,34 @@ export async function countIndexedEmbeddingsForUser(
  * Inserts or replaces a batch of vectors in one statement. The conflict target
  * matches the unique constraint, so repeated runs cannot duplicate rows. The
  * vector is sent as a parameter and cast to ::vector, never concatenated.
+ *
+ * Before writing, the chunk ids are checked against the owner. Callers already
+ * receive them from a scoped query; this second check keeps the write helper
+ * from becoming a way to persist an embedding for another user's chunk.
  */
 export async function upsertEmbeddingBatch(
+  userId: string,
   rows: readonly EmbeddingToStore[],
   model: EmbeddingModelInfo,
 ): Promise<void> {
   if (rows.length === 0) {
     return;
+  }
+
+  const chunkIds = [...new Set(rows.map((row) => row.chunkId))];
+  const ownedCount = await prisma.documentChunk.count({
+    where: {
+      id: { in: chunkIds },
+      documentPage: {
+        document: { userId },
+      },
+    },
+  });
+
+  if (ownedCount !== chunkIds.length) {
+    throw new Error(
+      "Refusing to persist embeddings for chunks outside the authenticated user scope.",
+    );
   }
 
   const values = rows.map(

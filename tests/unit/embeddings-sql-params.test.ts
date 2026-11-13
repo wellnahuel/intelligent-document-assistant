@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   $executeRaw: vi.fn(),
   $queryRaw: vi.fn(),
+  documentChunk: { count: vi.fn() },
 }));
 
 vi.mock("@/lib/db", () => ({ prisma: db }));
@@ -38,11 +39,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   db.$executeRaw.mockResolvedValue(1);
   db.$queryRaw.mockResolvedValue([]);
+  db.documentChunk.count.mockResolvedValue(2);
 });
 
 describe("vector SQL parameterization", () => {
   it("binds upsert values instead of concatenating them into SQL", async () => {
     await upsertEmbeddingBatch(
+      "user-1",
       [
         { chunkId: "chunk-1", vector },
         { chunkId: "chunk-2", vector },
@@ -131,8 +134,26 @@ describe("vector SQL parameterization", () => {
     expect(arg.values?.filter((value) => value === literal)).toHaveLength(2);
   });
 
+  it("refuses to persist a batch containing a chunk outside the owner scope", async () => {
+    db.documentChunk.count.mockResolvedValue(1);
+
+    await expect(
+      upsertEmbeddingBatch(
+        "user-1",
+        [
+          { chunkId: "chunk-1", vector },
+          { chunkId: "chunk-2", vector },
+        ],
+        MODEL,
+      ),
+    ).rejects.toThrow(/outside the authenticated user scope/);
+
+    expect(db.$executeRaw).not.toHaveBeenCalled();
+  });
+
   it("does not run an upsert for an empty batch", async () => {
-    await upsertEmbeddingBatch([], MODEL);
+    await upsertEmbeddingBatch("user-1", [], MODEL);
+    expect(db.documentChunk.count).not.toHaveBeenCalled();
     expect(db.$executeRaw).not.toHaveBeenCalled();
   });
 });

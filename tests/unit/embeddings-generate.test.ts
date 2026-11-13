@@ -72,6 +72,7 @@ describe("idempotent generation orchestration", () => {
       errors: [],
     });
     expect(mocks.findExistingChunkIds).toHaveBeenCalledWith(
+      "user-1",
       ["c0", "c1"],
       expect.objectContaining({ dimensions: 384 }),
     );

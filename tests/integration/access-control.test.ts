@@ -49,6 +49,7 @@ const CHUNK_B = "integration-chunk-b";
 const CHUNK_C = "integration-chunk-c";
 
 const RATE_LIMIT_KEY = "integration:rate-limit:test";
+const RATE_LIMIT_RESET_KEY = "integration:rate-limit:reset-test";
 
 function vectorAt(index: number): number[] {
   const vector = Array.from({ length: MODEL.dimensions }, () => 0);
@@ -153,7 +154,9 @@ afterAll(async () => {
   await prisma.user.deleteMany({
     where: { id: { in: [USER_A.id, USER_B.id] } },
   });
-  await prisma.rateLimitBucket.deleteMany({ where: { key: RATE_LIMIT_KEY } });
+  await prisma.rateLimitBucket.deleteMany({
+    where: { key: { in: [RATE_LIMIT_KEY, RATE_LIMIT_RESET_KEY] } },
+  });
   await prisma.$disconnect();
 });
 
@@ -306,6 +309,33 @@ describe("limits, quotas and cascade deletion", () => {
         windowSeconds: 60,
       }),
     ).rejects.toMatchObject({ code: "RATE_LIMITED", status: 429 });
+  });
+
+  it("resets a fixed window after it expires", async () => {
+    const first = await consumeRateLimit({
+      key: RATE_LIMIT_RESET_KEY,
+      limit: 1,
+      windowSeconds: 1,
+    });
+    const blocked = await consumeRateLimit({
+      key: RATE_LIMIT_RESET_KEY,
+      limit: 1,
+      windowSeconds: 1,
+    });
+
+    expect(first.allowed).toBe(true);
+    expect(blocked.allowed).toBe(false);
+
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+
+    const afterReset = await consumeRateLimit({
+      key: RATE_LIMIT_RESET_KEY,
+      limit: 1,
+      windowSeconds: 1,
+    });
+
+    expect(afterReset.allowed).toBe(true);
+    expect(afterReset.count).toBe(1);
   });
 
   it("cascades document deletion through pages, chunks and embeddings", async () => {

@@ -152,7 +152,7 @@ async function main(): Promise<void> {
     );
   }
 
-  await upsertEmbeddingBatch(rows, model);
+  await upsertEmbeddingBatch(EVAL_FIXTURE_USER_ID, rows, model);
 
   console.info(
     `[eval:seed] Ready: ${rows.length} chunks with ${model.modelId}@${model.modelRevision} (${model.dimensions} dimensions).`,

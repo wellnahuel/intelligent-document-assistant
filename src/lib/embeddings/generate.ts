@@ -49,6 +49,7 @@ export async function generateDocumentEmbeddings(input: {
   const existingChunkIds = options.regenerate
     ? new Set<string>()
     : await findExistingChunkIds(
+        userId,
         chunks.map((chunk) => chunk.id),
         model,
       );
@@ -114,7 +115,7 @@ export async function generateDocumentEmbeddings(input: {
         return { chunkId: chunk.id, vector };
       });
 
-      await upsertEmbeddingBatch(rows, model);
+      await upsertEmbeddingBatch(userId, rows, model);
       generatedCount += batch.length;
     } catch (error) {
       failedCount += batch.length;

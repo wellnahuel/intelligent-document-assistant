@@ -683,7 +683,7 @@ Amenazas que siguen abiertas en este sprint: un modelo puede seguir influenciado
 | Login | 10/15 min por email; 30/15 min por IP | Email/IP |
 | Registro | 5/hora por IP; 3/hora por email | IP/email |
 
-La cuota de documentos se verifica dentro de la transacción con `SELECT ... FOR UPDATE` sobre el usuario, para que dos cargas simultáneas no pasen ambas el conteo. Los endpoints devuelven `429` con `Retry-After`. OpenRouter `429` se traduce a `RAG_PROVIDER_RATE_LIMITED` y `402` a `RAG_PROVIDER_QUOTA_EXCEEDED`, sin exponer el cuerpo ni la clave del proveedor.
+La cuota de documentos se verifica dentro de la transacción con `SELECT ... FOR UPDATE` sobre el usuario, para que dos cargas simultáneas no pasen ambas el conteo. Los límites por ventana devuelven `429 RATE_LIMITED` con `Retry-After`; la cuota de documentos devuelve `429 DOCUMENT_QUOTA_EXCEEDED` sin `Retry-After`, porque no se libera sola con el tiempo. OpenRouter `429` se traduce a `RAG_PROVIDER_RATE_LIMITED` y `402` a `RAG_PROVIDER_QUOTA_EXCEEDED`, sin exponer el cuerpo ni la clave del proveedor; el `Retry-After` del proveedor no se reenvía.
 
 ### Privacidad y retención actual
 
@@ -812,7 +812,7 @@ La clave foránea con `onDelete: Cascade` hace que al borrar un chunk (o una pá
 
 ## API
 
-Todas las rutas de documentos, búsqueda y preguntas requieren una sesión de Auth.js. Sin sesión devuelven `401 UNAUTHENTICATED`. Un documento ajeno o inexistente devuelve `404 DOCUMENT_NOT_FOUND`; no se revela si existe. Los límites excedidos devuelven `429 RATE_LIMITED` con `Retry-After`.
+Todas las rutas de documentos, búsqueda y preguntas requieren una sesión de Auth.js. Sin sesión devuelven `401 UNAUTHENTICATED`. Un documento ajeno o inexistente devuelve `404 DOCUMENT_NOT_FOUND`; no se revela si existe. Los límites por ventana devuelven `429 RATE_LIMITED` con `Retry-After`; la cuota de documentos devuelve `429 DOCUMENT_QUOTA_EXCEEDED` sin ese header.
 
 ### `GET|POST /api/auth/[...nextauth]`
 
@@ -1213,8 +1213,8 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (197 tests en 24 archivos; incluye autenticación/Argon2id, input, prompt injection, mapeo de errores del proveedor, endpoints protegidos y toda la suite anterior)
-- `npm run test:integration` ✅ (11 tests contra PostgreSQL real: dos usuarios, dos documentos, listado, lectura, borrado, procesamiento, RAG, SQL vectorial/léxico, cuota, rate limit y cascada)
+- `npm run test:unit` ✅ (198 tests en 24 archivos; incluye autenticación/Argon2id, input, prompt injection, mapeo de errores del proveedor, endpoints protegidos y toda la suite anterior)
+- `npm run test:integration` ✅ (12 tests contra PostgreSQL real: dos usuarios, dos documentos, listado, lectura, borrado, procesamiento, RAG, SQL vectorial/léxico, cuota, rate limit y cascada)
 - `npx prisma migrate status` ✅ (5 migraciones aplicadas, esquema al día; la migración de Sprint 6 crea `User`, `RateLimitBucket`, `Document.userId`, el índice y la FK en cascada).
 - Prueba HTTP manual con dos cuentas ✅:
   - anónimo: `GET /api/documents` y `POST /api/search` → `401`; `/` y `/documents/<id>` → redirect a `/login`;
