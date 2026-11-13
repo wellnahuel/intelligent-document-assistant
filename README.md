@@ -40,6 +40,8 @@ Este es el quinto hito del proyecto de RAG. El recorrido completo es **indexar �
 
 ## Documentación del sprint
 
+- `docs/sprint-5-como-funciona.pdf` — guía de estudio del Sprint 5 (17 páginas): gold set, métricas, búsqueda vectorial y léxica, RRF, reranking opcional, CLI, reporte reproducible, resultados reales, límites y checklist para el Sprint 6.
+- `docs/sprint-5-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - **Sprint 5:** la sección [Evaluación de recuperación](#flujo-de-evaluación-de-recuperación-sprint-5) de este README explica el gold set, las métricas, RRF, el reranking opcional, el índice GIN y los límites. Los artefactos viven en `eval/gold-set.json`, `eval/fixtures/fictional-documents.json`, `eval/answer-quality-review.md` y `eval/reports/reference-report.json`.
 - `docs/sprint-4-como-funciona.pdf` — guía de estudio del Sprint 4 (20 páginas): RAG, recuperación por documento, contexto, OpenRouter, citas verificadas, pruebas reales, límites y checklist para el Sprint 5.
 - `docs/sprint-4-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
@@ -977,6 +979,7 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - Calidad de respuesta ❌ no ejecutada: la plantilla `eval/answer-quality-review.md` está lista, pero no se hizo una revisión manual de respuestas del Sprint 4 en este sprint.
 - Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado y no se asume un modelo gratuito. La integración se validó con `fetch` mockeado.
 - Generación real de OpenRouter ❌ no ejecutada en este sprint: no se repitió una llamada de chat real; la suite existente y los mocks siguen pasando.
+- Guía de estudio ✅: `docs/sprint-5-como-funciona.pdf` (17 páginas, A4) y su fuente HTML. Se validó con `pdfinfo` y `pdftotext`: sin páginas vacías, sin claves, sin rutas absolutas locales y sin referencias al Sprint 4.
 - `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests y los comandos de evaluación.
 - No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-5-retrieval-evaluation`.
 
