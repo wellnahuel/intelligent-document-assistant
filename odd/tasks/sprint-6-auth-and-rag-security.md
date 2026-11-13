@@ -33,7 +33,7 @@ Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:integrati
 | T6 | S8, S10, S11 | inline | done | `de08c16`; prompt-injection test, privacy copy, no raw HTML rendering |
 | T7 | S12 | inline | done | `216f05a`; 198 unit tests / 24 files, 12 integration tests against `ida_test` |
 | T8 | S11, S13 | inline | done | README, `.env.example`, manual two-account probe, commands |
-| T9 | S1–S13 | delegated | done | Independent verifier `PASS_WITH_ADVISORIES` (no blockers); advisory 1 fixed in `8865945`; advisory 5 covered by new reset test; README corrected. Native review not started. |
+| T9 | S1–S13 | delegated | done | Independent verifier `PASS_WITH_ADVISORIES` (no blockers); advisory 1 fixed in `8865945`; advisory 5 covered by new reset test; README corrected. Native review unavailable: OpenCode v2.2.7 returned `immutable_review_transport_unsupported`. |
 
 Route note: the feature names high-risk items 1 (schema migration and existing-data backfill), 2 (auth, sessions and password storage), 3 (contract/response changes for protected resources) and 4 (SQL ownership filters). One independent verifier runs at the end, not per task. No parallel writers: the units share the schema, DAL and route surfaces, so parallel edits would collide. All implementation ran inline.
 
@@ -288,3 +288,11 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
   6. IP spoofing and `trustHost` are documented as local/proxy caveats.
 - Post-advisory parent spot check: `npm run test:integration` 12/12 and full `npm test` 198/198 passed.
 - Native `gentle-ai review assess` was not invoked; if RDD is due, T9's candidate is the work-unit commit that holds the high-risk migration/auth change, not the accumulated branch.
+
+
+### L6 — Native review availability
+
+- `gentle-ai review mode status`: on (decided by default); global and clone-local unset.
+- `gentle-ai review assess --base-ref 90822ce --committed-only --json`: `risk: high`, `review_due: true`, reason `high_risk`, but `unassessable` because the active runtime (OpenCode v2.2.7) is not eligible for immutable receipt review.
+- Preflight `gentle-ai review status ... --next-transition` returned `gentle-ai.review-integration.failure/v2` with `immutable_review_transport_unsupported` and `next_action: stop`.
+- Typed result preserved. No PASS was invented and the mode was not toggled automatically. The independent verifier remains the verification evidence for this feature.
