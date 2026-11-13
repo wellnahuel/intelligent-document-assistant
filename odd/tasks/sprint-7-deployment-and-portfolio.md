@@ -31,14 +31,14 @@ Scope: deployment readiness, remote embedding option, observability, CI, portfol
 
 | ID | Spec | Task | Route | Status | Commit |
 | --- | --- | --- | --- | --- | --- |
-| T1 | S5, S1 | Rewrite `.env.example` by environment with new provider/limit variables | inline | pending | — |
-| T2 | S2 | Production upload cap: 4 MB on Vercel, 10 MB local, clear 413 | inline | pending | — |
-| T3 | S3 | Configurable local/OpenRouter embedding provider with stored model/revision | inline | pending | — |
-| T4 | S4 | Prisma serverless singleton, pool bound, CLI `DIRECT_URL`, build generates client | inline | pending | — |
-| T5 | S7 | Structured logger, request IDs, stage timings, `/api/health` | inline | pending | — |
-| T6 | S6 | GitHub Actions: install, generate, lint, typecheck, tests, build, integration | inline | pending | — |
-| T7 | S8 | README Sprint 7: deployment, architecture, eval results, limits, checklist | inline | pending | — |
-| T8 | S9, S10 | Local verification (no build), honest record, delivery summary | inline | pending | — |
+| T1 | S5, S1 | Rewrite `.env.example` by environment with new provider/limit variables | inline | done | `0d659d2` |
+| T2 | S2 | Production upload cap: 4 MB on Vercel, 10 MB local, clear 413 | inline | done | `c6df4aa` |
+| T3 | S3 | Configurable local/OpenRouter embedding provider with stored model/revision | inline | done | `6df906a` |
+| T4 | S4 | Prisma serverless singleton, pool bound, CLI `DIRECT_URL`, build generates client | inline | done | `11e8022` |
+| T5 | S7 | Structured logger, request IDs, stage timings, `/api/health` | inline | done | `57905d1` |
+| T6 | S6 | GitHub Actions: install, generate, lint, typecheck, tests, build, integration | inline | done | `904f6a4` |
+| T7 | S8 | README Sprint 7: deployment, architecture, eval results, limits, checklist | inline | done | `0d659d2` |
+| T8 | S9, S10 | Local verification (no build), honest record, delivery summary | inline | in progress | — |
 
 ## Log
 
@@ -265,3 +265,12 @@ Con este sprint termina el plan de 7 sprints del **Intelligent Document Assistan
 - `prisma.config.ts` usa `env("DATABASE_URL")`; el tipo `Datasource` de Prisma 7.10.1 solo expone `url` y `shadowDatabaseUrl` (no `directUrl`).
 - Reporte real Sprint 5: 25 casos (20 respondibles, 5 no respondibles). Vector Recall@5 1.00 / Precision@5 0.21 / MRR 0.9667 / 3.18 ms; léxico 0.95 / 0.20 / 0.635 / 2.88 ms; híbrido 1.00 / 0.21 / 0.90 / 3.60 ms; híbrido+rerank omitido por `missing_model`. Embedding medio de consulta 9.84 ms.
 - Decisión de alcance: no conectar híbrida/rerank a `/api/ask` (cambio de producto no pedido); instrumentar el pipeline real y documentar la diferencia.
+
+### L3 — Verificación independiente (2026-11-13)
+
+- `gentle-ai review assess --base-ref b50b70e --committed-only` devolvió `risk: high` con `unassessable: el runtime OpenCode no es elegible para immutable receipt review`. Se preserva el resultado tipado; no se inventa PASS ni se desactiva RDD.
+- Verificador independiente: typecheck, lint, 231 unit tests y 33 probes dirigidos pasan. Encontró 1 blocker y 4 advisories.
+- **Blocker corregido (S4/S6):** `scripts/test-integration.ts` solo pisaba `DATABASE_URL`; `prisma.config.ts` prefiere `DIRECT_URL` para el CLI, así que un `DIRECT_URL` heredado podía recibir `prisma migrate deploy`. Ahora el runner fija `DATABASE_URL` y `DIRECT_URL` al `*_test` y agrega un test de regresión.
+- **Advisories corregidos:** `/api/documents/[id]` y `/chunks` ahora usan `runRoute` (requestId consistente); mensaje de error local recupera la pista de descarga/caché; tabla histórica de latencias de evaluación corregida a los valores reales del reporte; este documento actualizado con estados y commits.
+- **Advisory no corregido:** ninguno pendiente.
+- Queda un recheck acotado al blocker corregido.

@@ -558,9 +558,9 @@ El comando imprime un resumen por estrategia, los casos donde un chunk relevante
 
 | Estrategia | Casos | Recall@5 | Precision@5 | MRR | Latencia media |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `vector` | 25 | 1.0000 | 0.2100 | 0.9667 | 2 ms |
-| `lexical` | 25 | 0.9500 | 0.2000 | 0.6350 | 2 ms |
-| `hybrid` | 25 | 1.0000 | 0.2100 | 0.9000 | 2 ms |
+| `vector` | 25 | 1.0000 | 0.2100 | 0.9667 | 3.18 ms |
+| `lexical` | 25 | 0.9500 | 0.2000 | 0.6350 | 2.88 ms |
+| `hybrid` | 25 | 1.0000 | 0.2100 | 0.9000 | 3.60 ms |
 | `hybrid-rerank` | — | — | — | — | skipped (`missing_model`) |
 
 Lectura honesta de esta muestra:
@@ -1255,7 +1255,7 @@ curl -s https://openrouter.ai/api/v1/embeddings/models \
 
 ### Observabilidad
 
-Cada request recibe un `requestId` (se reutiliza `x-request-id` solo si es un token seguro; si no, se genera un UUID) y lo devuelve en el header `x-request-id`. Los logs son una línea JSON por evento:
+Las rutas de documentos, búsqueda, embeddings y preguntas reciben un `requestId` (se reutiliza `x-request-id` solo si es un token seguro; si no, se genera un UUID) y lo devuelven en el header `x-request-id`. Los logs son una línea JSON por evento:
 
 ```json
 {"level":"info","event":"ask.completed","timestamp":"...","requestId":"...","route":"POST /api/ask","topK":5,"retrievedCount":5,"embeddingMs":12,"searchMs":4,"generationMs":1800,"promptTokens":900,"completionTokens":80,"totalTokens":980,"costUsd":0.0002,"sourceCount":5,"citedCount":2,"totalMs":1900}

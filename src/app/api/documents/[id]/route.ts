@@ -8,7 +8,7 @@ import {
   getDocumentDetailForUser,
 } from "@/lib/documents/queries";
 import { AppError } from "@/lib/errors";
-import { jsonError } from "@/lib/http";
+import { runRoute } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,51 +17,49 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_request: Request, { params }: RouteContext) {
-  try {
-    const user = await requireApiUser();
-    const { id } = await params;
+export async function GET(request: Request, { params }: RouteContext) {
+  return runRoute({
+    request,
+    route: "GET /api/documents/[id]",
+    fallbackMessage: "No se pudo cargar el documento.",
+    handler: async () => {
+      const user = await requireApiUser();
+      const { id } = await params;
 
-    assertDocumentId(id);
+      assertDocumentId(id);
 
-    const document = await getDocumentDetailForUser(user.id, id);
+      const document = await getDocumentDetailForUser(user.id, id);
 
-    if (!document) {
-      throw new AppError("DOCUMENT_NOT_FOUND", "Documento no encontrado.");
-    }
+      if (!document) {
+        throw new AppError("DOCUMENT_NOT_FOUND", "Documento no encontrado.");
+      }
 
-    return NextResponse.json({
-      document: toDocumentDetailDto(document),
-    });
-  } catch (error) {
-    return jsonError(
-      error,
-      "GET /api/documents/[id]",
-      "No se pudo cargar el documento.",
-    );
-  }
+      return NextResponse.json({
+        document: toDocumentDetailDto(document),
+      });
+    },
+  });
 }
 
-export async function DELETE(_request: Request, { params }: RouteContext) {
-  try {
-    const user = await requireApiUser();
-    const { id } = await params;
+export async function DELETE(request: Request, { params }: RouteContext) {
+  return runRoute({
+    request,
+    route: "DELETE /api/documents/[id]",
+    fallbackMessage: "No se pudo borrar el documento.",
+    handler: async () => {
+      const user = await requireApiUser();
+      const { id } = await params;
 
-    assertDocumentId(id);
+      assertDocumentId(id);
 
-    const deleted = await deleteDocumentForUser(user.id, id);
+      const deleted = await deleteDocumentForUser(user.id, id);
 
-    if (deleted === 0) {
-      // Same response as a nonexistent document: existence is not revealed.
-      throw new AppError("DOCUMENT_NOT_FOUND", "Documento no encontrado.");
-    }
+      if (deleted === 0) {
+        // Same response as a nonexistent document: existence is not revealed.
+        throw new AppError("DOCUMENT_NOT_FOUND", "Documento no encontrado.");
+      }
 
-    return NextResponse.json({ deleted: true });
-  } catch (error) {
-    return jsonError(
-      error,
-      "DELETE /api/documents/[id]",
-      "No se pudo borrar el documento.",
-    );
-  }
+      return NextResponse.json({ deleted: true });
+    },
+  });
 }
