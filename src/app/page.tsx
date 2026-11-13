@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DocumentLibrary } from "@/components/documents/DocumentLibrary";
+import { requireUser } from "@/lib/dal";
 import { getUploadLimits } from "@/lib/config";
 import { toDocumentSummaryDto } from "@/lib/documents/dto";
-import { listDocuments } from "@/lib/documents/queries";
+import { listDocumentsForUser } from "@/lib/documents/queries";
 import type { DocumentSummaryDto } from "@/lib/documents/types";
 
 import styles from "./page.module.css";
@@ -16,12 +17,13 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const user = await requireUser();
   const limits = getUploadLimits();
   let initialDocuments: DocumentSummaryDto[] = [];
   let initialLoadError: string | null = null;
 
   try {
-    const documents = await listDocuments();
+    const documents = await listDocumentsForUser(user.id);
     initialDocuments = documents.map(toDocumentSummaryDto);
   } catch (error) {
     console.error("[page] Could not load the document library.", error);

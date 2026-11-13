@@ -8,6 +8,7 @@ import type {
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 import { DocumentChunkViewer } from "./DocumentChunkViewer";
+import { DeleteDocumentButton } from "./DeleteDocumentButton";
 import { DocumentEmbeddingsPanel } from "./DocumentEmbeddingsPanel";
 import { StatusBadge } from "./StatusBadge";
 import styles from "./DocumentDetail.module.css";
@@ -50,7 +51,10 @@ export function DocumentDetail({
             </p>
             <h1 className={styles.title}>{document.originalFilename}</h1>
           </div>
-          <StatusBadge status={document.status} />
+          <div className={styles.headerActions}>
+            <StatusBadge status={document.status} />
+            <DeleteDocumentButton documentId={document.id} />
+          </div>
         </div>
 
         <dl className={styles.metaGrid}>
