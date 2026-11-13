@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, types, tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: ida
+          POSTGRES_PASSWORD: ida
+          POSTGRES_DB: ida
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ida -d ida"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Disposable local service for this job. These are not production values.
+      DATABASE_URL: postgresql://ida:ida@localhost:5432/ida?schema=public
+      # Build-time placeholder; Auth.js needs a value to initialize.
+      AUTH_SECRET: ci-only-placeholder-not-a-production-secret
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The repository has no E2E suite. This is the existing PostgreSQL
+      # integration suite: it creates an isolated *_test database, applies every
+      # migration and checks authentication, ownership and rate limits.
+      - name: Integration tests
+        run: npm run test:integration
