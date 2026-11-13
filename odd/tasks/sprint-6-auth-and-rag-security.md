@@ -268,9 +268,9 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
 - `npm run eval:seed` and `npm run eval:retrieval` still pass; metrics match the Sprint 5 reference report. The generated temporary report was removed.
 - `next build` was not run (project rule).
 
-### L4 — Pending
+### L4 — Pending at implementation close
 
-- T9 independent verification and native review decision at feature end.
+- T9 independent verification and native review decision were completed in L5 and L6.
 - No push, PR or merge requested.
 
 
@@ -287,7 +287,7 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
   5. Fixed-window reset now has an integration test (12 integration tests total).
   6. IP spoofing and `trustHost` are documented as local/proxy caveats.
 - Post-advisory parent spot check: `npm run test:integration` 12/12 and full `npm test` 198/198 passed.
-- Native `gentle-ai review assess` was not invoked; if RDD is due, T9's candidate is the work-unit commit that holds the high-risk migration/auth change, not the accumulated branch.
+- Native review status and the typed unavailability are recorded in L6.
 
 
 ### L6 — Native review availability
