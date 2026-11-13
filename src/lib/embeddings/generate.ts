@@ -13,6 +13,7 @@ import type {
   GenerationOptions,
 } from "@/lib/embeddings/types";
 import { AppError } from "@/lib/errors";
+import { logEvent } from "@/lib/observability/log";
 
 /**
  * Generates the embeddings of every chunk of a document in small batches.
@@ -29,6 +30,7 @@ export async function generateDocumentEmbeddings(input: {
   userId: string;
   documentId: string;
   options: GenerationOptions;
+  requestId?: string;
 }): Promise<EmbeddingGenerationResultDto> {
   const { userId, documentId, options } = input;
   const config = getEmbeddingConfig();
@@ -95,10 +97,15 @@ export async function generateDocumentEmbeddings(input: {
         stage: "embedding",
         message: "No se pudo generar el vector de este lote.",
       });
-      console.error(
-        `[embeddings] Inference failed for batch ${batchIndex + 1}/${batchCount}.`,
-        error,
-      );
+      logEvent("error", "embeddings.batch_failed", {
+        requestId: input.requestId,
+        route: "POST /api/documents/[id]/embeddings",
+        stage: "embedding",
+        batchIndex: batchIndex + 1,
+        batchCount,
+        failedCount: batch.length,
+        kind: error instanceof Error ? error.name : "unknown",
+      });
       continue;
     }
 
@@ -124,10 +131,15 @@ export async function generateDocumentEmbeddings(input: {
         stage: "persistence",
         message: "No se pudo guardar este lote en PostgreSQL.",
       });
-      console.error(
-        `[embeddings] Persistence failed for batch ${batchIndex + 1}/${batchCount}.`,
-        error,
-      );
+      logEvent("error", "embeddings.batch_failed", {
+        requestId: input.requestId,
+        route: "POST /api/documents/[id]/embeddings",
+        stage: "persistence",
+        batchIndex: batchIndex + 1,
+        batchCount,
+        failedCount: batch.length,
+        kind: error instanceof Error ? error.name : "unknown",
+      });
     }
   }
 

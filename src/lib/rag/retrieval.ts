@@ -14,12 +14,19 @@ import type { RetrievedChunk } from "@/lib/rag/types";
 import { AppError } from "@/lib/errors";
 import { prisma } from "@/lib/db";
 
+export type RetrievalTimings = {
+  embeddingMs: number;
+  searchMs: number;
+  totalMs: number;
+};
+
 export type RetrievalResult = {
   documentId: string;
   documentName: string;
   model: EmbeddingModelInfo;
   indexedChunkCount: number;
   results: RetrievedChunk[];
+  timings: RetrievalTimings;
 };
 
 export async function retrieveDocumentChunks(input: {
@@ -28,6 +35,7 @@ export async function retrieveDocumentChunks(input: {
   question: string;
   topK: number;
 }): Promise<RetrievalResult> {
+  const startedAt = performance.now();
   const document = await prisma.document.findFirst({
     where: { id: input.documentId, userId: input.userId },
     select: {
@@ -57,10 +65,16 @@ export async function retrieveDocumentChunks(input: {
       model,
       indexedChunkCount,
       results: [],
+      timings: {
+        embeddingMs: 0,
+        searchMs: 0,
+        totalMs: Math.round(performance.now() - startedAt),
+      },
     };
   }
 
   const provider = await loadEmbeddingProviderOrThrow();
+  const embeddingStartedAt = performance.now();
   let vector: number[];
 
   try {
@@ -73,6 +87,8 @@ export async function retrieveDocumentChunks(input: {
     );
   }
 
+  const embeddingMs = Math.round(performance.now() - embeddingStartedAt);
+  const searchStartedAt = performance.now();
   const rows = await findNearestChunksForDocument(
     vector,
     model,
@@ -80,6 +96,7 @@ export async function retrieveDocumentChunks(input: {
     input.userId,
     input.topK,
   );
+  const searchMs = Math.round(performance.now() - searchStartedAt);
 
   const results: RetrievedChunk[] = rows.map((row) => {
     const distance =
@@ -106,5 +123,10 @@ export async function retrieveDocumentChunks(input: {
     model,
     indexedChunkCount,
     results,
+    timings: {
+      embeddingMs,
+      searchMs,
+      totalMs: Math.round(performance.now() - startedAt),
+    },
   };
 }
