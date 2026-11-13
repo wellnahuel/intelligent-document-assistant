@@ -1,10 +1,10 @@
-# Intelligent Document Assistant — Sprint 6
+# Intelligent Document Assistant — Sprint 7
 
-Aplicación web educativa multiusuario para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings locales**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
+Aplicación web educativa multiusuario para subir PDFs, extraer su texto página por página, dividirlo en fragmentos trazables, generar **embeddings**, recuperar los fragmentos más cercanos con **pgvector** y responder preguntas con un modelo de **OpenRouter** y **citas verificadas** a las páginas del documento.
 
-Este es el sexto hito del proyecto de RAG. El recorrido completo es **autenticar → aislar → indexar → recuperar → generar**. Cada cuenta tiene su propia biblioteca: las páginas, los chunks y los embeddings heredan el dueño del documento, y las consultas vectoriales filtran por `userId` dentro del SQL. La pregunta se convierte en un vector con el modelo local; solo los chunks autorizados del documento elegido se envían como contexto a OpenRouter; el servidor valida las citas antes de mostrarlas. La respuesta sigue siendo de un solo turno: no hay historial de conversación, herramientas ni agentes.
+Este es el séptimo y último hito del proyecto de RAG. El recorrido completo es **autenticar → aislar → indexar → recuperar → generar**. Cada cuenta tiene su propia biblioteca: las páginas, los chunks y los embeddings heredan el dueño del documento, y las consultas vectoriales filtran por `userId` dentro del SQL. La pregunta se convierte en un vector con el mismo proveedor/modelo usado para indexar; solo los chunks autorizados del documento elegido se envían como contexto a OpenRouter; el servidor valida las citas antes de mostrarlas. La respuesta sigue siendo de un solo turno: no hay historial de conversación, herramientas ni agentes.
 
-> **Solo para desarrollo local.** Ahora hay autenticación con email y contraseña, aislamiento por usuario y límites de uso, pero no es una implementación de producción: faltan RLS, recuperación de contraseña, verificación de email, MFA, auditoría y revisión de despliegue. No la expongas a Internet ni la uses con documentos reales sin completar el Sprint 7. Los fixtures de evaluación son ficticios: si activás el reranking, la pregunta y los fragmentos candidatos salen hacia un proveedor externo.
+> **Estado del demo.** El repositorio queda preparado para desplegar en **Vercel + Neon**, con límite de PDF de 4 MB en producción, proveedor de embeddings configurable y CI. El demo público **todavía no fue publicado ni verificado desde este entorno**: no hay URL inventada en este README. Los pasos de cuenta (Neon, Vercel, OpenRouter) y la checklist manual están en [Despliegue](#sprint-7--despliegue-y-cierre). Los fixtures de evaluación son ficticios: si activás el reranking, la pregunta y los fragmentos candidatos salen hacia un proveedor externo.
 
 ## Qué incluye
 
@@ -47,10 +47,18 @@ Este es el sexto hito del proyecto de RAG. El recorrido completo es **autenticar
 - Adaptador `Reranker` y cliente opcional de OpenRouter `/api/v1/rerank`, desactivado si no hay modelo o clave.
 - Plantilla manual para revisar exactitud, fidelidad, citas y abstención de las respuestas del Sprint 4.
 - Reporte de referencia generado por una ejecución real en `eval/reports/reference-report.json`.
-- Documentación de decisiones, límites y comprobaciones manuales.
+- Todo lo del Sprint 7: límite de PDF de 4 MB en Vercel (10 MB local) con `413` seguro.
+- Proveedor de embeddings **local o remoto**: `EMBEDDING_PROVIDER=local` usa Transformers.js; `openrouter` usa el endpoint de embeddings de OpenRouter sin cargar ONNX en producción.
+- El modelo y la revisión se guardan en cada embedding; documentos y preguntas usan la misma configuración y los vectores de otro modelo no se mezclan.
+- PrismaClient como singleton por proceso, pool acotado y `prisma migrate deploy` para producción.
+- Logs JSON con `requestId`, etapa, duración, tokens y tipo de error; sin preguntas, prompts, texto de PDFs, cookies ni claves.
+- `GET /api/health` con respuesta mínima (`{ "status": "ok" }` o `unavailable`) y sin secretos.
+- Workflow de GitHub Actions con instalación desde lockfile, lint, tipos, tests unitarios, build y tests de integración contra PostgreSQL con pgvector.
+- README de portfolio: arquitectura, pipeline RAG, entornos, límites, costos, resultados reales de evaluación y checklist de despliegue.
 
 ## Documentación del sprint
 
+- **Sprint 7:** la sección [Despliegue y cierre](#sprint-7--despliegue-y-cierre) explica la arquitectura de producción, Neon/Vercel, migraciones, límite de carga, proveedor de embeddings, observabilidad, costos, resultados reales de evaluación y checklist manual. No hay guía PDF de este sprint: el entregable de portfolio es este README.
 - `docs/sprint-6-como-funciona.pdf` — guía de estudio del Sprint 6 (17 páginas): autenticación vs autorización, Auth.js y Argon2id, DAL, IDOR, migración legacy, filtro de ownership en SQL, prompt injection, límites, prueba con dos cuentas y deudas abiertas.
 - `docs/sprint-6-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - **Sprint 6:** la sección [Autenticación, autorización y seguridad](#sprint-6--autenticación-autorización-y-seguridad) de este README explica el flujo de identidad, la DAL, la prevención de IDOR, el aislamiento SQL, los límites y las amenazas abiertas.
@@ -70,7 +78,7 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 - Historial de conversación, herramientas o agentes.
 - Herramientas ejecutables para el modelo; la salida del modelo nunca modifica datos, permisos ni consultas.
 - Recuperación de contraseña, verificación de email, MFA, OAuth o inicio de sesión con proveedores externos.
-- Row-Level Security de PostgreSQL. El aislamiento se aplica en la DAL y en cada consulta; RLS queda como defensa adicional para el Sprint 7.
+- Row-Level Security de PostgreSQL. El aislamiento se aplica en la DAL y en cada consulta; RLS sigue fuera de alcance porque el adaptador de conexión no transmite una identidad de usuario a PostgreSQL.
 - Un panel de administración, auditoría de accesos o borrado de cuenta.
 - Conectar la búsqueda híbrida o el reranking al flujo de `/ask`; por ahora se comparan en la evaluación.
 - Un LLM juez automático para calidad de respuesta.
@@ -80,7 +88,8 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 - OCR para PDFs escaneados.
 - Almacenamiento del archivo PDF original.
 - Antivirus o análisis de malware de los PDFs.
-- Garantías de privacidad del proveedor externo: la pregunta y los fragmentos recuperados se envían a OpenRouter cuando se genera una respuesta.
+- Garantías de privacidad del proveedor externo: la pregunta y los fragmentos recuperados se envían a OpenRouter cuando se genera una respuesta; en modo de embeddings remoto, los chunks también salen hacia OpenRouter.
+- Un demo público verificado. Los pasos para publicarlo están documentados, pero este entorno no accedió a cuentas ni creó un deployment.
 
 ## Stack
 
@@ -97,8 +106,11 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 | Límites de uso | Fixed window persistente en PostgreSQL (`RateLimitBucket`) |
 | Extracción | PDF.js (`pdfjs-dist` 6) |
 | Chunking | Módulo TypeScript puro, sin dependencias de IA |
-| Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local |
-| Modelo de embeddings | `Xenova/multilingual-e5-small` (384 dimensiones) |
+| Embeddings | `@huggingface/transformers` 4 + ONNX Runtime local, u OpenRouter `/api/v1/embeddings` (configurable por entorno) |
+| Modelo de embeddings | Local: `Xenova/multilingual-e5-small` (384 dimensiones). Remoto: el modelo de 384 dimensiones que elijas en OpenRouter |
+| Despliegue | Vercel (Next.js) + Neon (PostgreSQL con pgvector) |
+| CI | GitHub Actions con PostgreSQL 17 + pgvector |
+| Observabilidad | Logs JSON estructurados + `GET /api/health` |
 | Generación | OpenRouter Chat Completions vía `fetch` en el servidor |
 | Búsqueda léxica | PostgreSQL `tsvector`/`tsquery` con configuración `simple` e índice GIN |
 | Búsqueda híbrida | Reciprocal Rank Fusion sobre rankings vectorial y léxico |
@@ -114,8 +126,9 @@ Las guías de los sprints 1 y 2 siguen disponibles en `docs/sprint-1-como-funcio
 - **Docker** con Docker Compose.
 - Puerto **3000** libre para Next.js.
 - Puerto **5434** libre para PostgreSQL en el host.
-- Espacio en disco y conexión a Internet la primera vez que se usa el modelo. El archivo ONNX fp32 pesa unos **470 MB** y se guarda en `.cache/transformers/`; después los archivos se reutilizan desde la caché, aunque Transformers.js puede seguir consultando metadatos remotos para resolver el modelo.
+- Espacio en disco y conexión a Internet la primera vez que se usa el modelo local. El archivo ONNX fp32 pesa unos **470 MB** y se guarda en `.cache/transformers/`; después los archivos se reutilizan desde la caché, aunque Transformers.js puede seguir consultando metadatos remotos para resolver el modelo. En producción con `EMBEDDING_PROVIDER=openrouter` no se descarga.
 - Una cuenta de OpenRouter con una API key y un ID de modelo compatible con Chat Completions. La clave se usa solo en el servidor.
+- Para desplegar: una cuenta de Vercel, un proyecto de Neon con pgvector y una cuenta de OpenRouter con crédito o un modelo disponible. Los límites y precios de los planes gratuitos cambian; verificá el uso real antes de publicar.
 
 ## Puesta en marcha
 
@@ -169,7 +182,9 @@ rm -rf .cache/transformers
 
 | Variable | Obligatoria | Valor por defecto | Descripción |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Sí | — | Cadena de conexión de PostgreSQL. |
+| `DATABASE_URL` | Sí | — | Conexión de runtime a PostgreSQL. En Neon puede ser el endpoint agrupado. |
+| `DIRECT_URL` | No | — | Conexión directa usada **solo por el CLI de Prisma** para migraciones/introspección cuando `DATABASE_URL` es un endpoint agrupado. El runtime la ignora. |
+| `DATABASE_POOL_MAX` | No | `1` en Vercel, `5` local | Conexiones máximas del pool por proceso. Rango: 1–20. |
 | `AUTH_SECRET` | Sí | — | Secreto de Auth.js para firmar/cifrar la cookie de sesión. Generarlo con `openssl rand -base64 32`. Nunca usar el prefijo `NEXT_PUBLIC_` ni commitearlo. |
 | `MAX_DOCUMENTS_PER_USER` | No | `20` | Cantidad máxima de documentos por cuenta. Se verifica dentro de la transacción de creación. |
 | `UPLOAD_RATE_LIMIT_PER_HOUR` | No | `10` | Cargas por usuario por hora. |
@@ -180,15 +195,17 @@ rm -rf .cache/transformers
 | `LOGIN_IP_RATE_LIMIT_PER_15_MIN` | No | `30` | Intentos de login por IP cada 15 minutos. |
 | `REGISTER_RATE_LIMIT_PER_HOUR` | No | `5` | Registros por IP por hora. |
 | `REGISTER_EMAIL_RATE_LIMIT_PER_HOUR` | No | `3` | Intentos de registro por email por hora. |
-| `MAX_PDF_SIZE_MB` | No | `10` | Tamaño máximo del PDF en MB. |
+| `MAX_PDF_SIZE_MB` | No | `10` local, `4` en Vercel | Tamaño máximo del PDF en MB. En Vercel se limita a 4 MB aunque configures más, por el cuerpo máximo de 4,5 MB de las Functions. |
 | `MAX_PDF_PAGES` | No | `50` | Cantidad máxima de páginas. |
 | `CHUNK_TARGET_CHARS` | No | `1200` | Tamaño objetivo de cada fragmento, en caracteres. |
 | `CHUNK_OVERLAP_CHARS` | No | `150` | Caracteres que se repiten desde el fragmento anterior. |
 | `CHUNK_MIN_CHARS` | No | `100` | Tamaño mínimo del último fragmento antes de fusionarlo. |
-| `EMBEDDING_MODEL_ID` | No | `Xenova/multilingual-e5-small` | Modelo local de Transformers.js. |
-| `EMBEDDING_MODEL_REVISION` | No | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` | Commit de Hugging Face usado para descargar el modelo. |
-| `EMBEDDING_CACHE_DIR` | No | `.cache/transformers` | Carpeta de caché del modelo. Está ignorada por git. |
+| `EMBEDDING_PROVIDER` | No | `local` | `local` usa Transformers.js en el proceso; `openrouter` usa el endpoint remoto de embeddings. |
+| `EMBEDDING_MODEL_ID` | Según el proveedor | `Xenova/multilingual-e5-small` | Modelo local o, con `EMBEDDING_PROVIDER=openrouter`, el id remoto (obligatorio en ese modo). Debe producir 384 dimensiones. |
+| `EMBEDDING_MODEL_REVISION` | No | Commit de Hugging Face; `openrouter-managed` en remoto | Revisión inmutable local o etiqueta operativa remota. Se guarda con cada embedding. |
+| `EMBEDDING_CACHE_DIR` | No | `.cache/transformers` | Carpeta de caché del modelo local. Está ignorada por git y no se usa en modo remoto. |
 | `EMBEDDING_BATCH_SIZE` | No | `4` | Chunks por lote de inferencia y escritura. Rango: 1–16. |
+| `OPENROUTER_EMBEDDING_TIMEOUT_MS` | No | `20000` | Timeout de cada request remoto de embeddings. Rango: 1000–120000. |
 | `SEARCH_DEFAULT_TOP_K` | No | `5` | Cantidad de resultados por defecto en `/search`. |
 | `SEARCH_MAX_TOP_K` | No | `20` | Máximo permitido para `topK` en `/search`. |
 | `SEARCH_QUERY_MAX_CHARS` | No | `1000` | Longitud máxima de la pregunta en `/search`. |
@@ -206,11 +223,15 @@ rm -rf .cache/transformers
 | `RERANK_TOP_N` | No | `5` | Cantidad de candidatos que devuelve el reranker. Rango: 1–50. |
 | `RERANK_TIMEOUT_MS` | No | `20000` | Timeout del reranker. Rango: 1000–120000. |
 
-Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y el proveedor valida que el modelo produzca exactamente 384 números. Cambiar de modelo exige una migración y regenerar los vectores.
+Los valores inválidos generan una advertencia en la terminal y se usan los valores por defecto. La dimensión **no** es configurable: la columna SQL es `vector(384)` y ambos proveedores validan que el modelo produzca exactamente 384 números. Cambiar entre local y remoto **no** requiere una migración de esquema, pero sí regenerar los embeddings: el filtro de recuperación usa `modelId` + `modelRevision`, así que los vectores viejos quedan ignorados hasta que se regeneran. Cambiar a un modelo de otra dimensión sí exige una migración.
+
+Local, Preview y Production deben tener **bases y secretos distintos**. En Vercel, cada variable se asigna por entorno y los cambios aplican a deployments nuevos. Una rama de Preview nunca debe apuntar a la base de Production ni reutilizar su `AUTH_SECRET`.
 
 `AUTH_SECRET` es obligatorio para que Auth.js pueda firmar y cifrar la cookie de sesión. No se expone al cliente. Los límites son opcionales: si no se configuran, se usan los valores de la tabla. Los contadores viven en `RateLimitBucket`, no en memoria, así que sobreviven reinicios y se comparten entre procesos que usen la misma base. Las filas vencidas se pueden limpiar con `DELETE FROM "RateLimitBucket" WHERE "expiresAt" < now();`.
 
-`OPENROUTER_API_KEY` y `OPENROUTER_MODEL` se leen solo en el servidor. Si faltan, `/api/ask` responde `503` con un mensaje seguro después de recuperar los fragmentos; el camino sin evidencia sigue funcionando sin llamar al proveedor. La clave no aparece en el bundle del navegador, en la API ni en los logs.
+`OPENROUTER_API_KEY` y `OPENROUTER_MODEL` se leen solo en el servidor. Si faltan, `/api/ask` responde `503` con un mensaje seguro después de recuperar los fragmentos; el camino sin evidencia sigue funcionando sin llamar al proveedor. En modo de embeddings remoto, `OPENROUTER_API_KEY` también es obligatoria para indexar y para embeber la pregunta. La clave no aparece en el bundle del navegador, en la API ni en los logs.
+
+`DIRECT_URL` es opcional y solo la lee `prisma.config.ts` para comandos de CLI. El runtime siempre usa `DATABASE_URL` en `src/lib/db.ts`; no se debe asumir que `DIRECT_URL` cambia la conexión de la aplicación.
 
 El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:retrieval` lo marca como `skipped` y termina normalmente. Cuando se activa, la pregunta y los fragmentos candidatos se envían a OpenRouter; usá solo documentos ficticios o que puedas compartir. No se asume que exista un modelo gratuito disponible.
 
@@ -219,7 +240,7 @@ El reranking es opcional: con `RERANK_MODEL` vacío o sin clave, `npm run eval:r
 | Comando | Qué hace |
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo con Turbopack. |
-| `npm run build` | Compilación de producción. |
+| `npm run build` | Genera el cliente de Prisma y compila para producción. |
 | `npm run start` | Servidor de producción (requiere `build`). |
 | `npm run lint` | ESLint con la configuración de Next.js. |
 | `npm run typecheck` | `tsc --noEmit` con TypeScript estricto. |
@@ -1099,6 +1120,235 @@ Prisma no puede declarar índices de expresión como `to_tsvector('simple', cont
 
 `npm run eval:retrieval` y `npm run eval:seed` se ejecutan con `tsx`, fuera del servidor de Next.js. El cargador del modelo se extrajo a `src/lib/embeddings/load-extractor.ts` y el CLI usa `node-provider.ts`; el servidor sigue usando `provider.ts` con la guardia `server-only`. Así ambos caminos comparten revisión, dtype y caché, sin duplicar la carga del modelo.
 
+## Sprint 7 — Despliegue y cierre
+
+### Estado real de esta entrega
+
+| Área | Estado |
+| --- | --- |
+| Configuración de producción (límite 4 MB, embeddings remotos, singleton de Prisma, logs, health) | Implementada y cubierta por tests unitarios. |
+| CI | Workflow agregado; se ejecuta en GitHub, no en este entorno. |
+| Build de Next.js | No ejecutado localmente por la regla del proyecto; CI lo ejecuta con `npm run build`. |
+| Neon, Vercel y OpenRouter | **No se accedió a ninguna cuenta ni se publicó la app.** Los pasos quedan documentados abajo. |
+| Embeddings remotos reales | **No se llamó al proveedor.** La integración está validada con `fetch` mockeado. |
+| URL de demo | **Pendiente.** No se inventa ninguna URL. |
+
+### Arquitectura de despliegue
+
+```text
+Navegador
+   │  HTTPS
+   ▼
+Vercel — Next.js 16 (Node.js runtime)
+   ├── Auth.js JWT (cookie HttpOnly)
+   ├── Route handlers: /api/documents, /api/search, /api/ask, /api/health
+   ├── Extracción PDF.js + chunking (en la Function)
+   └── Embeddings: Transformers.js local (dev) u OpenRouter remoto (prod)
+          │
+          ├── PostgreSQL 17 + pgvector (Neon)
+          │     ├── User, Document, DocumentPage, DocumentChunk
+          │     ├── ChunkEmbedding vector(384) + modelId/modelRevision
+          │     └── RateLimitBucket
+          │
+          └── OpenRouter
+                ├── POST /api/v1/chat/completions  (respuesta)
+                └── POST /api/v1/embeddings        (solo si EMBEDDING_PROVIDER=openrouter)
+```
+
+La app no guarda el PDF binario: guarda el texto extraído, los chunks y los embeddings. La generación envía a OpenRouter solo la pregunta y los fragmentos recuperados y autorizados.
+
+### Pipeline RAG, de PDF a respuesta con citas
+
+1. **Carga:** `POST /api/documents` recibe `multipart/form-data`; valida tamaño, MIME, firma `%PDF-` y cantidad de páginas en el servidor.
+2. **Extracción:** PDF.js obtiene el texto página por página. Un PDF sin texto seleccionable se rechaza; no hay OCR.
+3. **Persistencia:** se guardan `Document` y `DocumentPage` en una transacción, con el dueño tomado de la sesión.
+4. **Chunking:** cada página se divide en fragmentos con offsets de caracteres, overlap y un `chunkIndex` estable.
+5. **Embeddings:** cada chunk se embebe con el proveedor configurado y se guarda en `ChunkEmbedding` junto con `modelId`, `modelRevision` y `dimensions`.
+6. **Pregunta:** el servidor verifica la sesión, el límite por usuario y el dueño del documento; embebe la pregunta con **la misma configuración** usada para indexar.
+7. **Recuperación:** búsqueda coseno exacta con `<=>` de pgvector, filtrada por `userId`, `documentId`, modelo, revisión y dimensión. Devuelve hasta `RAG_TOP_K` chunks.
+8. **Contexto:** se arma un prompt con `RAG_MAX_CONTEXT_CHARS` como presupuesto y fuentes temporales `[S1]`, `[S2]`, ...
+9. **Generación:** OpenRouter Chat Completions sin streaming, con timeout y sin reintentos automáticos.
+10. **Citas:** el servidor elimina IDs que no correspondan a fuentes recuperadas y arma la metadata desde la base. La UI muestra documento, página, excerpt y si la fuente fue citada.
+
+La búsqueda léxica, la fusión híbrida (RRF) y el reranking están implementados y se comparan en `npm run eval:retrieval`, pero **no están conectados a `/api/ask`**. La respuesta usa recuperación vectorial exacta. Se documenta así para no atribuir al demo una arquitectura que no ejecuta.
+
+### Entornos: Local, Preview y Production
+
+| Variable / recurso | Local | Preview | Production |
+| --- | --- | --- | --- |
+| Base de datos | Docker Compose, puerto 5434 | Proyecto/branch de Neon separado | Proyecto/branch de Neon de producción |
+| `DATABASE_URL` | `postgresql://ida:ida@localhost:5434/ida` | Connection string de Preview | Connection string de Production |
+| `DIRECT_URL` | Opcional | Directa de Preview | Directa de Production |
+| `AUTH_SECRET` | Generado localmente | Secreto propio de Preview | Secreto propio de Production |
+| `EMBEDDING_PROVIDER` | `local` | `openrouter` (recomendado) | `openrouter` |
+| `EMBEDDING_MODEL_ID` | `Xenova/multilingual-e5-small` | Modelo remoto de 384 dimensiones | El mismo que Preview |
+| Límite de PDF | 10 MB | 4 MB | 4 MB |
+| `OPENROUTER_API_KEY` | Tu clave local | Clave de Preview (si corresponde) | Clave de Production |
+
+Reglas:
+
+- Preview y Production **no comparten base ni secretos**. Un deployment de una rama no debe escribir en la base pública.
+- Las variables se asignan por entorno en Vercel; un cambio de valor aplica a deployments nuevos, no a los ya construidos.
+- Ninguna clave privada lleva prefijo `NEXT_PUBLIC_`. El código no serializa configuración del servidor hacia componentes cliente.
+- GitHub Actions usa un PostgreSQL desechable del propio job; no recibe secretos de Production.
+
+### Neon: crear la base y habilitar pgvector
+
+1. Crear un proyecto en Neon (PostgreSQL 17 o la versión compatible disponible).
+2. Copiar la connection string **agrupada** (pooled) para `DATABASE_URL` y la **directa** para `DIRECT_URL`, si el proyecto las ofrece.
+3. Confirmar que la extensión queda instalada. La migración inicial ya ejecuta `CREATE EXTENSION IF NOT EXISTS vector;`; para verificar:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+SELECT extversion FROM pg_extension WHERE extname = 'vector';
+```
+
+4. Aplicar las migraciones con la conexión directa y el comando de producción:
+
+```bash
+# Una sola vez por entorno, desde una máquina o un job con las variables del entorno.
+DATABASE_URL="<url-directa-o-agrupada>" DIRECT_URL="<url-directa>" npx prisma migrate deploy
+```
+
+`prisma migrate deploy` aplica las migraciones pendientes y no genera nuevas. Este proyecto usa Prisma 7.10.1; el comando se mantiene. **No** ejecutes `prisma migrate dev` ni `prisma db push` contra Preview o Production: pueden crear migraciones nuevas, resetear datos o divergir del historial versionado.
+
+No corras migraciones desde cada request ni desde funciones concurrentes. El lugar correcto es un paso único del pipeline, antes del smoke test del deployment.
+
+### Vercel: publicar
+
+1. Importar el repositorio en Vercel y seleccionar el framework Next.js.
+2. Usar Node.js 22 (o la versión soportada que coincida con `package.json` y las dependencias nativas).
+3. Configurar las variables de la tabla anterior **por entorno**. Preview y Production deben apuntar a bases distintas.
+4. Build command: `npm run build`. El script ejecuta `prisma generate` antes de `next build`, porque el cliente generado está ignorado por git y no se versiona.
+5. El límite de PDF en Vercel es 4 MB. La app lo aplica en servidor y devuelve `413 FILE_TOO_LARGE` con un mensaje claro; no se cambia en silencio el límite local.
+6. Crear el deployment de Preview, aplicar migraciones en la base de Preview, ejecutar los smoke checks y recién después promover a Production.
+7. Aplicar migraciones en Production una vez y ejecutar los smoke checks.
+
+No se agregó Vercel Blob ni otro servicio pago: el alcance actual guarda texto, no el PDF binario. Para aceptar PDFs mayores a 4 MB hace falta subir el archivo directamente a object storage (S3, R2, Supabase Storage u otro), con URL firmada, y procesarlo después; eso cambia la arquitectura de upload y queda fuera de este sprint.
+
+### Embeddings: local para desarrollo, remoto para producción
+
+| Aspecto | Local | Remoto (OpenRouter) |
+| --- | --- | --- |
+| Variable | `EMBEDDING_PROVIDER=local` | `EMBEDDING_PROVIDER=openrouter` |
+| Modelo | `Xenova/multilingual-e5-small` (384) | `EMBEDDING_MODEL_ID`, por ejemplo `openai/text-embedding-3-small` |
+| Dependencia | ONNX Runtime + Transformers.js en el proceso | `fetch` al endpoint remoto |
+| Prefijos E5 | `passage: ` / `query: ` | No se aplican; se envía texto plano |
+| Modelo en el bundle | Se carga solo cuando el proveedor es local | El import dinámico no se ejecuta y el modelo no se descarga |
+| Costo | CPU/disco local | Tokens de embeddings del proveedor |
+| Reproducibilidad | Revisión fijada por commit | Etiqueta `EMBEDDING_MODEL_REVISION` administrada por el operador |
+
+Puntos importantes:
+
+- Documentos y preguntas usan **el mismo** `modelId` y `modelRevision`. Si se cambia el proveedor o el modelo, hay que regenerar los embeddings de todos los chunks.
+- La base de Production empieza vacía. No copies embeddings locales: son de otro modelo y el filtro de recuperación los ignoraría, pero además no tendría sentido pagar por vectores incompatibles.
+- La columna es `vector(384)`. El proveedor remoto envía `dimensions: 384` y valida la respuesta. Un modelo que no pueda producir 384 dimensiones no sirve sin una migración.
+- OpenRouter no garantiza un modelo gratuito permanente. Antes de publicar, consultá el catálogo real:
+
+```bash
+curl -s https://openrouter.ai/api/v1/embeddings/models \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" | head
+```
+
+- El proveedor remoto no aplica prefijos de instrucción. Elegí un modelo que espere texto plano; si un modelo requiere un prefijo específico, hay que agregarlo de forma explícita y regenerar.
+- No hay reintentos automáticos en embeddings ni en generación: un reintento duplica consumo y latencia. El timeout se controla con `OPENROUTER_EMBEDDING_TIMEOUT_MS` y `RAG_PROVIDER_TIMEOUT_MS`.
+
+### Observabilidad
+
+Cada request recibe un `requestId` (se reutiliza `x-request-id` solo si es un token seguro; si no, se genera un UUID) y lo devuelve en el header `x-request-id`. Los logs son una línea JSON por evento:
+
+```json
+{"level":"info","event":"ask.completed","timestamp":"...","requestId":"...","route":"POST /api/ask","topK":5,"retrievedCount":5,"embeddingMs":12,"searchMs":4,"generationMs":1800,"promptTokens":900,"completionTokens":80,"totalTokens":980,"costUsd":0.0002,"sourceCount":5,"citedCount":2,"totalMs":1900}
+```
+
+Se registran: ruta, método, etapa, resultado, duración, estado HTTP, código de error, tipo de error del proveedor, modelo, `topK`, cantidad de fuentes, tokens y costo si el proveedor los informa.
+
+**No** se registran: pregunta completa, prompt, texto de PDFs, chunks, respuesta completa, cookies, contraseñas, API keys ni connection strings. El logger usa una lista blanca de campos; un campo desconocido se descarta aunque el llamador lo pase.
+
+`GET /api/health` ejecuta `SELECT 1` y devuelve `{ "status": "ok" }` o `503 { "status": "unavailable" }`. No incluye versión, host, error de conexión ni configuración.
+
+### Costos
+
+No se afirma que el despliegue sea gratuito. Los componentes que pueden generar costo son:
+
+- **Chat de OpenRouter:** tokens de entrada (pregunta + contexto) y de salida, según el modelo elegido. El modelo `openrouter/free` no está garantizado ni necesariamente disponible.
+- **Embeddings remotos:** tokens de entrada de cada chunk al indexar y de cada pregunta al consultar.
+- **Neon:** compute y almacenamiento del proyecto/branch; los planes y cuotas cambian.
+- **Vercel:** invocaciones, duración y transferencia de las Functions; los límites del plan cambian.
+
+Para estimar, usá los precios vigentes de cada proveedor y multiplicá por el uso real: `tokens de embedding`, `tokens de prompt`, `tokens de completion`, cantidad de requests y tiempo de Function. Los controles ya implementados son `RAG_TOP_K`, `RAG_MAX_CONTEXT_CHARS`, `MAX_PDF_PAGES`, `MAX_PDF_SIZE_MB`, los límites por usuario y los timeouts. No se agregó monitoreo pago.
+
+### Resultados reales de evaluación (Sprint 5)
+
+Reporte: `eval/reports/reference-report.json`, generado el 2026-11-12 con Node 22.13.1 sobre el fixture ficticio y el gold set de 25 casos (20 respondibles, 5 no respondibles). La latencia es la búsqueda por caso y **excluye** el embedding de la consulta, medido aparte.
+
+| Estrategia | Recall@5 | Precision@5 | MRR | Latencia media |
+| --- | --- | --- | --- | --- |
+| Vectorial exacta | 1.00 | 0.21 | 0.9667 | 3.18 ms |
+| Léxica (`simple` + GIN) | 0.95 | 0.20 | 0.635 | 2.88 ms |
+| Híbrida (RRF) | 1.00 | 0.21 | 0.90 | 3.60 ms |
+| Híbrida + rerank | — | — | — | Omitida: `missing_model` |
+
+Embedding medio de la consulta: **9.84 ms**. Precisión@5 usa denominador `k`, por eso su valor es bajo aunque el recall sea alto.
+
+Lectura honesta: en este corpus chico y ficticio, la búsqueda vectorial exacta ya recupera el chunk relevante en todos los casos respondibles; la híbrida no la supera y el reranking no se midió. No se inventan métricas de calidad de respuesta: `eval/answer-quality-review.md` es una plantilla manual y **no tiene resultados completados**. Conectar híbrida/rerank a `/api/ask` y revisar respuestas reales queda como trabajo futuro.
+
+### CI/CD
+
+`.github/workflows/ci.yml` se ejecuta en `pull_request` y en `push` a `main`:
+
+1. `npm ci` desde `package-lock.json`.
+2. `npm run db:generate`.
+3. `npm run lint`.
+4. `npm run typecheck`.
+5. `npm test` (chunker + Vitest unitario).
+6. `npm run build` (incluye `prisma generate`).
+7. `npm run test:integration` contra un servicio PostgreSQL 17 + pgvector desechable.
+
+No existe una suite E2E (navegador) en el repositorio, así que no se ejecuta ni se declara. La suite de integración cubre autenticación, aislamiento entre dos cuentas, ownership, cuota, rate limit y cascada. El workflow falla si cualquier paso falla.
+
+Los secretos de Preview/Production se configuran en Vercel, no en GitHub Actions. El workflow no recibe `OPENROUTER_API_KEY` ni credenciales de Neon.
+
+### Checklist manual de despliegue
+
+Marcar solo lo que se comprobó de verdad. En este entorno no se ejecutó ninguno de los pasos que requieren cuentas o un deployment.
+
+- [ ] `npm run lint` y `npm run typecheck` en local.
+- [ ] `npm test` en local.
+- [ ] `npm run test:integration` con PostgreSQL local.
+- [ ] `npm run build` en local o en CI.
+- [ ] Deployment de Preview creado.
+- [ ] Migraciones aplicadas en la base de Preview (`prisma migrate deploy`).
+- [ ] `/api/health` responde `200 { "status": "ok" }` en Preview.
+- [ ] Registro y login de dos cuentas.
+- [ ] Aislamiento: cada cuenta ve solo sus documentos; un id ajeno devuelve 404.
+- [ ] PDF menor al límite: se sube y extrae texto.
+- [ ] PDF mayor al límite: se rechaza con `413 FILE_TOO_LARGE`.
+- [ ] Chunking y generación de embeddings completan.
+- [ ] Pregunta con evidencia: respuesta con al menos una cita válida.
+- [ ] Pregunta sin evidencia: `noEvidence: true` y sin llamada innecesaria al proveedor.
+- [ ] Error/timeout del proveedor: respuesta segura (`502`/`504`) sin filtrar detalles.
+- [ ] Logs del deployment: incluyen `requestId`, etapas y duración; no incluyen pregunta, texto, cookies ni claves.
+- [ ] Demo de Production verificado y URL agregada a este README.
+
+### Capturas para el portfolio
+
+No se agregaron imágenes simuladas. Para capturarlas:
+
+1. Usar `samples/documento-de-prueba.pdf` o un documento ficticio.
+2. Capturar: biblioteca vacía, formulario de carga, detalle con texto extraído, panel de chunks, panel de embeddings, búsqueda con resultados, pregunta con fuentes citadas y reporte de evaluación.
+3. Ocultar emails, ids de cuenta, claves y cualquier dato personal.
+4. Guardar en `docs/screenshots/` con nombres descriptivos y enlazarlas en este README cuando existan.
+
+### Cómo mostrarlo en una entrevista
+
+1. **Problema:** responder preguntas sobre documentos propios con evidencia verificable, no con conocimiento general del modelo.
+2. **Arquitectura:** Next.js en Vercel, PostgreSQL + pgvector en Neon, Auth.js, OpenRouter, embeddings locales o remotos.
+3. **Decisiones:** chunks con offsets y overlap; búsqueda exacta antes que ANN; mismo modelo para indexar y consultar; citas saneadas en servidor; aislamiento por `userId` dentro del SQL; límites persistentes.
+4. **Evidencia:** métricas reales del gold set, tests de aislamiento y de prompt injection, y las limitaciones medidas (híbrida no supera a vectorial en este corpus; rerank sin evaluar).
+5. **Tradeoffs:** 4 MB por el límite de Vercel; embeddings remotos para evitar ONNX en la Function; `/api/ask` vector-only para no atribuir mejoras no medidas.
+6. **Próximos pasos:** OCR, object storage para PDFs grandes, RLS, recuperación de contraseña/MFA, E2E y evaluación manual de calidad de respuesta.
+
 ## Seguridad y límites conocidos
 
 - **Autenticación local, no producción:** hay registro/login con Argon2id, sesión JWT y aislamiento, pero faltan recuperación de contraseña, verificación de email, MFA, auditoría, revocación inmediata de sesiones y revisión de despliegue. Un JWT robado sigue siendo válido hasta su expiración (7 días por defecto) porque no hay lista de revocación.
@@ -1107,9 +1357,11 @@ Prisma no puede declarar índices de expresión como `to_tsvector('simple', cont
 - **Confianza en headers de proxy:** el rate limit por IP usa `x-forwarded-for`/`x-real-ip`. Solo es confiable detrás de un proxy que sobrescriba esos headers; el límite por email sigue protegiendo una cuenta concreta.
 - **`trustHost: true` en Auth.js:** está pensado para desarrollo local y self-hosting directo. Detrás de un reverse proxy, el proxy debe controlar el header `Host`; en producción conviene fijar `AUTH_URL` y revisar esta configuración.
 - **Sin OCR:** un PDF escaneado como imagen se rechaza con “No se encontró texto seleccionable en el PDF.”.
-- **Límites de archivo y uso:** 10 MB y 50 páginas por defecto para el PDF. Los límites por usuario viven en PostgreSQL; la extracción es síncrona y ocurre en el proceso de Next.js.
-- **Inferencia en CPU:** la generación de embeddings puede tardar varios segundos o minutos según la cantidad de chunks y el hardware. La primera ejecución incluye la descarga del modelo.
-- **Dependencia de red la primera vez:** sin conexión a Hugging Face, el modelo no se puede descargar. Después los archivos se reutilizan desde la caché local, pero Transformers.js puede seguir resolviendo metadatos remotos; no se verificó un arranque completamente offline.
+- **Límites de archivo y uso:** 10 MB local y 4 MB en Vercel, con 50 páginas por defecto. Los límites por usuario viven en PostgreSQL; la extracción es síncrona y ocurre en el proceso de Next.js.
+- **Inferencia en CPU (modo local):** la generación de embeddings puede tardar varios segundos o minutos según la cantidad de chunks y el hardware. La primera ejecución incluye la descarga del modelo. En modo remoto la carga pasa al proveedor.
+- **Dependencia de red la primera vez (modo local):** sin conexión a Hugging Face, el modelo no se puede descargar. Después los archivos se reutilizan desde la caché local, pero Transformers.js puede seguir resolviendo metadatos remotos; no se verificó un arranque completamente offline.
+- **Embeddings remotos no verificados en vivo:** la integración con OpenRouter está cubierta con `fetch` mockeado, pero no se ejecutó contra la cuenta real. El modelo remoto debe existir, aceptar `dimensions: 384` y estar disponible en el plan contratado.
+- **Privacidad del proveedor de embeddings:** con `EMBEDDING_PROVIDER=openrouter`, el texto de cada chunk y cada pregunta se envían a OpenRouter. No uses documentos reales sin revisar las condiciones del proveedor.
 - **Límite de tokens del modelo:** E5 tiene una ventana de 512 tokens. El chunker mide caracteres, no tokens; un chunk de 1.200 caracteres puede truncarse en algunos idiomas. La pregunta también se trunca si supera la ventana, aunque la API limite los caracteres.
 - **Dimensión fija:** `vector(384)` está atado a E5-small. Cambiar a un modelo de otra dimensión exige migración, cambio de constante y regeneración.
 - **Precisión fija:** el sprint usa `fp32`. Cambiar de precisión puede cambiar los vectores; hay que regenerarlos y documentarlo.
@@ -1210,44 +1462,39 @@ ORDER BY indexname;
 
 ## Verificación de esta entrega
 
-Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
+Comprobado en este entorno (Node 22.13.1). El Sprint 7 **no** se desplegó ni accedió a cuentas externas.
 
 - `npm run typecheck` ✅
 - `npm run lint` ✅
 - `npm run test:chunking` ✅ (12 tests)
-- `npm run test:unit` ✅ (198 tests en 24 archivos; incluye autenticación/Argon2id, input, prompt injection, mapeo de errores del proveedor, endpoints protegidos y toda la suite anterior)
-- `npm run test:integration` ✅ (12 tests contra PostgreSQL real: dos usuarios, dos documentos, listado, lectura, borrado, procesamiento, RAG, SQL vectorial/léxico, cuota, rate limit y cascada)
-- `npx prisma migrate status` ✅ (5 migraciones aplicadas, esquema al día; la migración de Sprint 6 crea `User`, `RateLimitBucket`, `Document.userId`, el índice y la FK en cascada).
-- Prueba HTTP manual con dos cuentas ✅:
-  - anónimo: `GET /api/documents` y `POST /api/search` → `401`; `/` y `/documents/<id>` → redirect a `/login`;
-  - A y B subieron un PDF cada uno; cada listado mostró solo su documento;
-  - B contra el documento A: `GET`, `DELETE`, `/chunks`, `/embeddings` y `/api/ask` → `404 DOCUMENT_NOT_FOUND`;
-  - A leyó su detalle → `200`; B contra la página de detalle A → `404`;
-  - A generó 2 chunks y 2 embeddings; B, sin embeddings, vio `indexedChunkCount: 0` y `[]` en `/api/search`; después B generó los suyos y solo recuperó su documento;
-  - A preguntó sobre su documento y todas las fuentes pertenecieron a A; B hizo lo mismo y todas las fuentes pertenecieron a B;
-  - B borró su propio documento → `200 { deleted: true }`; una lectura posterior devolvió `404`;
-  - login con contraseña incorrecta y con email inexistente devolvió el mismo `CredentialsSignin` genérico;
-  - logout limpió la cookie de sesión y la siguiente llamada devolvió `401`.
-- Generación real con OpenRouter ✅: con `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` configurados en `.env`, A preguntó “¿Cuánto dura la garantía del producto?” y recibió `El período de garantía del producto es de dos años. [S1]` con fuentes de su propio documento. B recibió una respuesta equivalente con fuentes del documento de B. No se registraron preguntas completas ni texto completo de documentos.
-- `npm run eval:seed` / `npm run eval:retrieval` ✅ sin cambios de contrato; el fixture ahora tiene dueño `eval-fixture-owner` y el CLI resuelve el `userId` antes de consultar. El reporte de referencia del Sprint 5 sigue siendo el artefacto histórico.
-- Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado; la integración sigue validada con `fetch` mockeado.
-- Guía de estudio ✅: `docs/sprint-6-como-funciona.pdf` (17 páginas, A4) y su fuente HTML; validada con `pdfinfo` y `pdftotext`, sin páginas vacías ni rutas locales.
-- Native receipt review ❌ no disponible: OpenCode v2.2.7 devolvió `immutable_review_transport_unsupported`; se preservó el resultado tipado y no se inventó un PASS. La evidencia de verificación es el verificador independiente (`PASS_WITH_ADVISORIES`, sin blockers).
-- `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y probes HTTP reales.
-- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-6-auth-and-rag-security`.
+- `npm run test:unit` ✅ (231 tests en 28 archivos; agrega límite de producción, proveedor remoto de embeddings, logger y health a la suite existente)
+- `npm run test:integration` ❌ no ejecutado en este sprint: requiere PostgreSQL local con pgvector y migraciones aplicadas. El workflow de CI lo ejecuta contra un servicio desechable.
+- `npm run build` ❌ no ejecutado localmente por la regla del proyecto. El workflow de CI ejecuta `npm run build`, que incluye `prisma generate`.
+- `npx prisma migrate status` ❌ no ejecutado en este sprint; no se modificó el esquema ni se agregaron migraciones.
+- Deployment Preview/Production ❌ no creado.
+- Migraciones en Neon ❌ no ejecutadas.
+- Embeddings remotos reales ❌ no llamados: la integración está validada con `fetch` mockeado (request, dimensiones, orden por índice, 429/402, timeout, JSON inválido, prefijos ausentes).
+- `/api/health` ✅ cubierto con la ruta simulada: `200 { "status": "ok" }` y `503 { "status": "unavailable" }` sin filtrar el error de conexión.
+- Logger ✅ cubierto: conserva campos permitidos y descarta pregunta, prompt, texto, cookies, contraseña, API key y respuesta.
+- Los resultados de evaluación citados en [Resultados reales](#resultados-reales-de-evaluación-sprint-5) provienen del reporte histórico `eval/reports/reference-report.json`; no se regeneraron en este sprint.
+- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-7-deployment`.
 
-## Próximo sprint
+## Después de este sprint
 
-Sprint 7: producción, despliegue y optimización. Antes de exponer la app fuera de localhost hay que:
+El plan de 7 sprints está cerrado. Para convertir este repositorio en un demo público verificado faltan, en orden:
 
-- decidir y probar el patrón de conexión y, si se adopta, Row-Level Security con una identidad de usuario transmitida a PostgreSQL;
-- agregar recuperación de contraseña, verificación de email, MFA opcional y revocación de sesiones;
-- definir retención, borrado de cuenta, auditoría de accesos y respaldo/restauración;
-- revisar los headers de proxy y la confianza en `x-forwarded-for` detrás del despliegue real;
-- ejecutar `npm run build` y una prueba de humo de producción con el empaquetado de `@huggingface/transformers`, `onnxruntime-node`, `sharp` y `@node-rs/argon2`;
-- medir el corpus con más documentos, evaluar índices ANN y decidir si conviene conectar híbrida/reranking a `/ask`;
-- revisar las condiciones de privacidad de OpenRouter para documentos reales;
-- agregar antivirus o análisis de archivos si el producto lo requiere.
+- crear el proyecto de Neon, habilitar pgvector y aplicar `prisma migrate deploy` en Preview y Production;
+- importar el repo en Vercel, cargar variables por entorno y completar la checklist manual de [Despliegue](#checklist-manual-de-despliegue);
+- ejecutar una prueba real de embeddings remotos con el modelo elegido y confirmar que acepta 384 dimensiones;
+- capturar las pantallas y agregar la URL del demo recién cuando esté verificada;
+- decidir si se conecta híbrida/rerank a `/api/ask` con una medición previa, en lugar de asumir que mejora;
+- agregar recuperación de contraseña, verificación de email, MFA y revocación de sesiones;
+- evaluar RLS con una identidad de usuario transmitida a PostgreSQL;
+- definir retención, borrado de cuenta, auditoría y respaldo/restauración;
+- revisar headers de proxy y `x-forwarded-for` en el despliegue real;
+- agregar OCR para PDFs escaneados y object storage si se quieren aceptar archivos mayores a 4 MB;
+- agregar antivirus o análisis de archivos si el producto lo requiere;
+- agregar una suite E2E de navegador (hoy no existe).
 
 ## Orden sugerido para revisar el código
 
@@ -1258,11 +1505,14 @@ Sprint 7: producción, despliegue y optimización. Antes de exponer la app fuera
 5. `src/lib/documents/queries.ts` — consultas acotadas por `userId`, borrado y detalle.
 6. `src/lib/documents/create-document.ts` — cuota con lock por usuario.
 7. `src/lib/embeddings/store.ts` — SQL vectorial con `d."userId"` y búsquedas acotadas.
-8. `src/lib/retrieval/lexical.ts` y `hybrid.ts` — filtro de dueño en SQL léxico y paso a vector.
-9. `src/lib/rag/retrieval.ts`, `generate.ts`, `citations.ts` y `prompt.ts` — recuperación autorizada, citas y separación de instrucciones.
-10. `src/lib/rate-limit/limiter.ts`, `config.ts` y `keys.ts` — fixed window atómico y claves opacas.
-11. `src/app/api/documents/route.ts`, `[id]/route.ts`, `search/route.ts` y `ask/route.ts` — protección de endpoints.
-12. `src/app/(auth)/actions.ts`, `login/page.tsx` y `register/page.tsx` — flujo de sesión.
-13. `tests/integration/access-control.test.ts` — aislamiento con dos cuentas contra PostgreSQL real.
-14. `tests/unit/rag-injection.test.ts` y `auth-password.test.ts` — prompt injection y almacenamiento de contraseñas.
-15. La sección [Sprint 6](#sprint-6--autenticación-autorización-y-seguridad) de este README — amenazas abiertas y prueba manual.
+8. `src/lib/embeddings/config.ts`, `create-provider.ts`, `openrouter-embeddings.ts` y `provider.ts` — selección local/remota, dimensiones, timeouts y singleton.
+9. `src/lib/retrieval/lexical.ts` y `hybrid.ts` — filtro de dueño en SQL léxico y paso a vector (solo evaluación).
+10. `src/lib/rag/retrieval.ts`, `generate.ts`, `citations.ts` y `prompt.ts` — recuperación autorizada, citas y separación de instrucciones.
+11. `src/lib/rate-limit/limiter.ts`, `config.ts` y `keys.ts` — fixed window atómico y claves opacas.
+12. `src/lib/config.ts` y `src/lib/db.ts` — límite 4 MB en Vercel, pool acotado y singleton de Prisma.
+13. `src/lib/observability/log.ts`, `src/lib/http.ts` y `src/app/api/health/route.ts` — campos permitidos, `requestId` y health.
+14. `src/app/api/documents/route.ts`, `[id]/route.ts`, `search/route.ts` y `ask/route.ts` — protección de endpoints y logs por etapa.
+15. `.github/workflows/ci.yml` — lint, tipos, tests, build e integración.
+16. `tests/integration/access-control.test.ts` — aislamiento con dos cuentas contra PostgreSQL real.
+17. `tests/unit/rag-injection.test.ts`, `auth-password.test.ts`, `upload-limits.test.ts`, `embeddings-openrouter.test.ts`, `observability-log.test.ts` y `health-route.test.ts` — seguridad, proveedor remoto y observabilidad.
+18. La sección [Sprint 7](#sprint-7--despliegue-y-cierre) de este README — entornos, migraciones, límites, costos y checklist.
