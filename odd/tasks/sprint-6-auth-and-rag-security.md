@@ -296,3 +296,10 @@ Creá dos usuarios y cargá un documento distinto con cada uno. Copiá el ID del
 - `gentle-ai review assess --base-ref 90822ce --committed-only --json`: `risk: high`, `review_due: true`, reason `high_risk`, but `unassessable` because the active runtime (OpenCode v2.2.7) is not eligible for immutable receipt review.
 - Preflight `gentle-ai review status ... --next-transition` returned `gentle-ai.review-integration.failure/v2` with `immutable_review_transport_unsupported` and `next_action: stop`.
 - Typed result preserved. No PASS was invented and the mode was not toggled automatically. The independent verifier remains the verification evidence for this feature.
+
+### L7 — Sprint 6 study guide
+
+- Added `docs/sprint-6-como-funciona.html` and `docs/sprint-6-como-funciona.pdf`.
+- The guide is 17 A4 pages and follows the Sprint 1–5 visual format.
+- It covers authentication vs authorization, Auth.js + Argon2id, the DAL, IDOR, the legacy migration, the SQL ownership filter, prompt injection, limits, the two-account test, error responses, verification evidence and open threats.
+- Validated with `pdfinfo` and `pdftotext`: 17 pages, no empty pages, no absolute local paths or secrets.

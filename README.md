@@ -51,7 +51,9 @@ Este es el sexto hito del proyecto de RAG. El recorrido completo es **autenticar
 
 ## Documentación del sprint
 
-- **Sprint 6:** la sección [Autenticación, autorización y seguridad](#sprint-6--autenticación-autorización-y-seguridad) de este README explica el flujo de identidad, la DAL, la prevención de IDOR, el aislamiento SQL, los límites y las amenazas abiertas. No se agregó una guía PDF nueva en este sprint.
+- `docs/sprint-6-como-funciona.pdf` — guía de estudio del Sprint 6 (17 páginas): autenticación vs autorización, Auth.js y Argon2id, DAL, IDOR, migración legacy, filtro de ownership en SQL, prompt injection, límites, prueba con dos cuentas y deudas abiertas.
+- `docs/sprint-6-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
+- **Sprint 6:** la sección [Autenticación, autorización y seguridad](#sprint-6--autenticación-autorización-y-seguridad) de este README explica el flujo de identidad, la DAL, la prevención de IDOR, el aislamiento SQL, los límites y las amenazas abiertas.
 - `docs/sprint-5-como-funciona.pdf` — guía de estudio del Sprint 5 (17 páginas): gold set, métricas, búsqueda vectorial y léxica, RRF, reranking opcional, CLI, reporte reproducible, resultados reales, límites y checklist para el Sprint 6.
 - `docs/sprint-5-como-funciona.html` — fuente editable de la guía; el PDF se genera con Chrome headless.
 - **Sprint 5:** la sección [Evaluación de recuperación](#flujo-de-evaluación-de-recuperación-sprint-5) de este README explica el gold set, las métricas, RRF, el reranking opcional, el índice GIN y los límites. Los artefactos viven en `eval/gold-set.json`, `eval/fixtures/fictional-documents.json`, `eval/answer-quality-review.md` y `eval/reports/reference-report.json`.
@@ -1229,6 +1231,7 @@ Comprobado en este entorno (PostgreSQL 17 con pgvector 0.8.7, Node 22.13.1):
 - Generación real con OpenRouter ✅: con `OPENROUTER_API_KEY` y `OPENROUTER_MODEL` configurados en `.env`, A preguntó “¿Cuánto dura la garantía del producto?” y recibió `El período de garantía del producto es de dos años. [S1]` con fuentes de su propio documento. B recibió una respuesta equivalente con fuentes del documento de B. No se registraron preguntas completas ni texto completo de documentos.
 - `npm run eval:seed` / `npm run eval:retrieval` ✅ sin cambios de contrato; el fixture ahora tiene dueño `eval-fixture-owner` y el CLI resuelve el `userId` antes de consultar. El reporte de referencia del Sprint 5 sigue siendo el artefacto histórico.
 - Reranking real ❌ no ejecutado: no hay `RERANK_MODEL` configurado; la integración sigue validada con `fetch` mockeado.
+- Guía de estudio ✅: `docs/sprint-6-como-funciona.pdf` (17 páginas, A4) y su fuente HTML; validada con `pdfinfo` y `pdftotext`, sin páginas vacías ni rutas locales.
 - Native receipt review ❌ no disponible: OpenCode v2.2.7 devolvió `immutable_review_transport_unsupported`; se preservó el resultado tipado y no se inventó un PASS. La evidencia de verificación es el verificador independiente (`PASS_WITH_ADVISORIES`, sin blockers).
 - `next build` no se ejecutó (regla del proyecto). La validación fue con `tsc`, ESLint, tests, migraciones y probes HTTP reales.
 - No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-6-auth-and-rag-security`.
