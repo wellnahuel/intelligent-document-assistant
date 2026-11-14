@@ -77,9 +77,18 @@ async function main(): Promise<void> {
   await ensureDatabase(adminUrl, databaseName);
 
   console.info(`[test:integration] Applying migrations to ${databaseName}.`);
+  // prisma.config.ts prefers DIRECT_URL for CLI commands. Pin both URLs to the
+  // isolated test database so an inherited DIRECT_URL can never migrate a
+  // developer's Preview/Production database.
+  const testEnv = {
+    ...process.env,
+    DATABASE_URL: testUrl,
+    DIRECT_URL: testUrl,
+  };
+
   execFileSync("npx", ["prisma", "migrate", "deploy"], {
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: testUrl },
+    env: testEnv,
   });
 
   console.info("[test:integration] Running Vitest integration suite.");
@@ -89,8 +98,7 @@ async function main(): Promise<void> {
     {
       stdio: "inherit",
       env: {
-        ...process.env,
-        DATABASE_URL: testUrl,
+        ...testEnv,
         TEST_DATABASE_URL: testUrl,
       },
     },

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { logEvent } from "@/lib/observability/log";
 import { getOpenRouterConfig, getRagConfig } from "@/lib/rag/config";
 import { createNoEvidenceAnswer, generateAnswerFromChunks } from "@/lib/rag/generate";
 import { OpenRouterError, requestChatCompletion } from "@/lib/rag/openrouter";
@@ -12,29 +13,41 @@ function elapsedMs(startedAt: number): number {
   return Math.round(performance.now() - startedAt);
 }
 
-
 export async function answerDocumentQuestion(
-  input: AskRequestInput & { userId: string },
+  input: AskRequestInput & { userId: string; requestId?: string },
 ): Promise<RagAnswerDto> {
+  const startedAt = performance.now();
   const config = getRagConfig();
-  const retrievalStartedAt = performance.now();
   const retrieval = await retrieveDocumentChunks({
     userId: input.userId,
     documentId: input.documentId,
     question: input.question,
     topK: config.topK,
   });
-  const retrievalMs = elapsedMs(retrievalStartedAt);
   const retrievalInfo = {
     topK: config.topK,
     retrievedCount: retrieval.results.length,
     indexedChunkCount: retrieval.indexedChunkCount,
   };
+  const logBase = {
+    requestId: input.requestId,
+    route: "POST /api/ask",
+    topK: config.topK,
+    retrievedCount: retrieval.results.length,
+    indexedChunkCount: retrieval.indexedChunkCount,
+    model: retrieval.model.modelId,
+    embeddingMs: retrieval.timings.embeddingMs,
+    searchMs: retrieval.timings.searchMs,
+    retrievalMs: retrieval.timings.totalMs,
+  };
 
   if (retrieval.results.length === 0) {
-    console.info(
-      `[rag] retrieval=${retrievalMs}ms sources=0 provider=skipped cause=no_embeddings`,
-    );
+    logEvent("info", "ask.completed", {
+      ...logBase,
+      outcome: "no_evidence",
+      code: "no_embeddings",
+      totalMs: elapsedMs(startedAt),
+    });
 
     return createNoEvidenceAnswer({
       documentId: retrieval.documentId,
@@ -63,42 +76,71 @@ export async function answerDocumentQuestion(
         }),
     });
     const generationMs = elapsedMs(generationStartedAt);
+    const usage = result.usage;
 
     if (result.noEvidence) {
-      console.info(
-        `[rag] retrieval=${retrievalMs}ms generation=${generationMs}ms sources=0 provider=skipped cause=${result.noEvidenceReason ?? "unknown"}`,
-      );
+      logEvent("info", "ask.completed", {
+        ...logBase,
+        outcome: "no_evidence",
+        code: result.noEvidenceReason ?? "unknown",
+        generationMs,
+        sourceCount: result.sources.length,
+        totalMs: elapsedMs(startedAt),
+      });
 
       return result;
     }
 
-    const usage = result.usage?.totalTokens ?? "n/a";
-    console.info(
-      `[rag] retrieval=${retrievalMs}ms generation=${generationMs}ms provider=200 sources=${result.sources.length} cited=${result.citedSourceIds.length} usage=${usage}`,
-    );
+    logEvent("info", "ask.completed", {
+      ...logBase,
+      outcome: "answered",
+      generationMs,
+      sourceCount: result.sources.length,
+      citedCount: result.citedSourceIds.length,
+      promptTokens: usage?.promptTokens ?? undefined,
+      completionTokens: usage?.completionTokens ?? undefined,
+      totalTokens: usage?.totalTokens ?? undefined,
+      costUsd: usage?.cost ?? undefined,
+      totalMs: elapsedMs(startedAt),
+    });
 
     return result;
   } catch (error) {
     const generationMs = elapsedMs(generationStartedAt);
 
     if (error instanceof OpenRouterError) {
-      console.error(
-        `[rag] retrieval=${retrievalMs}ms provider=failed status=${error.status ?? "n/a"} kind=${error.kind} generation=${generationMs}ms`,
-      );
+      logEvent("error", "ask.failed", {
+        ...logBase,
+        outcome: "failed",
+        stage: "generation",
+        kind: error.kind,
+        httpStatus: error.status ?? undefined,
+        generationMs,
+        totalMs: elapsedMs(startedAt),
+      });
       throw mapProviderError(error);
     }
 
     if (error instanceof AppError) {
-      console.error(
-        `[rag] retrieval=${retrievalMs}ms generation-configuration-failed code=${error.code} generation=${generationMs}ms`,
-      );
+      logEvent("error", "ask.failed", {
+        ...logBase,
+        outcome: "failed",
+        stage: "configuration",
+        code: error.code,
+        generationMs,
+        totalMs: elapsedMs(startedAt),
+      });
       throw error;
     }
 
-    console.error(
-      `[rag] retrieval=${retrievalMs}ms unexpected-generation-error generation=${generationMs}ms`,
-      error,
-    );
+    logEvent("error", "ask.failed", {
+      ...logBase,
+      outcome: "failed",
+      stage: "unknown",
+      kind: error instanceof Error ? error.name : "unknown",
+      generationMs,
+      totalMs: elapsedMs(startedAt),
+    });
     throw error;
   }
 }
