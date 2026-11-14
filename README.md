@@ -1226,6 +1226,10 @@ No corras migraciones desde cada request ni desde funciones concurrentes. El lug
 
 No se agregó Vercel Blob ni otro servicio pago: el alcance actual guarda texto, no el PDF binario. Para aceptar PDFs mayores a 4 MB hace falta subir el archivo directamente a object storage (S3, R2, Supabase Storage u otro), con URL firmada, y procesarlo después; eso cambia la arquitectura de upload y queda fuera de este sprint.
 
+### PDF.js en Vercel
+
+`pdfjs-dist` carga su worker y las fuentes estándar con rutas armadas en runtime. El file tracing de Vercel no puede seguirlas, así que un PDF válido puede fallar solo en producción con `422 CORRUPT_PDF` o `422 NO_EXTRACTABLE_TEXT`. `next.config.ts` las incluye explícitamente con `outputFileTracingIncludes` para `/api/**`; `serverExternalPackages` por sí solo no alcanza. Si aparece ese 422, revisá los logs `http.request` (campo `code`) y confirmá que el deploy incluyó esos assets.
+
 ### Embeddings: local para desarrollo, remoto para producción
 
 | Aspecto | Local | Remoto (OpenRouter) |
