@@ -1,7 +1,7 @@
 # Sprint 7 — Despliegue y cierre del proyecto
 
 Branch: `feat/sprint-7-deployment` (stacked on `main`, Sprint 6 merge `b50b70e`).
-Delivery: single feature branch, work-unit commits; push, PR and merge are user decisions.
+Delivery: single feature branch, work-unit commits; pushed and merged to `main` at the user's request (no PR).
 Runner: Node 22.13.1, `node:test` (chunking) + Vitest (unit/integration).
 Scope: deployment readiness, remote embedding option, observability, CI, portfolio README. No account access, no deploy, no invented URLs or metrics.
 

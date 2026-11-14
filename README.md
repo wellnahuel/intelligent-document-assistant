@@ -1479,7 +1479,7 @@ Comprobado en este entorno (Node 22.13.1). El Sprint 7 **no** se desplegó ni ac
 - `/api/health` ✅ cubierto con la ruta simulada: `200 { "status": "ok" }` y `503 { "status": "unavailable" }` sin filtrar el error de conexión.
 - Logger ✅ cubierto: conserva campos permitidos y descarta pregunta, prompt, texto, cookies, contraseña, API key y respuesta.
 - Los resultados de evaluación citados en [Resultados reales](#resultados-reales-de-evaluación-sprint-5) provienen del reporte histórico `eval/reports/reference-report.json`; no se regeneraron en este sprint.
-- No se hizo push, PR ni merge; los cambios quedan como commits de trabajo en la rama `feat/sprint-7-deployment`.
+- La rama `feat/sprint-7-deployment` se publicó y se mergeó a `main`; el repositorio remoto contiene el Sprint 7 completo. No se abrió un PR: el merge se hizo directamente a pedido del usuario.
 
 ## Después de este sprint
 
